@@ -1,0 +1,308 @@
+# Piru
+
+Substance dose tracking iOS app built with SwiftUI and SwiftData. Logs doses, browses 1,700+ substances from a bundled SQLite database (sourced from TripSit/PsychonautWiki/DailyMed and curated data), checks interactions, and provides pharmacokinetic insights.
+
+## Voice (read before writing any user-facing copy)
+
+**Anti-guilt, assumes competence. Do NOT use the phrase "harm reduction" in app or marketing copy** — it implies the user is guilty of something needing reduction. The established house lines (already on the site and in the README — keep them, and write in this register):
+
+- "This is not harm reduction. Nobody here thinks you need *reducing*."
+- "a dose is not a confession."
+- "it's not a question of goodness — it's a question of dose."
+- "Most tracking apps are built to make you take less. Piru isn't."
+
+Piru presents as a **reference, a record, and a model** — what is known about a substance, what you logged, how the pharmacology behaves. Never advice to use, never a dosing recommendation. "Not medical advice" stays prominent.
+
+(The rule is about *consumer* voice, not scholarship: in a peer-reviewed paper "harm reduction" is a legitimate field name.)
+
+## What curated content may claim (read before authoring under `data/curated/`)
+
+Voice governs register; these govern *claims*. Each was gotten wrong at least once, and a curated claim is indistinguishable to the reader from a sourced one.
+
+- **Bust myths; never restate them.** A misconception entry names the belief, says plainly it is wrong, and cites the work showing why. Not even a hedged restatement.
+- **Don't ship an uncited model — and don't replace it with an invented number.** The community "3-month rule" for MDMA is an uncited fixed-exponential; it must not appear. But human recovery kinetics are graded LOW-to-no evidence, so no substitute "recovers in X" figure either. What is real and sayable is *acute intra-session* tolerance. When the honest answer is "the kinetics aren't known," say that — removing a wrong number doesn't license a better-sounding one.
+- **Rank combination risk by evidence, not reputation.** "MDMA + SSRI is dangerous" is a myth; the replicated human finding is 30–80% effect *blockade*, with no serotonin-syndrome case having MDMA as sole agent. The real danger is **MAOIs**. So any combinations surface ranks MAOI as danger and SSRI as "mostly just blunts it" — the reverse of the folk ordering.
+- **Bound practical guidance on both sides.** MDMA raises core temperature *metabolically*, so "stay cool" alone is insufficient and hydration genuinely matters — but over-drinking causes the hyponatremia that has actually killed people. Hence: **≈250 mL/hour while active, less at rest, favor electrolytes, "more is not safer."** Never an exact-mL prescription, never an open-ended instruction to drink.
+- **Get the citation right, including the journal.** The retracted primate neurotoxicity study is **Ricaurte 2002 in *Science*** (retracted *Science* 2003;301:1479) — **not *Nature***; those animals received methamphetamine. Cite a retracted source only to *discredit*, always marked as retracted, linking the notice rather than the paper. Distinguish an *association* (reduced SERT binding — reversible, no deficit in long-abstinent users) from a *lesion*. And say when a frightening result came from doses far above human use; that extrapolation, not the finding, is usually where the myth is manufactured.
+- **Curate names for recognition, not completeness.** `popularAliases` is hand-authored (MDMA = *Ecstasy · Molly · E*) with remaining synonyms collapsed behind a count — never an algorithmic top-N slice, and when it's missing the fallback is to show nothing rather than dump the raw alias list.
+
+## Working Style
+
+- **Use sub-agents** for research, exploration, and parallel tasks. Spawn agents for codebase searches, multi-file reads, and independent investigations rather than doing everything sequentially in the main context.
+- Prefer editing existing files over creating new ones.
+- Keep changes minimal and focused — no over-engineering.
+- **Never leave a comment describing something that no longer exists.** If a thing is gone, it is gone from everywhere — the code, the docs, and the comments. A removed pill, a superseded ordering, a deleted flag: delete the words too. `git log` is the history; a comment narrating what used to be here is dead weight that makes every later reader reconstruct a design that isn't there.
+  - **The one exception: a comment whose job is to stop the thing coming back.** Then it stays. The test is whether it changes what the next person *does*, not whether it explains what happened. Write it as the prohibition and the reason — "no mechanism pill here, the ratio line and every ACTS ON row already say it" — not as a changelog entry ("the pill was removed because…"). If it doesn't prevent a reintroduction, it doesn't belong.
+
+## Build & Test
+
+**Prefer the Xcode MCP over raw `xcodebuild`.** Use `mcp__xcode__BuildProject` to build and `mcp__xcode__RunAllTests` / `mcp__xcode__RunSomeTests` to test. The MCP surfaces compiler errors and warnings far more legibly than parsing `xcodebuild` output, and it drives the one shared Xcode/DerivedData instance — so it won't race a build another agent (or the IDE) already has in flight. Raw `xcodebuild` is a fallback for CI or when the MCP is unavailable; two concurrent `xcodebuild` invocations against the same DerivedData clobber each other.
+
+**When a test run reports 0 tests, use `pipeline/run-tests.sh`.** The IDE/MCP test runner intermittently wedges — the test host never pairs with `testmanagerd`, so nothing executes and the run hangs indefinitely (cause and A/B in the `xcode-test-hang-lldb-attach` memory). The script is the bounded escape hatch: `build-for-testing` once, then
+
+```bash
+xcodebuild build-for-testing -scheme Piru -destination 'platform=iOS Simulator,name=iPhone 18 Pro Max,OS=27.2'
+pipeline/run-tests.sh                  # full suite, ~20s healthy
+pipeline/run-tests.sh -only SomeSuite  # one suite (repeatable; use the Swift type name)
+```
+
+**A run that exceeds its cutoff is a failure, not an inconclusive result** — the script exits non-zero (124 timeout / 125 nothing-executed) rather than letting a wedged run read as green. Three cutoffs: 45 s to the first test line, 180 s whole-run, 60 s per-test (`STARTUP_TIMEOUT` / `RUN_TIMEOUT` / `TEST_TIMEOUT` to override). Read the verdict off Swift Testing's `✔/✘ Test run with N tests` line — the legacy XCTest reporter prints `Executed 0 tests` on *every* run and that 0 means nothing.
+
+```bash
+# Fallback only (prefer the Xcode MCP above):
+xcodebuild -scheme Piru -destination 'platform=iOS Simulator,name=iPhone 18 Pro Max' build
+xcodebuild -scheme Piru -destination 'platform=iOS Simulator,name=iPhone 18 Pro Max' test
+
+```
+
+**Every archive passes `pipeline/check-weak-imports.py` before it ships.** A symbol the SDK declares `@backDeployed(before: <the SDK's own OS version>)` is weak-imported and called on any OS reporting that version, and early betas of it report the version without exporting the symbol: the call jumps to address 0. The script reads each binary's SDK from LC_BUILD_VERSION, indexes that SDK's `.swiftinterface` files, and fails on a weak import of a back-deployed declaration; `@available(<SDK version>)` symbols print as warnings.
+
+```bash
+pipeline/check-weak-imports.py /path/to/Piru.xcarchive          # or a .app; exit 1 on a hazard
+pipeline/check-weak-imports.py --list Piru.app                  # every weak import, demangled
+```
+
+- **`Date <=` / `>=` resolve to `Shared/DateComparison.swift`**, which shadows Foundation's back-deployed operators in every target that compiles it. Keep it in each new target that compares dates (the watch app takes it through its `Shared` membership exceptions).
+- A new hazard the interfaces miss goes in the script's `DENYLIST` (mangled substring → reason).
+
+**An edit under `Piru/` or `Shared/` can break the Android build.** `android/patches/` is applied to those files by path, and every context line has to match the source exactly, so a reworded comment or a moved file is enough to stop a patch applying. After changing Swift, run the check; it names the first patch that fails. Fix that patch's context (or its path, and `android/exclude.txt`) in the same commit. The patch workflow is in `android/AGENTS.md`.
+
+```bash
+python3 android/tools/stage.py --check   # "31 patches apply to N upstream files" when clean
+```
+
+## Screenshots
+
+`pipeline/screenshots.py` captures every screen worth showing — the vertical timeline, each tab, a quick log with the morning meds staged, stats, inventory, three substance pages, the interaction checker with a pair checked, the skins sheet — in English and Simplified Chinese, in the `piru` skin and then a subset in every other skin the picker offers. It runs unattended and prints each file as it lands.
+
+```bash
+pipeline/screenshots.py                          # build, then everything (~10 min)
+pipeline/screenshots.py --no-build --skins none  # the piru skin only, ~1 min per locale
+pipeline/screenshots.py --screens journal,quicklog --skins tsuki,yuki --locales en
+pipeline/screenshots.py --appearance both        # light and dark
+pipeline/screenshots.py --list                   # screen and skin names
+pipeline/screenshots.py --platform macos --skins none --locales en   # the native Mac app, ~1 min
+pipeline/screenshots.py --device "Piru Duo Screenshots" --device-type iPhone-Duo --pose open --orientation portrait
+                                                 # an iPhone Duo, unfolded and turned to portrait
+```
+
+- **Output is `Store/shots/` (gitignored):** `en/01-journal.png` for the piru skin, `en/skins/tsuki/01-journal-tsuki.png` per skin, `zh-Hans/…`, `en-dark/…`, plus `index.json`. Numbers are fixed by the catalog, so a re-run of one screen overwrites the same file.
+- **The app does the walking.** `ScreenshotTour` (`Piru/Utilities/ScreenshotTour.swift`, DEBUG) is enabled by `-piruScreenshots <dir>`, seeds the `week` persona, lands on each screen through `AppNavigator`, and asks the host for a capture through `<dir>/.tour/request.json`; the script answers with `simctl io screenshot` so the 9:41 status bar and real pixels are in the picture. **Add a screen by adding a `Screen` to `catalog`**; a new skin is in the pass the moment it is in `Skin.available`. A screen that only one persona's seed fills names it (`Screen(name:persona:)`) and is left out of every other pass: the shared-session screens need `--persona sharedNight`.
+- **It runs on its own simulator, "Piru Screenshots"** (an iPhone 18 Pro Max created on first use), so the persona reseed never wipes the journal on the simulator you develop on. `--udid booted` uses that one anyway.
+- **`--device-type`, `--pose` and `--orientation` cover the iPhone Duo and iPad.** `--device-type` creates the pass's simulator from another type (`iPhone-Duo`, `iPad-Pro-13-inch-M5-12GB`); give it its own `--device` name so it never reuses the iPhone. `--pose closed|partially-open|open` folds a Duo and captures the display that pose lights; `--orientation portrait|landscape` turns the device for the pass and back after, checking each turn against a probe capture. Both press Device Hub's buttons through `rocuronium`, since simctl has no verb for either.
+- **`--platform macos` runs the same tour in the Mac app** and writes `Store/shots-macos/`. The sandboxed app can write nowhere the script can read, so the tour POSTs each request to a loopback server in the script (`-piruScreenshotHost`), and the window is captured at 1280×820 with `rocuronium screenshot --pid`.
+- **Every tour runs on its own store, `screenshots.store`** (`StoreRecovery.activeStoreName`): the persona reseed wipes whatever store it opens, and on a Mac the debug build shares its App Group container with the installed app's real journal.
+- **`--clock` (default 9:41) sets both the status bar and the vertical timeline's Now** — the strip reads `DebugClock.now`, pinned by `-piruNow`, and the `week` persona seeds against it. Other surfaces (the Active Now card, the accessory's "Next:" countdown, In Your Body) still read the wall clock.
+
+## Lint & format — pinned tool versions
+
+CI runs `swiftformat --lint .`, `swiftlint lint --quiet`, `ruff format --check .`, and `ruff check .` and fails the PR on any violation. **Match these versions locally before pushing** — a different SwiftFormat release enables different default rules, so a tree that is clean on one version is red on another (0.62 made `wrapIfStatementBodies` a default rule and produced 1,300+ phantom violations until it was disabled).
+
+| Tool | Version | Where the pin lives |
+|---|---|---|
+| SwiftFormat | **0.63.0** | `.github/workflows/ci.yml` (`SWIFTFORMAT_VERSION`, release binary) |
+| SwiftLint | **0.65.1** | `.github/workflows/ci.yml` (`SWIFTLINT_VERSION`, release binary) |
+| Ruff | **0.15.15** | `.github/workflows/ci.yml` + `.pre-commit-config.yaml` (`rev: v0.15.15`) |
+| Python | **3.13** | `.github/workflows/ci.yml` |
+| RDKit | **2026.3.4** | `.github/workflows/ci.yml` (hard dependency of the data checks) |
+
+```bash
+swiftformat --version && swiftlint --version && ruff --version   # compare against the table
+brew upgrade swiftformat swiftlint && pip install ruff==0.15.15   # bring local up to CI
+pre-commit install --hook-type pre-commit --hook-type pre-push     # once per clone; formats on commit, lints on push
+```
+
+- **Before pushing: `swiftformat .` then `ruff format .`**, then `swiftformat --lint .` must print nothing. Agent worktrees have no pre-commit hooks, so this is a manual step there.
+- **When CI goes red on format but local is green**, the versions differ: bring local up to the table. **To move CI to a new SwiftFormat**, bump `SWIFTFORMAT_VERSION`, run `swiftformat --lint .` locally on that version, `--disable` any newly-default rule the repo never opted into in `.swiftformat` rather than reflowing the tree, and update this table and CONTRIBUTING.md in the same commit.
+- `.swiftformat` keeps `redundantSelf`, `wrapIfStatementBodies`, and `wrapIfExpressionBodies` disabled on purpose; the file says why.
+
+## Releases & schema versioning
+
+- **Each shipped build is git-tagged** (`vMAJOR.MINOR-bBUILD`). Run `git tag --sort=-creatordate | head` to find the current shipped baseline; everything after the newest tag is **unreleased**. Tag every release going forward so this stays true.
+- **Never bump a persisted schema version that hasn't shipped.** Many schema/data changes land between releases and never reach a user, so the "current" version is often itself unshipped — amend it *in place* rather than minting `n+1`. Check the newest release tag before assuming a version is live in the wild.
+  - **SwiftData store:** uses additive automatic lightweight migration with **no version ladder** (see `StoreRecovery`'s schema-migration policy). Additive `@Model` changes (new entity, new optional/defaulted field) need **no** version bump and no migration plan at all. Only a genuinely non-additive change reintroduces a scoped `VersionedSchema` + `MigrationStage`.
+  - **Bundled substance SQLite** (`manifest.schema_version`, currently `6`): the DB ships as a wholesale-replaced bundle artifact, so its version can be edited in place pre-release — only bump it for a change that an *already-shipped* app must read.
+
+## Rebuilding the bundled substance DB
+
+`pipeline/build.sh` (default `fast`) is **quick, offline, and reproducible** — it rebuilds the whole `Piru/Data/piru-substances.sqlite` from committed inputs (cached web snapshots in `data/sources/` + the curated layer in `data/curated/`) plus external extracts in `/tmp/piru-extract`. `pipeline/build.sh full` additionally re-runs the upstream scrape (network).
+
+- **Always rebuild the WHOLE DB through the pipeline — never hand-edit the bundled `.sqlite`.** A surgical/manual edit hides build-pipeline bugs (they only surface on a full rebuild) and is silently clobbered on the next run. Because the full rebuild is fast and offline, there is never a reason to avoid it.
+- To change pharmacology/MOA data, edit the curated source (`data/curated/`), then `pipeline/build.sh fast`, then commit the rebuilt `manifest.json` + `data/snapshots/*` and **publish the rebuilt `.sqlite` to the host** (see below) — the DB itself is not tracked, and the manifest's checksum is what every later fetch is validated against, so shipping one without the other breaks both CI and installed builds.
+- Some datasources are private (not in this open-source repo); the build **warns loudly** when an external extract is missing and produces a clearly-partial DB rather than failing silently (set `PIRU_REQUIRE_EXTERNAL=1` to hard-fail instead).
+- **After a rebuild, read `data/snapshots/dose-gate-report.md` and the build report's "Identifier corrections" section.** The gates (`pipeline/build/dose_gates.py`, ceilings in `data/curated/dose-class-gates.json`) delete dose rows that fail a rule about themselves; the corrections are identifier columns dose.wiki was allowed to overwrite. Both are reportable upstream: `python3 pipeline/audit/adjudicate.py && python3 pipeline/audit/upstream_report.py dosewiki|drug.community` writes the per-source defect report under `Specs/evidence/upstream-reports/`. A source that is wrong for a whole *field* gets a `SOURCE_FIELD_PRIORITY` row in `sqlite.py`, never a global reorder; a single row the literature settles gets a `dose-source-exceptions.json` entry with the citation.
+- **Before a release, and after touching a source's URL builder or slugs, run `python3 pipeline/audit/source_link_check.py`.** It is the only check that a source link lands on the page *about* that substance rather than a homepage or a soft-404; `--gate` re-reads its cached verdicts offline. Usage in `pipeline/README.md`.
+
+### The bundled DB is not in git — it is fetched
+
+**This is how a *checkout* gets the database, not how the app does.** The app reads the copy in its own bundle and fetches nothing at runtime.
+
+`Piru/Data/piru-substances.sqlite` is ~19 MB and is rewritten wholesale on nearly every data pass, so it is **gitignored and hosted** rather than tracked. `pipeline/fetch-db.sh` puts it in place:
+
+```bash
+pipeline/fetch-db.sh            # no-op when the file already matches the manifest
+pipeline/fetch-db.sh --force    # re-download regardless
+```
+
+- **Run it after cloning, and before any build.** `Piru/Data` is a filesystem-synchronized Xcode group, so the app bundles the DB by its merely being there, and `SubstanceStore` calls `fatalError` at launch when the bundle lacks it. Both CI jobs that read it run the script right after checkout.
+- **`manifest.json` beside it stays tracked.** It is small, and its `sqlite_sha256` is what the download is verified against — so a host serving a database this checkout does not expect is rejected rather than installed. The checksum comes from the tracked manifest, never from the server.
+- **It is served from the `db` release tag**, which holds both files. Only clones and CI read it.
+- **Run `pipeline/publish-db.sh` after every rebuild.** The manifest is committed and the database it describes is not, so a manifest pushed without its database fails every later fetch. The script refuses to publish a database the committed manifest does not describe, and verifies what the release serves afterwards.
+- **Never put it in Git LFS.** `raw.githubusercontent.com` serves an LFS path as its 133-byte pointer, so an LFS-tracked DB would hand `fetch-db.sh` 133 bytes of pointer text instead of a database.
+
+## Architecture
+
+**Pattern**: SwiftUI + SwiftData with @Observable singletons — no formal MVVM ViewModels.
+
+```
+Piru/
+├── Domain/          # value-type domain models (NOT SwiftData): Substance struct, DoseRange + DoseLadder, DurationProfile, JournalModel, PSID
+├── Views/           # SwiftUI views (ContentView has 4 tabs: Journal, Library, Tools, Insights)
+│   ├── Insights/    # Adherence, half-life calc, activity charts, usage stats
+│   └── Components/
+├── Data/            # per-concern subfolders (all filesystem-synchronized groups):
+│   ├── SubstanceDB/     # SubstanceStore (GRDB over bundled SQLite) + extensions, SubstanceLibrary façade, AppSources, search history
+│   ├── Persistence/     # SwiftData store lifecycle: StoreRecovery, StoreHealth, StoreDiagnostics, backfill migrations
+│   ├── Backup/          # BackupManager, BackupCrypto (AES-256-GCM encrypted backups)
+│   ├── Pharmacology/    # the science: MechanismOfActionDatabase, receptor/metabolism/effect models
+│   ├── Tolerance/       # ToleranceStore, ToleranceModulation
+│   └── Services/        # Interactions, Benzo/OpioidEquivalence, InventoryService, UserProfile(+Store)
+├── Utilities/       # ActiveSubstanceCalculator, SessionNotificationScheduler, LiveActivityManager, etc.
+├── Navigation/      # AppNavigator + route enums + deep link codec — single source of truth for tab/sheet/path state
+Shared/              # Code shared across all targets (widget + Live Activity):
+│   ├── Models/         # the 15 SwiftData @Model (DoseEntry, Session, DailyDoseItem, …)
+│   ├── Engines/        # PKModel, PDModel, EffectEngine, TimelineCurveModel, SessionClustering
+│   ├── Formatting/     # DoseFormatting, ColorHex, ConfidenceTier
+│   └── (root)          # value types: RouteOfAdministration, ByVolumeDosing, SessionVitals, TimelineGraphView, PiruActivityAttributes, DosePhaseGlyph, CheckInOffsets
+PiruLiveActivityExtension/  # Lock Screen Live Activity widget
+PiruWidget/          # Home Screen widgets (Today's Summary, Recent Dose)
+PiruTests/           # 105 test files, ~1,300 tests using Apple Testing framework (@Suite, @Test)
+pipeline/            # Python data pipeline that builds the bundled substance SQLite DB
+```
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `Domain/Substance.swift` | Core `Substance` struct, `DoseRange`, `DurationProfile`, `SubstanceCategory` enum (23 categories) |
+| `Shared/Models/DoseEntry.swift` | SwiftData `@Model` for logged doses (shared with widget) |
+| `Shared/Models/DailyDoseItem.swift` | SwiftData `@Model` for daily medication tracking (shared with widget) |
+| `Shared/Models/SubstanceColor.swift` | SwiftData `@Model` for a substance's color: resolved Display P3 components + `usesDefault`. Also `LegacyColorImport` (the only sRGB-hex reader), `CatalogTints`, and the `SubstancePalette` fallback (shared with widget) |
+| `Domain/SubstanceColorGenerator.swift` | A substance's default color: hue from its class seed (`SubstanceCategory+OklchSeed.swift`, generated by `design-system/color/build_l2_scales.py`), lightness/chroma/±10° hue drawn from its PSID family. A pinned-value test guards it — changing the band recolors every journal |
+| `Data/Services/SubstanceColorStore.swift` | The only writer of `SubstanceColor` rows: minting a default on first meeting, the picker's result, Reset All, the launch refresh/mint passes, and the legacy-row resolution behind the class-colors update notice |
+| `Views/Launch/LaunchSheetModifier.swift` | The one presenter for self-raised launch sheets (update notices, then the Discord invite) — at most one per launch. New "what's new"/migration pages are an `UpdateNotice` case, never another `.sheet` on the root |
+| `Shared/RouteOfAdministration.swift` | 10 routes enum (shared with widget) |
+| `Shared/Formatting/DoseFormatting.swift` | `Double.doseFormatted` extension (shared with widget) |
+| `Shared/DosePhaseGlyph.swift` | **The** phase glyph table (come-up ↗, peak ☀, offset ↘, afterglow, ended, sleep) + the plain word for a phase. Never hardcode a phase symbol — the Live Activity countdown, the timeline milestones and the substance share card all read from here |
+| `Piru/Views/Journal/TimelineMilestone.swift` | Curve milestone marks on the vertical timeline (model, lane geometry, the two marks) + `CurveMilestonePolicy`, which decides whether the *horizontal* graph may annotate — it lives in the app, not `Shared/`, because that graph also compiles into the widget targets, which have no substance catalog and draw no milestones |
+| `Data/SubstanceDB/SubstanceStore.swift` | `@Observable @MainActor` singleton — identity (name/alias/uid indexes), caches, connection lifecycle, source-priority prefs. Delegates resolution to `SubstanceReadModel` via its `reader` property |
+| `Data/SubstanceDB/SubstanceReadModel.swift` | The source-priority resolution engine: per-substance record assembly, every per-field resolver, the batch loader, and the priority-SQL fragments. **New read paths go here** (or a `SubstanceReadModel+<Concern>` extension), not on `SubstanceStore` |
+| `Utilities/LocalizedSubstanceName.swift` | A substance's title in the app language (Ketamina, 氯胺酮, 愷他命) from `data/curated/localized-names.json` → `localized_names`; switched off by Settings → English Substance Names. Order in `Substance.displayTitle`: relabel/curated title, then language name, then regional spelling, then canonical |
+| `Data/SubstanceDB/SubstanceLibrary.swift` | The `SubstanceLibrary` static façade (overlay-aware lookups) — the only intended resolution path for app code |
+| `Data/Persistence/StoreRecovery.swift` | Never-delete SwiftData store recovery: versioned migration plan + data-aware fallback |
+| `Data/Services/Interactions.swift` | The interaction engine. Classes, rules and severities all resolve from the bundled DB (`interaction_rules`, `substance_interaction_classes`, `category_interaction_classes`); the localized sentence per class pair is `InteractionRuleCopy.swift` |
+| `Shared/Engines/PKModel.swift` | One-compartment oral PK model (concentration, Tmax, Cmax, ka estimation) |
+| `Utilities/SessionNotificationScheduler.swift` | Local session notifications with session-based grouping |
+| `Views/InteractionTimelineView.swift` | PK curve overlay with interaction danger window visualization |
+| `Views/QuickLog/EntryLevelEstimateCard.swift` | Model estimate for the latest recorded entry shown during quick-log |
+| `Views/ContentView.swift` | Main TabView, built from the user's `TabLayoutStore` layout (stock: Journal, Library, Tools, Insights + Search) |
+| `Views/QuickLogView.swift` | Modal for quick dose logging (plus per-type `QuickLog*.swift` files split out alongside it) |
+| `Navigation/AppNavigator.swift` | `@Observable @MainActor` singleton owning `selectedTab`, per-tab push paths, and the sheet stack |
+| `Navigation/Routes.swift` | `AppTab`, `PushRoute`, `SheetRoute` enums + `NavigatorSnapshot` (all Codable for deep links); `TabID` (a tab-bar slot: stock tab or `PinnedScreen`) |
+| `Navigation/TabLayoutStore.swift` | The user's tab bar (Settings ▸ Tabs): order, hidden stock tabs, pinned screens, Search on/off. Cap 4 + Search, at least one tab besides Search; backed up |
+| `Navigation/DeepLink.swift` | `piru://` URL ↔ `NavigatorSnapshot` codec |
+| `Navigation/SheetRouteView.swift` | Dispatches a `SheetRoute` to its underlying view |
+| `Theme.swift` | Accent color + secondary label styling |
+
+## Data Layer
+
+- **Persistence**: SwiftData for user data (DoseEntry, DailyDoseItem, SubstanceColor, FavoriteSubstance)
+- **Substance data**: Ships as a bundled SQLite DB (`Piru/Data/piru-substances.sqlite`) built by `pipeline/build.sh` from TripSit/PsychonautWiki/DailyMed + curated data — editing pipeline JSON does nothing without a rebuild. `SubstanceStore` resolves each field by per-source priority (user-reorderable). The app opens only the bundled file; there is no runtime update path
+- **Queries**: Use `@Query` macro in views for SwiftData, `SubstanceLibrary.all` for substance lookups
+- **Substance lookups go through the `SubstanceLibrary` façade** (`SubstanceLibrary.swift`), never raw `SubstanceStore.shared.lookup*` — the façade overlays `CustomSubstanceStore` user edits (duration overrides, relabels); bypassing it silently drops those overrides
+- **`SubstanceLibrary.lookup` is the default resolve; `resolveFull` is detail-screens-only.** `lookup` is a dict hit over the batch projection (name, category, routes, per-salt dose ladders, durations, half-life — enough for everything but a detail page). `resolveFull` loads the full per-field record at ~21 SQL per uncached substance, and `ensureAllLoaded()` never warms its cache — so it belongs only where mechanism/bindings/chemistry are shown. Any task that resolves substances must `await SubstanceStore.shared.ensureAllLoaded()` first: a cold `SubstanceStore.all` on the main actor **asserts in DEBUG** (the release fallback is a ~500 ms hang, which is why the assert exists).
+- **Background SwiftData work goes on `DatabaseActor`** (`Data/Persistence/DatabaseActor.swift`): annotate the function `@DatabaseActor`, take the `ModelContainer` as a parameter, make a fresh `ModelContext` inside. It reads committed store state — run it post-save (revision tick / change streams), never to observe in-flight main-context edits.
+- **Dose amounts carry their unit.** A stored `amount` + `unit` pair is parsed into a `DoseQuantity` (`Shared/DoseQuantity.swift`: `entry.quantity`, or `substance.quantity(of:)` to include the substance's alias units) before any arithmetic; a ladder is weighed only through `DoseLadder` (`substance.ladder(for:…)`, `tierLadder`, `scalingLadder`), which converts into the ladder's own unit and answers `nil` across families. Never divide, sum or compare a bare `entry.amount` against a ladder, a reference dose or another dose — and never `?? amount` a failed conversion: a dose that can't be expressed is unknown, not small. Masses are `Measurement<UnitDoseMass>` (milligram base, so µg/mg/g and alias units convert exactly and `0.08 g == 80 mg`); past that boundary engines take plain `Double`s with the unit in the name (`refDoseMg`, `amountMg`).
+- **Search**: Ranked cascade (exact → alias → prefix → contains → fuzzy via Levenshtein distance)
+- **Export**: PsyLog-compatible JSON format via `DataExportImport`; PDF reports with PK charts via `PDFReportGenerator`
+- **Shared code**: SwiftData models + formatting live in `Shared/` with multi-target membership (Piru, PiruWidget, PiruLiveActivityExtension)
+
+## Navigation
+
+Navigation state is centralised in `AppNavigator` (`Piru/Navigation/`). Views read tab/sheet state through `@Environment(\.appNavigator)` rather than holding their own `@State` flags. The key rules:
+
+- **Present a sheet**: `navigator.present(.someRoute)`. To atomically swap the current sheet for another (e.g. Save → ColorPicker), use `replacingTop: true`.
+- **Dismiss a sheet**: `navigator.dismiss()`. Direct state mutation, not the env `dismiss()` round-trip — that's why Done/Cancel feel instant now.
+- **`@Environment(\.dismiss)` is fine** in views that can be either pushed or presented (e.g. `EntryDetailView`) — the system routes it correctly. For dedicated sheet roots, prefer `navigator.dismiss()` for explicitness.
+- **New screens**: add a case to `SheetRoute` (or `PushRoute`) and a dispatch arm in `SheetRouteView`. Update `DeepLink.encode/decode` if the route should be deep-linkable. A screen that can stand as a tab also goes in `PinnedScreen` (and `pickable`).
+- **Tabs are the user's.** Any stock tab can be hidden and any tool, insight or the Timeline pinned, so never assume Journal (or any tab) is in the bar. A "take me there" action goes through `navigator.open(_:home:)` (deep links through `apply`), which resolves by `TabRouting`: a pinned tab for that screen, else the home tab if shown, else the current tab. Plain `push` stays on the current tab.
+
+`piru://` URLs route through `DeepLink.decode` → `navigator.apply(_:)`. URL scheme is registered in `Piru/Info.plist`.
+
+## Testing
+
+Uses **Apple Testing framework** (Swift Testing), not XCTest:
+```swift
+@Suite("DoseEntry")
+struct DoseEntryTests {
+    @Test("Initializes with correct default values")
+    func defaults() { ... }
+}
+```
+
+**Coverage areas**: Models (Substance, DoseEntry, DoseRange, DurationProfile, RouteOfAdministration, etc.), Data (BundledDatabase, SourcePriorityResolution, SubstanceLibrary, SubstanceCustomOverlay, Interactions, AppSources, StoreRecovery, BackupCrypto/BackupManager), Utilities (AdherenceCalculator, DataExportImport, PKModel, SessionNotificationScheduler, TagExtractor, ColorHex, SessionClustering, SessionService), Features (FuzzySearch, NotificationGrouping, Navigation/DeepLink).
+
+## Conventions
+
+- **Spelling**: Use **US English** everywhere — code, comments, and user-facing strings (`color` not `colour`, `behavior` not `behaviour`, `-ize`/`-ization` not `-ise`/`-isation`, `gray`, `center`, `modeled`, `signaling`). The lone exception is proper nouns and official names, which keep their real spelling (e.g. the poison-control "Centre Antipoison", the "European Monitoring Centre for Drugs and Drug Addiction").
+- **Localization**: The app ships **English, Simplified Chinese (`zh-Hans`), Traditional Chinese (`zh-Hant`), and Spanish (`es`)** via `Piru/Localizable.xcstrings`. **Every user-facing string must be localized** — use `Text("...")`, `LocalizedStringKey`, or `String(localized:)`; never hardcode a bare `String` into UI. Strings passed to non-localizing APIs (e.g. accessibility labels taking `String`) still need `String(localized:)`.
+  - **NEVER hand-edit `Localizable.xcstrings` with a generic JSON writer.** Xcode owns its format — `" : "` key separators (spaces around the colon), empty entries written `"key" : {\n\n    }` (not `{}`), CJK stored literally (no `\uXXXX`), no trailing newline, and keys ordered by Unicode collation Python can't reproduce. A naïve `json.dump` reformats all ~20k lines and the diff becomes unreviewable.
+  - **Workflow for new strings:** add the English `Text("…")` in code, then add `"English": ("简体", "繁體")` to the `T` dict in **`translate_catalog.py`**, add `"English": "Español"` to `ES` in **`localization/es_translations.py`** (neutral international Spanish, informal *tú*, sentence case; glossary at the top of that file), and run `python3 translate_catalog.py`. It updates existing keys in place with a byte-identical serializer (see `serialize_catalog`). For a string Xcode hasn't extracted yet (CLI-only change, project not opened), add it to the `NEW_KEYS` allow-list in `__main__` so it gets inserted — keep that set to just the handful you added (don't bulk-insert all of `T`, or a catalog inherits strings its target never uses; the widget catalog is intentionally a small subset). The script leaves a no-op run as an empty `git diff`.
+  - **The script canonicalizes order itself — no build-first dance needed.** After filling translations, `translate_catalog.py` runs `canonicalize_catalogs()`: an `xcodebuild -exportLocalizations` → `-importLocalizations` round-trip that hands every project `.xcstrings` back to Xcode to re-collate into its canonical (ICU-collated) key order. This is the *only* reliable headless way to get Xcode's ordering — verified facts: (1) Python can't reproduce the collation; (2) `xcodebuild build`/`clean build` (CLI **or** IDE-via-AppleScript) never writes the source catalog back, so a build can't reorder it; (3) standalone `xcstringstool sync` mangles the catalog (stales hundreds of live strings, drops keys like `Substance Info` that are present in the `.stringsdata`) — that's the trap the old "build first" note danced around. The export/import round-trip is **idempotent** (second pass = byte-identical) and **non-destructive** (no keys dropped, stale marks and untranslated entries preserved); it also cross-fills a catalog's untranslated keys from project-wide translations (e.g. the widget's `Onset`/`Peak` pick up the main catalog's zh values), matching what Xcode does on its own. So the durable workflow is just **add to `T` → run the script → commit** — the script owns both translations *and* ordering. It still appends `NEW_KEYS` to the end first, but the round-trip then relocates them canonically, which is exactly what stops the IDE from re-ordering the file on the next build. Falls back gracefully (leaves the unsorted Python output) if `xcodebuild` is unavailable.
+  - **Don't auto-prune stale entries.** `extractionState: stale` is a *candidate* signal, not proof of death — the lightweight extractor false-flags strings resolved via `String(localized:)` in helpers (e.g. `MechanismOfActionDatabase.moa()` summaries) or used only from another target. Deleting those ships English to zh users at runtime. Leave orphans in place (harmless unused entries); a future clean build re-evaluates them. We do **not** use a TMS (SimpleLocalize/Localazy) — translations are authored directly in `translate_catalog.py`.
+  - **To prune deliberately, use two gates and let a build be the proof.** Split each stale key on its format specifiers and keep it the moment any literal fragment ≥4 chars appears in (1) the four targets' Swift, or (2) anything else in the repo plus a `.dump` of the bundled DB. That is what catches a parametrized key whose source form looks nothing like the catalog's (`"%lld of %lld scheduled doses"` ← `Text("\(taken) of \(due) scheduled doses")`), a helper's `String(localized:)`, a cross-target use, and a runtime-keyed lookup (`MetabolicModulationBanner`, `SubstanceDetailSections.indicationText`). A key whose fragments are all shorter than the floor is kept unconditionally rather than guessed at. Delete only what neither gate rescues, then run `translate_catalog.py`: its export/import round-trip re-adds any key a real build still reaches, so **nothing coming back is the check that matters**. Remove the same keys from `T` so the table and the catalog agree, and write through `serialize_catalog` — a correct prune is a deletions-only diff. (2026-09-19: 62 of 191 stale keys went; method and result in `Specs/CLAUDE.md` §3.)
+- **Decompose views eagerly — never grow a "superview" holding piles of state.** A SwiftUI `View` is one *invalidation boundary*: any `@State` change re-evaluates the **entire** `body`, every section, every modifier. A view with 15–30 pieces of `@State` is both a performance problem (everything re-renders on any change) and a correctness hazard (tangled interdependencies, stale values, effects firing on the wrong change — the hard-to-trace bugs live here). Split a view **as soon as it grows past a few hundred lines or takes on more than one role** — don't defer it to a later refactor pass. The rules:
+  1. **Each section → its own `View` `struct` with narrow inputs** — only the fields it reads (value types by `let`, shared mutable state by `@Binding`, its own `@Environment`, actions as closures). **Not** a `private var section: some View` and **not** a `@ViewBuilder` helper — those share the parent's invalidation boundary and buy nothing.
+  2. **More than ~6 `@State` is a smell.** Async-loaded data belongs in an `@Observable @MainActor` model filled in `.task`; a multi-field edit draft belongs in **one** `@Observable` draft model. Keep only genuine UI toggles as `@State`.
+  3. Reference example: the giant-view decomposition of `SubstanceDetailView`/`SessionDetailView`/`EntryDetailView`/`QuickLogDock`/`ToleranceToolView` (each 1200–1600 lines → a thin coordinator + narrow-input subviews + an `@Observable` model). Follow the `swiftui-specialist` skill (`structure.md`, `dataflow.md`) when doing this.
+- **iOS 26+ / macOS 26+** minimum deployment targets (Liquid Glass UI throughout)
+- **Swift 6** strict concurrency (`default-isolation=MainActor`)
+- **No `Text + Text` concatenation.** The SwiftUI `+` operator on `Text` is deprecated in iOS 26 and trips a build warning (`'+' was deprecated in iOS 26.0: Use string interpolation on Text`). Build the value in one shot instead: a single `Text("… \(value) …")`, or — when several **independently localized** pieces must join (e.g. an `accessibilityValue`) — compose a plain `String` from `String(localized:)` pieces and pass that (`"\(status), \(position)"` assigned to a `let`, so it resolves to the `StringProtocol` overload rather than minting a `"%@, %@"` catalog key). Keep the build warning-clean; don't leave these to accumulate.
+- Colors: accent from `Assets.xcassets` (soft pink light / hot pink dark), substances get a class color from `SubstanceColorGenerator`, or one the user picks in the Oklch picker. Substance colors are `P3Color` end to end (store, Live Activity, watch, widgets, caches) — never a hex string
+- **Define colors in Oklab/Oklch, never hex.** Hex is confusing and encodes nothing perceptual; Oklab is the best perceptual representation — lightness, chroma, and hue mean what a human sees, and equal numeric distance ≈ equal perceived difference, so you don't have to guess how a color reads or how far apart two colors are (measure Oklab dE with `design-system/color/colorimetry.py`; distinct UI colors want ≥ ~0.08–0.10). Since Apple panels are Display P3, convert Oklch → P3 components at the catalog boundary (`generate_colorsets.py` emits display-p3 only); sRGB is not a gamut we target or notate. Legacy hex still in the design-system sources is historical — new colors get Oklch seeds or P3 components, not hex.
+- All singleton managers use `@Observable @MainActor`
+- Route parsing is case-insensitive with abbreviation support
+- Substance names are normalized for dedup (lowercased, stripped of prefixes/suffixes)
+- Interaction rules are class-based (e.g., "stimulant + MAOI"), not per-substance
+- Notifications use `threadIdentifier` for session-based grouping (6-hour windows)
+- `nonisolated(unsafe)` in LiveActivityManager is intentional (Apple's Activity API not Sendable)
+
+## Multiplatform (iOS + macOS)
+
+The app builds for both iOS and native macOS (not Catalyst) from a single target. Platform-specific code uses a naming convention enforced by `EXCLUDED_SOURCE_FILE_NAMES` in the build settings — no `#if` wrappers needed in these files.
+
+| File suffix | Compiled on | Excluded from |
+|---|---|---|
+| `Foo+iOS.swift` | iOS/iPadOS only | macOS (`sdk=macosx*`) |
+| `Foo+macOS.swift` | macOS only | iOS (`sdk=iphoneos*`, `sdk=iphonesimulator*`) |
+| `Foo.swift` (no suffix) | both platforms | neither |
+
+**Standalone iOS-only files** live in `Piru/iOS/` (camera scanner, WatchConnectivity, UIKit PDF rendering). They are also excluded on macOS via the same build setting.
+
+**Companion files** live next to their parent: `DoseIntensityCard+iOS.swift` beside `DoseIntensityCard.swift`, `ImageQuickLook+macOS.swift` beside `ImageQuickLook+iOS.swift`. The companion contains the platform-specific type definitions (`UIViewRepresentable`, `UIGestureRecognizerRepresentable`, `NSViewRepresentable`); the parent references them from call sites that are themselves inside `#if canImport(UIKit)` / `#if os(iOS)` guards.
+
+**`PlatformCompat.swift`** (`Piru/Utilities/`) is the cross-platform adapter layer:
+- Type aliases: `PlatformImage` (`UIImage`/`NSImage`), `PlatformColor`, `PlatformFont`, `PlatformView`
+- `PlatformPasteboard.copy(_:)` — clipboard
+- `PlatformHaptics.success()` / `.impact()` — no-op on macOS
+- `openPlatformSettings()` / `openNotificationSettings()`
+- View modifiers that absorb inline `#if`: `.inlineNavigationTitle()`, `.insetGroupedListStyle()`, `.decimalKeyboard()`, `.neverAutocapitalize()`, `.wordsAutocapitalize()`, `.permanentEditMode()`, `.compactListSectionSpacing()`, `.wheelPickerStyle()` (`.wheel` does not exist on macOS; the shim falls back to `.menu`)
+- Toolbar placement: `.platformTopBarTrailing` / `.platformTopBarLeading`
+- System colors: `Color.platformSystemBackground`, `.platformSecondarySystemFill`, `.platformTertiarySystemFill`, `.platformQuaternaryLabel`, `.platformTertiaryLabel`, etc.
+
+**Rules:**
+- Use the view modifier shims (`.inlineNavigationTitle()` not `#if canImport(UIKit) .navigationBarTitleDisplayMode(.inline) #endif`).
+- Use `Color.platformTertiarySystemFill` not `Color(.tertiarySystemFill)` — the `Color(_: UIColor)` initializer doesn't exist on macOS.
+- Use `.platformTopBarTrailing` not `.topBarTrailing` — the latter is unavailable on macOS.
+- `LiveActivityManager` has a macOS stub with no-op methods — call sites compile on both platforms without guards.
+- `fullScreenCover` doesn't exist on macOS; use `#if os(iOS) .fullScreenCover(...) #else .sheet(...) #endif` at call sites, or avoid `fullScreenCover` in new code.
