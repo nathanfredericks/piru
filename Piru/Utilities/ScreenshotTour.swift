@@ -1,12 +1,7 @@
 #if DEBUG
     import SwiftData
     import SwiftUI
-    #if canImport(UIKit)
-        import UIKit
-    #endif
-    #if os(macOS)
-        import AppKit
-    #endif
+    import UIKit
 
     /// Walks the app through every screen worth a screenshot and has the host
     /// capture each one — the in-process half of `pipeline/screenshots.py`.
@@ -17,14 +12,8 @@
     /// `<dir>/.tour/request.json` naming the file it wants. The host takes the
     /// screenshot with `simctl io screenshot` — so the status-bar override and
     /// every real pixel are in the picture — and answers with `<dir>/.tour/ack`.
-    /// `<dir>/.tour/done.json` closes the run.
-    ///
-    /// A sandboxed Mac app can write to no directory the host can read, so on
-    /// macOS the host passes `-piruScreenshotHost <url>` instead: each request
-    /// is POSTed to `<url>/request` and the response is the ack; the report goes
-    /// to `<url>/done`. The window is sized to `-piruScreenshotWindow <w>x<h>`
-    /// (default 1280x820) so every capture has one frame. Either way the tour
-    /// runs on its own store (`StoreRecovery.activeStoreName`).
+    /// `<dir>/.tour/done.json` closes the run. The tour runs on its own store
+    /// (`StoreRecovery.activeStoreName`).
     ///
     /// Screens are captured in the `piru` skin first, then a subset again in
     /// every other skin the picker offers (`Skin.available`), so a skin added to
@@ -291,7 +280,6 @@
             let skinScreens = wantsWallpapers ? [wallpaper] : select(list(after: "-piruScreenshotSkinScreens") ?? skinScreenNames, from: catalog)
             let skins = selectSkins(list(after: "-piruScreenshotSkins"))
 
-            let host = argument(after: "-piruScreenshotHost").flatMap(URL.init(string:))
             let tourDirectory = URL(filePath: root).appending(path: ".tour")
             try? FileManager.default.createDirectory(at: tourDirectory, withIntermediateDirectories: true)
 
@@ -303,9 +291,6 @@
 
             // The stock bar in every capture, whatever this device's own layout.
             TabLayoutStore.shared.setEphemeral(.default)
-            #if os(macOS)
-                sizeWindow()
-            #endif
             let stage = Stage(context: container.mainContext)
             let originalGrouping = stage.currentGrouping
             let skinStore = SkinStore.shared
@@ -336,7 +321,7 @@
                 try? await Task.sleep(for: .seconds(settle))
                 let request = Request(file: file, screen: screen.name, skin: skin.rawValue, index: index, total: total)
                 print("ScreenshotTour: [\(index)/\(total)] \(file)")
-                switch await handshake(request, in: tourDirectory, host: host) {
+                switch await handshake(request, in: tourDirectory) {
                 case .captured: report.captured.append(file)
                 case .timedOut: report.failed.append(file)
                 }
@@ -371,11 +356,7 @@
             TabLayoutStore.shared.setEphemeral(nil)
 
             report.seconds = Date.now.timeIntervalSince(started)
-            if let host {
-                await post(report, to: host.appending(path: "done"))
-            } else {
-                write(report, to: tourDirectory.appending(path: "done.json"))
-            }
+            write(report, to: tourDirectory.appending(path: "done.json"))
             print("ScreenshotTour: done — \(report.captured.count) captured, \(report.failed.count) failed, \(report.skipped.count) skipped")
         }
 
@@ -436,17 +417,8 @@
 
         private enum Outcome { case captured, timedOut }
 
-        /// Asks the host for one capture and waits for its ack (30 s): over
-        /// HTTP when the host serves one, else through `request.json`/`ack`.
-        private static func handshake(_ request: Request, in directory: URL, host: URL?) async -> Outcome {
-            if let host {
-                return await post(request, to: host.appending(path: "request")) ? .captured : .timedOut
-            }
-            return await fileHandshake(request, in: directory)
-        }
-
         /// Writes the request, waits for the host's ack (30 s), then clears both.
-        private static func fileHandshake(_ request: Request, in directory: URL) async -> Outcome {
+        private static func handshake(_ request: Request, in directory: URL) async -> Outcome {
             let requestURL = directory.appending(path: "request.json")
             let ackURL = directory.appending(path: "ack")
             write(request, to: requestURL)
@@ -461,33 +433,6 @@
             print("ScreenshotTour: no ack for \(request.file) — is pipeline/screenshots.py running?")
             return .timedOut
         }
-
-        /// POSTs `value` as JSON; the host answers once it has acted on it.
-        @discardableResult
-        private static func post(_ value: some Encodable, to url: URL) async -> Bool {
-            var request = URLRequest(url: url, timeoutInterval: 30)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try? JSONEncoder().encode(value)
-            do {
-                let (_, response) = try await URLSession.shared.data(for: request)
-                return (response as? HTTPURLResponse)?.statusCode == 200
-            } catch {
-                print("ScreenshotTour: \(url.lastPathComponent) failed — \(error.localizedDescription)")
-                return false
-            }
-        }
-
-        #if os(macOS)
-            /// One frame for every capture, whatever size the window was restored at.
-            private static func sizeWindow() {
-                let raw = argument(after: "-piruScreenshotWindow") ?? "1280x820"
-                let parts = raw.split(separator: "x").compactMap { Double($0) }
-                guard parts.count == 2, let window = NSApp.windows.first(where: { $0.isVisible }) else { return }
-                window.setContentSize(NSSize(width: parts[0], height: parts[1]))
-                window.center()
-            }
-        #endif
 
         private static func write(_ value: some Encodable, to url: URL) {
             let encoder = JSONEncoder()
@@ -590,37 +535,33 @@
             /// the field is a `UISearchTextField` under SwiftUI's `.searchable`,
             /// and its `editingChanged` action is what feeds the text binding.
             func search(_ query: String) async {
-                #if canImport(UIKit)
-                    try? await Task.sleep(for: .seconds(0.6))
-                    guard let field = Self.searchField() else {
-                        print("ScreenshotTour: no search field on screen")
-                        return
-                    }
-                    field.becomeFirstResponder()
-                    try? await Task.sleep(for: .seconds(0.4))
-                    field.text = query
-                    field.sendActions(for: .editingChanged)
-                #endif
+                try? await Task.sleep(for: .seconds(0.6))
+                guard let field = Self.searchField() else {
+                    print("ScreenshotTour: no search field on screen")
+                    return
+                }
+                field.becomeFirstResponder()
+                try? await Task.sleep(for: .seconds(0.4))
+                field.text = query
+                field.sendActions(for: .editingChanged)
             }
 
-            #if canImport(UIKit)
-                private static func searchField() -> UISearchTextField? {
-                    for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
-                        for window in scene.windows {
-                            if let field = searchField(in: window) { return field }
-                        }
+            private static func searchField() -> UISearchTextField? {
+                for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+                    for window in scene.windows {
+                        if let field = searchField(in: window) { return field }
                     }
-                    return nil
                 }
+                return nil
+            }
 
-                private static func searchField(in view: UIView) -> UISearchTextField? {
-                    if let field = view as? UISearchTextField { return field }
-                    for subview in view.subviews {
-                        if let field = searchField(in: subview) { return field }
-                    }
-                    return nil
+            private static func searchField(in view: UIView) -> UISearchTextField? {
+                if let field = view as? UISearchTextField { return field }
+                for subview in view.subviews {
+                    if let field = searchField(in: subview) { return field }
                 }
-            #endif
+                return nil
+            }
         }
     }
 #endif

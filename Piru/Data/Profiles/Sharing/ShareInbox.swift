@@ -84,12 +84,12 @@ final class ShareInbox {
         return data
     }
 
-    /// Whether `url` is a copy made for the app to read and then delete: a file whose folder,
-    /// or that folder's parent, is an Inbox (iOS `Documents/Inbox`, `tmp/<bundle>-Inbox`,
-    /// Android `cache/Inbox/<id>`). Judged on the resolved path, so `Inbox/..` names nothing.
+    /// Matches incoming copies whose immediate parent is an Inbox directory,
+    /// such as `Documents/Inbox` or `tmp/<bundle>-Inbox`. Resolve the path first
+    /// so traversal or symlinks cannot make a file outside an Inbox match.
     static func isInboxCopy(_ url: URL) -> Bool {
         guard url.isFileURL else { return false }
-        let folders = url.standardizedFileURL.resolvingSymlinksInPath().pathComponents.dropLast()
-        return folders.suffix(2).contains { $0 == "Inbox" || $0.hasSuffix("-Inbox") }
+        let folder = url.standardizedFileURL.resolvingSymlinksInPath().deletingLastPathComponent().lastPathComponent
+        return folder == "Inbox" || folder.hasSuffix("-Inbox")
     }
 }

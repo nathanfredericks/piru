@@ -16,7 +16,7 @@ pipeline/
 └── audit/        After-the-fact inspection + comparison tools
 
 screenshots.py    Captures every app screen on the simulator, per language and
-                  skin, into Store/shots/ (see "Screenshots" in ../CLAUDE.md)
+                  skin, into Store/shots/ (see "Screenshots" in ../AGENTS.md)
 ```
 
 ## Curated data
@@ -496,10 +496,7 @@ parses neither: `duration` is kept beside each reference row as published, and
 
 Run `python3 pipeline/build/tests/test_drug_community_timelines.py` for the real
 importer/SQLite/prose-pass regressions. `WikiTimingRecordTests` and
-`WikiTimingReadModelTests` belong to the native Piru test suite and are also
-exposed by the `WikiTimingTests` target in `android/PiruCore`. On Linux, testing
-that package can also build the separate smoke executable; a failure in its
-Foundation predicate macros is not a result for the timeline tests.
+`WikiTimingReadModelTests` belong to the Piru test suite.
 A release still requires a complete database rebuild, the matching published DB
 and manifest, and native UI verification on the supported app platforms.
 

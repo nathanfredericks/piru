@@ -1,172 +1,86 @@
 import SwiftUI
+import UIKit
 
-#if canImport(UIKit)
-    import UIKit
-
-    typealias PlatformImage = UIImage
-    typealias PlatformView = UIView
-#elseif canImport(AppKit)
-    import AppKit
-
-    typealias PlatformImage = NSImage
-    typealias PlatformView = NSView
-
-    extension NSImage {
-        nonisolated func pngData() -> Data? {
-            guard let tiffData = tiffRepresentation,
-                  let rep = NSBitmapImageRep(data: tiffData)
-            else { return nil }
-            return rep.representation(using: .png, properties: [:])
-        }
-    }
-#endif
+typealias PlatformImage = UIImage
+typealias PlatformView = UIView
 
 extension Image {
     init(platformImage: PlatformImage) {
-        #if canImport(UIKit)
-            self.init(uiImage: platformImage)
-        #elseif canImport(AppKit)
-            self.init(nsImage: platformImage)
-        #endif
+        self.init(uiImage: platformImage)
     }
 }
 
 extension ImageRenderer {
     var platformImage: PlatformImage? {
-        #if canImport(UIKit)
-            uiImage
-        #elseif canImport(AppKit)
-            nsImage
-        #endif
+        uiImage
     }
 }
 
 enum PlatformPasteboard {
     static func copy(_ string: String) {
-        #if canImport(UIKit)
-            UIPasteboard.general.string = string
-        #elseif canImport(AppKit)
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(string, forType: .string)
-        #endif
+        UIPasteboard.general.string = string
     }
 
-    #if canImport(UIKit)
-        static func copy(image: UIImage) {
-            UIPasteboard.general.image = image
-        }
+    static func copy(image: UIImage) {
+        UIPasteboard.general.image = image
+    }
 
-        static func copy(data: Data, type: String) {
-            UIPasteboard.general.setData(data, forPasteboardType: type)
-        }
-    #elseif canImport(AppKit)
-        static func copy(image: NSImage) {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.writeObjects([image])
-        }
-
-        static func copy(data: Data, type: String) {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setData(data, forType: NSPasteboard.PasteboardType(type))
-        }
-    #endif
+    static func copy(data: Data, type: String) {
+        UIPasteboard.general.setData(data, forPasteboardType: type)
+    }
 }
 
 enum PlatformHaptics {
     static func success() {
-        #if canImport(UIKit)
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 
     static func impact() {
-        #if canImport(UIKit)
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        #endif
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 }
 
-#if canImport(UIKit)
-    func openPlatformSettings() {
-        if let url = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(url)
-        }
+func openPlatformSettings() {
+    if let url = URL(string: UIApplication.openSettingsURLString) {
+        UIApplication.shared.open(url)
     }
+}
 
-    func openNotificationSettings() {
-        if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
-            UIApplication.shared.open(url)
-        }
+func openNotificationSettings() {
+    if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+        UIApplication.shared.open(url)
     }
-#elseif canImport(AppKit)
-    func openPlatformSettings() {
-        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:")!)
-    }
-
-    func openNotificationSettings() {
-        NSWorkspace.shared.open(
-            URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!,
-        )
-    }
-#endif
+}
 
 // MARK: - System Color Shims
 
 extension Color {
     static var platformSystemBackground: Color {
-        #if canImport(UIKit)
-            Color(.systemBackground)
-        #else
-            Color(nsColor: .windowBackgroundColor)
-        #endif
+        Color(.systemBackground)
     }
 
     static var platformSecondarySystemBackground: Color {
-        #if canImport(UIKit)
-            Color(.secondarySystemBackground)
-        #else
-            Color(nsColor: .controlBackgroundColor)
-        #endif
+        Color(.secondarySystemBackground)
     }
 
     static var platformSecondarySystemGroupedBackground: Color {
-        #if canImport(UIKit)
-            Color(.secondarySystemGroupedBackground)
-        #else
-            Color(nsColor: .controlBackgroundColor)
-        #endif
+        Color(.secondarySystemGroupedBackground)
     }
 
     static var platformSecondarySystemFill: Color {
-        #if canImport(UIKit)
-            Color(.secondarySystemFill)
-        #else
-            Color(nsColor: .quaternaryLabelColor)
-        #endif
+        Color(.secondarySystemFill)
     }
 
     static var platformTertiarySystemFill: Color {
-        #if canImport(UIKit)
-            Color(.tertiarySystemFill)
-        #else
-            Color(nsColor: .separatorColor)
-        #endif
+        Color(.tertiarySystemFill)
     }
 
     static var platformQuaternaryLabel: Color {
-        #if canImport(UIKit)
-            Color(.quaternaryLabel)
-        #else
-            Color(nsColor: .quaternaryLabelColor)
-        #endif
+        Color(.quaternaryLabel)
     }
 
     static var platformTertiaryLabel: Color {
-        #if canImport(UIKit)
-            Color(.tertiaryLabel)
-        #else
-            Color(nsColor: .tertiaryLabelColor)
-        #endif
+        Color(.tertiaryLabel)
     }
 }
 
@@ -174,116 +88,55 @@ extension Color {
 
 extension View {
     func inlineNavigationTitle() -> some View {
-        #if canImport(UIKit)
-            self.navigationBarTitleDisplayMode(.inline)
-        #else
-            self
-        #endif
+        self.navigationBarTitleDisplayMode(.inline)
     }
 
     func largeNavigationTitle() -> some View {
-        #if canImport(UIKit)
-            self.navigationBarTitleDisplayMode(.large)
-        #else
-            self
-        #endif
+        self.navigationBarTitleDisplayMode(.large)
     }
 
     /// A search field that stays in view. The automatic placement hides it
     /// until the list is pulled down, which reads as "there is no search here".
     func alwaysVisibleSearch(text: Binding<String>, prompt: Text) -> some View {
-        #if os(iOS)
-            searchable(text: text, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
-        #else
-            searchable(text: text, placement: .automatic, prompt: prompt)
-        #endif
+        searchable(text: text, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
     }
 
     func insetGroupedListStyle() -> some View {
-        #if os(iOS)
-            self.listStyle(.insetGrouped)
-        #else
-            self.listStyle(.inset)
-        #endif
+        self.listStyle(.insetGrouped)
     }
 
-    /// A spinning wheel where one exists, the platform default elsewhere:
-    /// `.wheel` is unavailable on macOS, where a pop-up menu is the idiom for
-    /// the same short, bounded list.
     func wheelPickerStyle() -> some View {
-        #if os(iOS)
-            self.pickerStyle(.wheel)
-        #else
-            self.pickerStyle(.menu)
-        #endif
+        self.pickerStyle(.wheel)
     }
 
-    /// Swipeable pages with no index dots (the caller draws its own): `.page`
-    /// is unavailable on macOS, where the tab view keeps its default style.
+    /// Swipeable pages whose index is drawn by the caller.
     func pagedTabViewStyle() -> some View {
-        #if os(iOS)
-            self.tabViewStyle(.page(indexDisplayMode: .never))
-        #else
-            self
-        #endif
+        self.tabViewStyle(.page(indexDisplayMode: .never))
     }
 
-    /// The shape a long-press lifts into the context-menu preview. macOS
-    /// draws no preview, so the API does not exist there.
+    /// The shape a long-press lifts into the context-menu preview.
     func contextMenuPreviewShape(_ shape: some Shape) -> some View {
-        #if canImport(UIKit)
-            self.contentShape(.contextMenuPreview, shape)
-        #else
-            self
-        #endif
+        self.contentShape(.contextMenuPreview, shape)
     }
 
     func decimalKeyboard() -> some View {
-        #if canImport(UIKit)
-            self.keyboardType(.decimalPad)
-        #else
-            self
-        #endif
+        self.keyboardType(.decimalPad)
     }
 
     func neverAutocapitalize() -> some View {
-        #if canImport(UIKit)
-            self.textInputAutocapitalization(.never)
-        #else
-            self
-        #endif
+        self.textInputAutocapitalization(.never)
     }
 
     func wordsAutocapitalize() -> some View {
-        #if canImport(UIKit)
-            self.textInputAutocapitalization(.words)
-        #else
-            self
-        #endif
+        self.textInputAutocapitalization(.words)
     }
 
     func permanentEditMode() -> some View {
-        #if canImport(UIKit)
-            self.environment(\.editMode, .constant(.active))
-        #else
-            self
-        #endif
+        self.environment(\.editMode, .constant(.active))
     }
 
     func compactListSectionSpacing() -> some View {
-        #if canImport(UIKit)
-            self.listSectionSpacing(16)
-        #else
-            self
-        #endif
-    }
-
-    func readableWidth() -> some View {
-        #if os(macOS)
-            self.frame(maxWidth: 720)
-        #else
-            self
-        #endif
+        self.listSectionSpacing(16)
     }
 }
 
@@ -291,18 +144,10 @@ extension View {
 
 extension ToolbarItemPlacement {
     static var platformTopBarTrailing: ToolbarItemPlacement {
-        #if os(iOS)
-            .topBarTrailing
-        #else
-            .automatic
-        #endif
+        .topBarTrailing
     }
 
     static var platformTopBarLeading: ToolbarItemPlacement {
-        #if os(iOS)
-            .topBarLeading
-        #else
-            .automatic
-        #endif
+        .topBarLeading
     }
 }

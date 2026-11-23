@@ -70,19 +70,11 @@ struct SubstanceFilterSheet: View {
             .navigationTitle("Substances")
             .inlineNavigationTitle()
             .toolbar {
-                #if os(iOS)
-                    ToolbarItem(placement: .platformTopBarLeading) {
-                        Button(allSelected ? "Deselect All" : "Select All") {
-                            shown = allSelected ? [] : allNames
-                        }
+                ToolbarItem(placement: .platformTopBarLeading) {
+                    Button(allSelected ? "Deselect All" : "Select All") {
+                        shown = allSelected ? [] : allNames
                     }
-                #else
-                    ToolbarItem(placement: .automatic) {
-                        Button(allSelected ? "Deselect All" : "Select All") {
-                            shown = allSelected ? [] : allNames
-                        }
-                    }
-                #endif
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) { dismiss() }
                 }

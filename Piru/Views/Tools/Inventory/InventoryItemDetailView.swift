@@ -52,25 +52,14 @@ struct InventoryItemDetailView: View {
         .navigationTitle(item.displayTitle)
         .inlineNavigationTitle()
         .toolbar {
-            #if os(iOS)
-                ToolbarItem(placement: .platformTopBarTrailing) {
-                    Button {
-                        navigator.present(.inventoryItemEdit(id: item.id))
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                    }
-                    .accessibilityLabel("Edit")
+            ToolbarItem(placement: .platformTopBarTrailing) {
+                Button {
+                    navigator.present(.inventoryItemEdit(id: item.id))
+                } label: {
+                    Image(systemName: "square.and.pencil")
                 }
-            #else
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        navigator.present(.inventoryItemEdit(id: item.id))
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                    }
-                    .accessibilityLabel("Edit")
-                }
-            #endif
+                .accessibilityLabel("Edit")
+            }
         }
         // Re-derive when returning from a restock/edit sheet or a dose change.
         .onAppear {

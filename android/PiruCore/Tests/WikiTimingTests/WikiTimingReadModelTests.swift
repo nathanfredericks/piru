@@ -1,1 +1,0 @@
-../../../../PiruTests/WikiTimingReadModelTests.swift

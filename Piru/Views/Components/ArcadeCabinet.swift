@@ -56,12 +56,8 @@ final class ArcadeCabinet {
     /// notices, the system's — as UIKit sees it, which is the one place all
     /// of them show up.
     private static var sheetIsUp: Bool {
-        #if canImport(UIKit)
-            let windows = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)
-            return windows.contains { $0.isKeyWindow && $0.rootViewController?.presentedViewController != nil }
-        #else
-            return !AppNavigator.shared.sheetStack.isEmpty
-        #endif
+        let windows = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)
+        return windows.contains { $0.isKeyWindow && $0.rootViewController?.presentedViewController != nil }
     }
 
     /// The idle round, stepped to `date`, as a frame to draw: nil while a
@@ -245,10 +241,6 @@ private struct ArcadePlayView: View {
     }
 
     private static func makeHUDFont() -> Font {
-        #if canImport(UIKit)
-            SkinFace.label(weight: .regular, size: 10, relativeTo: .caption) ?? .system(size: 11, weight: .bold, design: .monospaced)
-        #else
-            .system(size: 11, weight: .bold, design: .monospaced)
-        #endif
+        SkinFace.label(weight: .regular, size: 10, relativeTo: .caption) ?? .system(size: 11, weight: .bold, design: .monospaced)
     }
 }

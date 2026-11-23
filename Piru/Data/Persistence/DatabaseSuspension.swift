@@ -2,9 +2,7 @@ import Foundation
 import GRDB
 import os
 import Synchronization
-#if canImport(UIKit)
-    import UIKit
-#endif
+import UIKit
 
 /// Keeps GRDB connections from holding a file lock at the moment iOS suspends
 /// the process, which RunningBoard punishes with a `0xdead10cc` kill — the
@@ -34,15 +32,13 @@ nonisolated enum DatabaseSuspension {
 
     /// Observe the app's background/foreground transitions. Call once at launch.
     static func install() {
-        #if canImport(UIKit) && !os(watchOS)
-            let center = NotificationCenter.default
-            center.addObserver(
-                forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil,
-            ) { _ in suspend() }
-            center.addObserver(
-                forName: UIApplication.willEnterForegroundNotification, object: nil, queue: nil,
-            ) { _ in resume() }
-        #endif
+        let center = NotificationCenter.default
+        center.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil,
+        ) { _ in suspend() }
+        center.addObserver(
+            forName: UIApplication.willEnterForegroundNotification, object: nil, queue: nil,
+        ) { _ in resume() }
     }
 
     /// Release and refuse database locks until ``resume()``.

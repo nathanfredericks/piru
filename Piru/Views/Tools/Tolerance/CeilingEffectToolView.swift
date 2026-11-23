@@ -30,8 +30,6 @@ struct CeilingEffectToolView: View {
                 // The gabapentinoid teaching pair sits right after gabapentin's absorption ceiling:
                 // same α2δ target, opposite dose→exposure behavior (pregabalin is dose-linear, so
                 // it isn't a ceiling profile of its own — it only makes sense as this contrast).
-                // It stays outside the profiles' ForEach: two Sections from one element share
-                // that element's id, which a lazy list on Android rejects as a duplicate key.
                 if profiles.hasGabapentin {
                     Section { gabapentinoidComparisonCard }
                 }

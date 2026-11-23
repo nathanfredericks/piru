@@ -269,104 +269,99 @@ struct SessionDetailView: View {
         .insetGroupedListStyle()
         .scrollContentBackground(.hidden)
         .contentMargins(.top, 0, for: .scrollContent)
-        #if canImport(UIKit)
-            // Section margins, not horizontal content margins: on a List those
-            // replace the safe area, so cards slide under iPhone Duo's vertical bar.
-            .listSectionMargins(.horizontal, Spacing.xxl)
-            .listSectionSpacing(Spacing.xxl)
-        #else
-            .contentMargins(.horizontal, Spacing.xxl, for: .scrollContent)
-        #endif
-            .skinBackdrop()
-            .readableWidth()
-            .task(id: session.sharedExperienceID) {
-                await model.followSharedExperience(session.sharedExperienceID)
-            }
-            .task(id: colorSignature) {
-                model.loadColorMap(colors: substanceColors)
-            }
-            .task(id: vitalsTaskKey) {
-                await model.loadVitals(
-                    session: session, entries: entries,
-                    windowEnd: vitalsWindowEnd(resolvedDay.states), showSessionVitals: showSessionVitals,
-                )
-            }
-            .task(id: mechanisticSignature) {
-                await SubstanceStore.shared.ensureAllLoaded()
-                let resolved = resolvedDay
-                await model.computeMechanistic(
-                    supported: resolved.mechanisticSupported,
-                    doses: resolved.mechanisticDoses,
-                    pharmacology: resolved.mechanisticPharmacology,
-                    signature: mechanisticSignature,
-                )
-            }
-            .navigationTitle(session.title ?? SessionDateTitle.full(date))
-            .inlineNavigationTitle()
-            .toolbar {
-                if !entries.isEmpty {
-                    ToolbarItem(placement: .platformTopBarTrailing) {
-                        Button {
-                            showShareSession = true
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                        }
-                        .accessibilityLabel(Text("Share session"))
-                        .accessibilityInputLabels([Text("Share session"), Text("Share")])
-                        .popoverTip(ShareSessionTip())
-                    }
-                }
+        // Section margins, not horizontal content margins: on a List those
+        // replace the safe area, so cards slide under iPhone Duo's vertical bar.
+        .listSectionMargins(.horizontal, Spacing.xxl)
+        .listSectionSpacing(Spacing.xxl)
+        .skinBackdrop()
+        .task(id: session.sharedExperienceID) {
+            await model.followSharedExperience(session.sharedExperienceID)
+        }
+        .task(id: colorSignature) {
+            model.loadColorMap(colors: substanceColors)
+        }
+        .task(id: vitalsTaskKey) {
+            await model.loadVitals(
+                session: session, entries: entries,
+                windowEnd: vitalsWindowEnd(resolvedDay.states), showSessionVitals: showSessionVitals,
+            )
+        }
+        .task(id: mechanisticSignature) {
+            await SubstanceStore.shared.ensureAllLoaded()
+            let resolved = resolvedDay
+            await model.computeMechanistic(
+                supported: resolved.mechanisticSupported,
+                doses: resolved.mechanisticDoses,
+                pharmacology: resolved.mechanisticPharmacology,
+                signature: mechanisticSignature,
+            )
+        }
+        .navigationTitle(session.title ?? SessionDateTitle.full(date))
+        .inlineNavigationTitle()
+        .toolbar {
+            if !entries.isEmpty {
                 ToolbarItem(placement: .platformTopBarTrailing) {
-                    SessionMenu(
-                        session: session,
-                        hasCurves: !day.states.isEmpty,
-                        isToday: isToday,
-                        hasOngoingDose: ongoing,
-                        longestBreakPivot: SessionMenu.longestBreakPivot(in: entries),
-                        onRename: {
-                            titleDraft = session.title ?? ""
-                            showRename = true
-                        },
-                        onAddNote: { navigator.present(.sessionNoteEditor(sessionID: session.id)) },
-                        onEditSummary: editSummary,
-                        onToggleLiveActivity: toggleLiveActivity,
-                    )
-                    .popoverTip(SessionMenuTip(), arrowEdge: .top)
+                    Button {
+                        showShareSession = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel(Text("Share session"))
+                    .accessibilityInputLabels([Text("Share session"), Text("Share")])
+                    .popoverTip(ShareSessionTip())
                 }
             }
-            .task { await OnboardingTips.retireDataTipAfterSessionMenuTip() }
-            // The primary "Record an entry" action lives in the tab bar's bottom accessory
-            // (always on screen beneath this detail), so the day view floats no add
-            // button of its own.
-            .alert("Rename Session", isPresented: $showRename) {
-                TextField("Session title", text: $titleDraft)
-                Button("Cancel", role: .cancel) {}
-                Button("Save") { SessionService.setTitle(titleDraft, for: session) }
-            }
-            .sheet(item: $editing.entryToAdjustTime) { entry in
-                NavigationStack {
-                    TimeAdjustSheet(entry: entry)
-                }
-                .presentationDetents([.medium])
-            }
-            .sheet(item: $editing.entryToMove) { entry in
-                MoveToSessionView(dose: entry)
-                    .presentationDetents([.medium, .large])
-            }
-            .sheet(isPresented: $showShareSession) {
-                SessionShareSheet(
-                    title: session.title ?? "",
-                    dateText: SessionDateTitle.full(date),
-                    entries: entries,
-                    colors: Array(substanceColors),
-                    stackRedoses: stackRedoses,
-                    doseHR: model.doseHR,
+            ToolbarItem(placement: .platformTopBarTrailing) {
+                SessionMenu(
                     session: session,
+                    hasCurves: !day.states.isEmpty,
+                    isToday: isToday,
+                    hasOngoingDose: ongoing,
+                    longestBreakPivot: SessionMenu.longestBreakPivot(in: entries),
+                    onRename: {
+                        titleDraft = session.title ?? ""
+                        showRename = true
+                    },
+                    onAddNote: { navigator.present(.sessionNoteEditor(sessionID: session.id)) },
+                    onEditSummary: editSummary,
+                    onToggleLiveActivity: toggleLiveActivity,
                 )
+                .popoverTip(SessionMenuTip(), arrowEdge: .top)
             }
-            .sheet(item: $editing.recolorRequest) { request in
-                SubstanceColorPickerView(substanceName: request.substanceName) { editing.recolorRequest = nil }
+        }
+        .task { await OnboardingTips.retireDataTipAfterSessionMenuTip() }
+        // The primary "Record an entry" action lives in the tab bar's bottom accessory
+        // (always on screen beneath this detail), so the day view floats no add
+        // button of its own.
+        .alert("Rename Session", isPresented: $showRename) {
+            TextField("Session title", text: $titleDraft)
+            Button("Cancel", role: .cancel) {}
+            Button("Save") { SessionService.setTitle(titleDraft, for: session) }
+        }
+        .sheet(item: $editing.entryToAdjustTime) { entry in
+            NavigationStack {
+                TimeAdjustSheet(entry: entry)
             }
+            .presentationDetents([.medium])
+        }
+        .sheet(item: $editing.entryToMove) { entry in
+            MoveToSessionView(dose: entry)
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showShareSession) {
+            SessionShareSheet(
+                title: session.title ?? "",
+                dateText: SessionDateTitle.full(date),
+                entries: entries,
+                colors: Array(substanceColors),
+                stackRedoses: stackRedoses,
+                doseHR: model.doseHR,
+                session: session,
+            )
+        }
+        .sheet(item: $editing.recolorRequest) { request in
+            SubstanceColorPickerView(substanceName: request.substanceName) { editing.recolorRequest = nil }
+        }
     }
 
     /// Each dose row's render-ready facts: the resolved substance core (memoized

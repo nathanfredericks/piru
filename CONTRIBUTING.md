@@ -6,8 +6,7 @@ decisions about what they put in their body**. That raises the bar past a normal
 here isn't a cosmetic defect, it's a safety defect. The most valuable contributions are the ones
 grounded in a **primary source** or verified on a **real device** — not what looks plausible.
 
-Read [CLAUDE.md](CLAUDE.md) for the architecture and house conventions before starting. It's written for
-agents, but it's the fastest orientation for anyone.
+Read [AGENTS.md](AGENTS.md) for the architecture and house conventions before starting.
 
 ## The rule that matters most: cite your sources
 
@@ -21,8 +20,9 @@ point of Piru is that every claim traces back to something real.
 ## Bugs
 
 Open an issue with the **Bug report** template, or post in the Discord's #bug-reports;
-[BUG-REPORTS.md](BUG-REPORTS.md) explains both and how to get crash logs on each platform. For anything involving a dose, a curve, a timer, an
-interaction, or a notification, the single most useful thing you can attach is a **shared session**: in the
+[BUG-REPORTS.md](BUG-REPORTS.md) explains both and how to get crash logs on iPhone and iPad.
+For anything involving a dose, a curve, a timer, an interaction, or a notification, the single
+most useful thing you can attach is a **shared session**: in the
 app, **Share → Markdown** produces a clean, paste-able record of exactly what you logged and what Piru
 computed. Redact anything you'd rather not share.
 
@@ -78,7 +78,7 @@ The pre-commit hook runs `pipeline/build/validate_curated.py` over staged curate
 Piru ships **English, Simplified Chinese, and Traditional Chinese**, and **every user-facing string must be
 localized**. A hardcoded `String` ships English to Chinese users at runtime — for a safety warning, that's a
 real bug, not a nicety. Add the English `Text("…")`, then add the translations to `translate_catalog.py` and
-run it; don't hand-edit `Localizable.xcstrings`. The full workflow is in [CLAUDE.md](CLAUDE.md).
+run it; don't hand-edit `Localizable.xcstrings`. The full workflow is in [AGENTS.md](AGENTS.md).
 
 ## Style
 

@@ -7,7 +7,6 @@ extension View {
     func themedPage() -> some View {
         scrollContentBackground(.hidden)
             .skinBackdrop()
-            .readableWidth()
     }
 
     /// Bottom room so a pushed screen's last row (a Delete button, say)
@@ -15,12 +14,8 @@ extension View {
     /// scroll content for the tab bar itself; the accessory floats above it
     /// uncounted, so this reserves its control row
     /// (``IconSize/touchTarget``, the accessory's expanded control size) and
-    /// the gap above it. iOS only: the Mac app has no accessory.
+    /// the gap above it.
     func tabAccessoryClearance() -> some View {
-        #if os(iOS)
-            contentMargins(.bottom, IconSize.touchTarget + Spacing.xxxl, for: .scrollContent)
-        #else
-            self
-        #endif
+        contentMargins(.bottom, IconSize.touchTarget + Spacing.xxxl, for: .scrollContent)
     }
 }

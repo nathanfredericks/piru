@@ -19,15 +19,11 @@ struct ProfileAvatarView: View {
     }
 
     var body: some View {
-        #if os(Android)
+        if let image = avatar.photo.flatMap(ProfilePhotoCache.image(named:)) {
+            ProfilePhotoCircle(image: image, color: color, diameter: diameter)
+        } else {
             letters
-        #else
-            if let image = avatar.photo.flatMap(ProfilePhotoCache.image(named:)) {
-                ProfilePhotoCircle(image: image, color: color, diameter: diameter)
-            } else {
-                letters
-            }
-        #endif
+        }
     }
 
     private var letters: some View {
@@ -46,50 +42,44 @@ struct ProfileAvatarView: View {
     }
 }
 
-#if !os(Android)
-    /// A photo filling a circle, with a thin ring in the profile's color so
-    /// two similar photos still read as different people.
-    struct ProfilePhotoCircle: View {
-        let image: PlatformImage
-        let color: ProfileColor
-        let diameter: CGFloat
+/// A photo filling a circle, with a thin ring in the profile's color so
+/// two similar photos still read as different people.
+struct ProfilePhotoCircle: View {
+    let image: PlatformImage
+    let color: ProfileColor
+    let diameter: CGFloat
 
-        var body: some View {
-            Image(platformImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: diameter, height: diameter)
-                .clipShape(.circle)
-                .overlay {
-                    Circle().strokeBorder(color.p3.color, lineWidth: min(max(diameter * 0.05, 1.5), 2.5))
-                }
-                .accessibilityHidden(true)
-        }
+    var body: some View {
+        Image(platformImage: image)
+            .resizable()
+            .scaledToFill()
+            .frame(width: diameter, height: diameter)
+            .clipShape(.circle)
+            .overlay {
+                Circle().strokeBorder(color.p3.color, lineWidth: min(max(diameter * 0.05, 1.5), 2.5))
+            }
+            .accessibilityHidden(true)
     }
+}
 
-    /// Decoded profile photos by file name. A name is never reused for other
-    /// pixels, so an entry never goes stale.
-    @MainActor
-    enum ProfilePhotoCache {
-        private static var images: [String: PlatformImage] = [:]
+/// Decoded profile photos by file name. A name is never reused for other
+/// pixels, so an entry never goes stale.
+@MainActor
+enum ProfilePhotoCache {
+    private static var images: [String: PlatformImage] = [:]
 
-        static func image(named name: String) -> PlatformImage? {
-            if let cached = images[name] { return cached }
-            // Decoded at the saved size whatever the file holds: a backup can
-            // carry a file the importer never wrote.
-            guard let data = ProfilePhotoStore.data(named: name),
-                  let decoded = ProfilePhotoImporter.thumbnail(of: data, maxSide: ProfilePhotoImporter.savedSide)
-            else { return nil }
-            #if canImport(UIKit)
-                let image = UIImage(cgImage: decoded)
-            #else
-                let image = NSImage(cgImage: decoded, size: .zero)
-            #endif
-            images[name] = image
-            return image
-        }
+    static func image(named name: String) -> PlatformImage? {
+        if let cached = images[name] { return cached }
+        // Decoded at the saved size whatever the file holds: a backup can
+        // carry a file the importer never wrote.
+        guard let data = ProfilePhotoStore.data(named: name),
+              let decoded = ProfilePhotoImporter.thumbnail(of: data, maxSide: ProfilePhotoImporter.savedSide)
+        else { return nil }
+        let image = UIImage(cgImage: decoded)
+        images[name] = image
+        return image
     }
-#endif
+}
 
 /// The avatar as a bitmap, for a `Menu` row: menus draw only images and text,
 /// so a view in a row's label would be dropped.

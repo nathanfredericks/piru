@@ -1,11 +1,8 @@
 import SwiftData
 import SwiftUI
+import UIKit
 import VisionKit
 import WidgetKit
-
-#if canImport(UIKit)
-    import UIKit
-#endif
 
 /// Thin wrapper that pins the recent-history window before building the screen.
 ///
@@ -238,7 +235,6 @@ struct QuickLogView: View {
                     )
                 }
         }
-        #if os(iOS)
         // The staging dock: a native detented sheet over this cover, mounted
         // for the cover's whole lifetime (never dismissible — it's the
         // staging basket). Sheets launched from quick log (custom-substance
@@ -262,112 +258,93 @@ struct QuickLogView: View {
                 onCommit: commitTray,
             )
         }
-        #endif
     }
 
-    /// The screen under the shared data plumbing: on iOS the card list a
-    /// detented dock floats over; on macOS one two-pane window that holds the
-    /// cards, search and the staged tray side by side (``QuickLogMacLayout``).
-    @ViewBuilder
+    /// The card list behind the staging dock.
     private var page: some View {
-        #if os(macOS)
-            QuickLogMacLayout(
-                tray: tray,
-                content: content,
-                searchText: $searchText,
-                showCustomForm: $showCustomForm,
-                showEditSheet: $showEditSheet,
-                onCommit: commitTray,
-            )
-        #else
-            ScrollView {
-                // The scroll content is a closure-free child, so a search
-                // keystroke, which re-runs this body through
-                // `searchText`, doesn't cascade into every card.
-                // See ``QuickLogCardList``.
-                QuickLogCardList(content: content, tray: tray)
-                    .padding(.horizontal)
-                    .padding(.top, Spacing.xs)
-                    // With a dose editor open in the dock, hide the cards behind it
-                    // from assistive tech so VoiceOver/Voice Control focus the
-                    // editor's controls instead of interleaving the dimmed list.
-                    .accessibilityHidden(!tray.expandedItemIDs.isEmpty)
-            }
-            // Staging haptics live in a leaf, not this body: reading the tick
-            // counters here would re-run the whole `QuickLogView.body` on
-            // every stage/increment.
-            .modifier(DockClearance(geometry: dockGeometry))
-            .onScrollPhaseChange { _, phase in
-                if phase == .interacting { dockGeometry.requestMinimize() }
-            }
-            .background(StagingHaptics(tray: tray))
-            #if canImport(UIKit)
-                .background(CoverAccessibilityUnmasker())
-            #endif
-                // With the cover's modal flag cleared (see the unmasker), nothing
-                // at the window level masks this content while a sheet is stacked
-                // on the dock — VoiceOver could wander into elements the sheet
-                // blocks from touch. Hide the cover content whenever a nested
-                // sheet is up. (Sheets presented from deep inside the dock — the
-                // drink preset manager, find-a-place — are the dock's own overlay
-                // problem and don't expose this layer.)
-                .accessibilityHidden(showEditSheet || showCustomForm || showScanner || navigator.sheetStack.count > 1)
-                .scrollDismissesKeyboard(.interactively)
-                .skinBackdrop()
-                .navigationTitle("Log")
-                .inlineNavigationTitle()
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        // With staged doses, close is a Menu — it gets the glass
-                        // morph out of the button, unlike a confirmationDialog,
-                        // which anchors to the toolbar as a stray popover.
-                        if tray.isEmpty {
-                            Button {
-                                navigator.dismiss()
-                            } label: {
-                                Image(systemName: "xmark")
-                            }
-                            .accessibilityLabel(Text("Close"))
-                        } else {
-                            Menu {
-                                Button(role: .destructive) {
-                                    navigator.dismiss()
-                                } label: {
-                                    Label("Discard Entries", systemImage: "trash")
-                                }
-                            } label: {
-                                Image(systemName: "xmark")
-                            }
-                            .accessibilityLabel(Text("Close"))
-                        }
+        ScrollView {
+            // The scroll content is a closure-free child, so a search
+            // keystroke, which re-runs this body through
+            // `searchText`, doesn't cascade into every card.
+            // See ``QuickLogCardList``.
+            QuickLogCardList(content: content, tray: tray)
+                .padding(.horizontal)
+                .padding(.top, Spacing.xs)
+                // With a dose editor open in the dock, hide the cards behind it
+                // from assistive tech so VoiceOver/Voice Control focus the
+                // editor's controls instead of interleaving the dimmed list.
+                .accessibilityHidden(!tray.expandedItemIDs.isEmpty)
+        }
+        // Staging haptics live in a leaf, not this body: reading the tick
+        // counters here would re-run the whole `QuickLogView.body` on
+        // every stage/increment.
+        .modifier(DockClearance(geometry: dockGeometry))
+        .onScrollPhaseChange { _, phase in
+            if phase == .interacting { dockGeometry.requestMinimize() }
+        }
+        .background(StagingHaptics(tray: tray))
+        .background(CoverAccessibilityUnmasker())
+        // With the cover's modal flag cleared (see the unmasker), nothing
+        // at the window level masks this content while a sheet is stacked
+        // on the dock — VoiceOver could wander into elements the sheet
+        // blocks from touch. Hide the cover content whenever a nested
+        // sheet is up. (Sheets presented from deep inside the dock — the
+        // drink preset manager, find-a-place — are the dock's own overlay
+        // problem and don't expose this layer.)
+        .accessibilityHidden(showEditSheet || showCustomForm || showScanner || navigator.sheetStack.count > 1)
+        .scrollDismissesKeyboard(.interactively)
+        .skinBackdrop()
+        .navigationTitle("Log")
+        .inlineNavigationTitle()
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                // With staged doses, close is a Menu — it gets the glass
+                // morph out of the button, unlike a confirmationDialog,
+                // which anchors to the toolbar as a stray popover.
+                if tray.isEmpty {
+                    Button {
+                        navigator.dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
                     }
-                    // One standard Edit action, text-labeled per the HIG ("Edit"
-                    // is the canonical hard-to-symbolize action) — one sheet for
-                    // everything editable here: routines & prescriptions, the
-                    // favorites order, and the "Keep Order" toggle.
-                    ToolbarItem(placement: .platformTopBarTrailing) {
-                        Button("Edit") {
-                            showEditSheet = true
+                    .accessibilityLabel(Text("Close"))
+                } else {
+                    Menu {
+                        Button(role: .destructive) {
+                            navigator.dismiss()
+                        } label: {
+                            Label("Discard Entries", systemImage: "trash")
                         }
-                        .accessibilityLabel("Edit routines and favorites")
+                    } label: {
+                        Image(systemName: "xmark")
                     }
-                    // The label scanner, split into its own glass group — point the
-                    // camera at a medication box to stage its substance and strength.
-                    #if canImport(UIKit)
-                        if DataScannerViewController.isSupported {
-                            ToolbarSpacer(.fixed, placement: .platformTopBarTrailing)
-                            ToolbarItem(placement: .platformTopBarTrailing) {
-                                Button {
-                                    showScanner = true
-                                } label: {
-                                    Image(systemName: "camera")
-                                }
-                                .accessibilityLabel("Scan a label")
-                            }
-                        }
-                    #endif
+                    .accessibilityLabel(Text("Close"))
                 }
-        #endif
+            }
+            // One standard Edit action, text-labeled per the HIG ("Edit"
+            // is the canonical hard-to-symbolize action) — one sheet for
+            // everything editable here: routines & prescriptions, the
+            // favorites order, and the "Keep Order" toggle.
+            ToolbarItem(placement: .platformTopBarTrailing) {
+                Button("Edit") {
+                    showEditSheet = true
+                }
+                .accessibilityLabel("Edit routines and favorites")
+            }
+            // The label scanner, split into its own glass group — point the
+            // camera at a medication box to stage its substance and strength.
+            if DataScannerViewController.isSupported {
+                ToolbarSpacer(.fixed, placement: .platformTopBarTrailing)
+                ToolbarItem(placement: .platformTopBarTrailing) {
+                    Button {
+                        showScanner = true
+                    } label: {
+                        Image(systemName: "camera")
+                    }
+                    .accessibilityLabel("Scan a label")
+                }
+            }
+        }
     }
 
     // MARK: - Daily routine

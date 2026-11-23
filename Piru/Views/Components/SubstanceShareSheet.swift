@@ -1,10 +1,5 @@
 import SwiftUI
-
-#if canImport(UIKit)
-    import UIKit
-#elseif canImport(AppKit)
-    import AppKit
-#endif
+import UIKit
 
 /// The "Share Substance" surface: a custom sheet reached from the substance
 /// screen's share button. Renders the colorful ``SubstanceShareCard`` specimen

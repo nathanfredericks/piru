@@ -1,38 +1,32 @@
 import BackgroundTasks
 import SwiftData
 import SwiftUI
-#if canImport(UIKit)
-    import UIKit
-#endif
+import UIKit
 import UserNotifications
 import WidgetKit
 
 // A UIKit background-execution assertion that ends itself exactly once —
 // explicitly via ``end()`` when the protected work finishes, or from the
 // system's expiration handler if time runs out first.
-#if canImport(UIKit)
-    @MainActor
-    private final class BackgroundTaskAssertion {
-        private var id: UIBackgroundTaskIdentifier = .invalid
+@MainActor
+private final class BackgroundTaskAssertion {
+    private var id: UIBackgroundTaskIdentifier = .invalid
 
-        init(name: String) {
-            id = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in
-                self?.end()
-            }
-        }
-
-        func end() {
-            guard id != .invalid else { return }
-            UIApplication.shared.endBackgroundTask(id)
-            id = .invalid
+    init(name: String) {
+        id = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in
+            self?.end()
         }
     }
-#endif
+
+    func end() {
+        guard id != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(id)
+        id = .invalid
+    }
+}
 
 // MARK: - App
 
-/// The iOS and macOS host. The launch and lifecycle policy is ``AppLaunch``,
-/// shared with the Android host; this type adds what only Apple platforms have.
 @main
 struct PiruApp: App {
     /// Whose journal is open, and its store. The root view reads the store from
@@ -83,15 +77,13 @@ struct PiruApp: App {
         // keeps it alive.
         UNUserNotificationCenter.current().delegate = DoseNotificationDelegate.shared
 
-        #if os(iOS)
-            BGTaskScheduler.shared.register(
-                forTaskWithIdentifier: LiveActivityManager.backgroundTaskIdentifier,
-                using: .main,
-            ) { task in
-                guard let task = task as? BGAppRefreshTask else { return }
-                LiveActivityManager.shared.handleBackgroundRefresh(task)
-            }
-        #endif
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: LiveActivityManager.backgroundTaskIdentifier,
+            using: .main,
+        ) { task in
+            guard let task = task as? BGAppRefreshTask else { return }
+            LiveActivityManager.shared.handleBackgroundRefresh(task)
+        }
     }
 
     #if DEBUG
@@ -110,20 +102,15 @@ struct PiruApp: App {
                     }
                 }
             }
-            #if DEBUG && os(iOS)
+            #if DEBUG
             .statusBarHidden(ScreenshotTour.wantsWallpapers)
             #endif
             .task {
                 guard !AppIdentity.isLegacy else { return }
                 WidgetCenter.shared.reloadAllTimelines()
-                await AppLaunch.finishLaunching(container: container, hooks: Self.launchHooks)
+                await AppLaunch.finishLaunching(container: container)
             }
         }
-        #if os(macOS)
-        // Room for the sidebar, a journal column and the Log sheet over it.
-        .defaultSize(width: 1100, height: 760)
-        .commands { ProfileCommands(directory: profiles) }
-        #endif
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, !AppIdentity.isLegacy {
                 AppLaunch.becameActive(container: container)
@@ -153,54 +140,24 @@ struct PiruApp: App {
         #endif
     }
 
-    /// TipKit and HealthKit work at the launch task's fixed points.
-    private static var launchHooks: AppLaunch.Hooks {
-        AppLaunch.Hooks(
-            engagementKnown: { hasLoggedDose in
-                // First-run contextual tips (gated on onboarding completion),
-                // then the tips ladder (log a dose → where settings live).
-                OnboardingTips.configure()
-                OnboardingTips.updateEngagement(hasLoggedDose: hasLoggedDose)
-            },
-            passesFinished: {
-                // If the user connected Apple Health for body weight, silently refresh it
-                // (no prompt). On a revoked/empty read we deliberately KEEP the last-known weight
-                // rather than clear it — a slightly stale real weight beats reverting to the 60 kg
-                // population default. The Body Weight screen surfaces the empty-read state so the
-                // user can re-grant access or update it.
-                if UserProfileStore.shared.weightSource == .healthKit {
-                    Task { await HealthKitBodyMass.shared.syncLatest() }
-                }
-            },
-        )
-    }
-
     private func enterBackground() {
         // Tear down any live keyboard before suspension. Suspending with
         // a first responder up can strand UIKit's scene-level keyboard
         // state, and every sheet presented after foregrounding then lays
         // out keyboard-avoiding — the QuickLog dock floats one keyboard
         // height above the bottom with a dead touch zone below it.
-        #if canImport(UIKit)
-            UIApplication.shared.sendAction(
-                #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil,
-            )
-        #endif
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil,
+        )
         Self.publishLegacyHandoff(backgrounding: true)
         // Hold a background-execution assertion across the await so
         // iOS can't suspend the process mid-write; ended on completion
         // or expiration, whichever comes first.
-        #if canImport(UIKit)
-            let assertion = BackgroundTaskAssertion(name: "AutomaticBackup")
-            Task {
-                defer { assertion.end() }
-                await AppLaunch.enteredBackground(container: container)
-            }
-        #else
-            Task {
-                await AppLaunch.enteredBackground(container: container)
-            }
-        #endif
+        let assertion = BackgroundTaskAssertion(name: "AutomaticBackup")
+        Task {
+            defer { assertion.end() }
+            await AppLaunch.enteredBackground(container: container)
+        }
     }
 
     /// Publish the legacy build's handoff off the main thread. On backgrounding
@@ -209,16 +166,10 @@ struct PiruApp: App {
     /// `UIApplication` to ask yet. Returns at once in the successor.
     private static func publishLegacyHandoff(backgrounding: Bool = false) {
         guard AppIdentity.isLegacy else { return }
-        #if canImport(UIKit)
-            let assertion = backgrounding ? BackgroundTaskAssertion(name: "LegacyHandoff") : nil
-            Task.detached(name: "Publish legacy handoff", priority: .utility) {
-                LegacyHandoff.publishIfLegacy()
-                await assertion?.end()
-            }
-        #else
-            Task.detached(name: "Publish legacy handoff", priority: .utility) {
-                LegacyHandoff.publishIfLegacy()
-            }
-        #endif
+        let assertion = backgrounding ? BackgroundTaskAssertion(name: "LegacyHandoff") : nil
+        Task.detached(name: "Publish legacy handoff", priority: .utility) {
+            LegacyHandoff.publishIfLegacy()
+            await assertion?.end()
+        }
     }
 }

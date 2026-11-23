@@ -1,6 +1,4 @@
-#if os(iOS)
-    import CoreMotion
-#endif
+import CoreMotion
 import Observation
 import SwiftUI
 
@@ -24,12 +22,9 @@ final class SkinMotion {
 
     private var rest: (x: Double, y: Double)?
     private var users = 0
-    #if os(iOS)
-        private let manager = CMMotionManager()
-    #endif
+    private let manager = CMMotionManager()
 
-    /// Balanced by ``release()``. A backdrop calls this on appear. A Mac
-    /// has no tilt; the scene stays still there.
+    /// A backdrop calls this on appear and balances it with ``release()``.
     ///
     /// The accelerometer alone, at 20 Hz: the parallax only needs gravity's
     /// direction, and the fused `deviceMotion` feed keeps the gyroscope
@@ -37,22 +32,18 @@ final class SkinMotion {
     /// separated from hand motion by the low-pass in ``ingest(x:y:)``.
     func retain() {
         users += 1
-        #if os(iOS)
-            guard users == 1, manager.isAccelerometerAvailable, !manager.isAccelerometerActive else { return }
-            manager.accelerometerUpdateInterval = 1 / 20
-            manager.startAccelerometerUpdates(to: .main) { [weak self] data, _ in
-                guard let self, let a = data?.acceleration else { return }
-                MainActor.assumeIsolated { self.ingest(x: a.x, y: a.y) }
-            }
-        #endif
+        guard users == 1, manager.isAccelerometerAvailable, !manager.isAccelerometerActive else { return }
+        manager.accelerometerUpdateInterval = 1 / 20
+        manager.startAccelerometerUpdates(to: .main) { [weak self] data, _ in
+            guard let self, let a = data?.acceleration else { return }
+            MainActor.assumeIsolated { self.ingest(x: a.x, y: a.y) }
+        }
     }
 
     func release() {
         users = max(0, users - 1)
         guard users == 0 else { return }
-        #if os(iOS)
-            manager.stopAccelerometerUpdates()
-        #endif
+        manager.stopAccelerometerUpdates()
         rest = nil
         gravity = nil
         tilt = .zero

@@ -264,7 +264,7 @@ alphas (0.5/0.82/1.0), ordered by timescale. Don't count it as a semantic ramp.
 ## 6. L3 — identity
 
 - Sources: user pick, `UserColor`, and `PresetColor.deterministic` (FNV-1a).
-- **48 presets** (CLAUDE.md says 31 — stale).
+- **48 presets**.
 - **11 of 48 collide** with an L1/L2 anchor within 15° hue and 0.06 chroma:
   Rose/Light/Dark ≈ accent (Δh 1.0–1.4°), Tangerine ≈ warning (2.1°),
   Mustard ≈ caution (2.5°), Green/Dark Green ≈ success (7.7°).

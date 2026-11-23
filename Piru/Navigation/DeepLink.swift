@@ -353,8 +353,7 @@ nonisolated enum DeepLink {
 
     // MARK: - Web links
 
-    /// The host of dose.wiki's links into the app (`AndroidManifest.xml`'s
-    /// App Link filter names the same host and paths).
+    /// The host of dose.wiki's universal links into the app.
     static let webHost = "kagerou.glass"
 
     /// Parse a `https://kagerou.glass/piru/…` link. Returns `nil` for any other

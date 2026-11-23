@@ -45,23 +45,13 @@ struct InventoryClassOrderView: View {
             .navigationTitle("Arrange Classes")
             .inlineNavigationTitle()
             .toolbar {
-                #if os(iOS)
-                    ToolbarItem(placement: .platformTopBarLeading) {
-                        Button("Reset") {
-                            model.resetCategoryOrder()
-                            ordered = categories
-                        }
-                        .disabled(!model.hasCustomCategoryOrder)
+                ToolbarItem(placement: .platformTopBarLeading) {
+                    Button("Reset") {
+                        model.resetCategoryOrder()
+                        ordered = categories
                     }
-                #else
-                    ToolbarItem(placement: .automatic) {
-                        Button("Reset") {
-                            model.resetCategoryOrder()
-                            ordered = categories
-                        }
-                        .disabled(!model.hasCustomCategoryOrder)
-                    }
-                #endif
+                    .disabled(!model.hasCustomCategoryOrder)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) { dismiss() }
                         .fontWeight(.semibold)

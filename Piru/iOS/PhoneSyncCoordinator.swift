@@ -19,8 +19,8 @@ final class PhoneSyncCoordinator: NSObject {
     private var container: ModelContainer?
     private var changeObserver: Task<Void, Never>?
 
-    /// Bind the coordinator to the store and activate the session. No-op on devices without
-    /// WatchConnectivity (iPad, Mac). Idempotent.
+    /// Bind the coordinator to the store and activate the session on devices
+    /// that support WatchConnectivity. Idempotent.
     func configure(container: ModelContainer) {
         guard WCSession.isSupported() else { return }
         self.container = container

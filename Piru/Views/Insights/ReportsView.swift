@@ -134,9 +134,7 @@ struct ReportsView: View {
                 title: "Journal Summary",
                 description: "Your entries, your meds and dose trends, as one document",
             ) {
-                #if canImport(UIKit)
-                    await exportJournalSummaryAction()
-                #endif
+                await exportJournalSummaryAction()
             }
 
             cardDivider
@@ -273,16 +271,14 @@ struct ReportsView: View {
 
     // MARK: - Export actions
 
-    #if canImport(UIKit)
-        private func exportJournalSummaryAction() async {
-            model.isExporting = true
-            defer { model.isExporting = false }
-            let url = await model.exportJournalSummary(
-                entries: allEntries, dailyItems: dailyItems, colors: substanceColors,
-            )
-            model.shareRequest = .init(items: [url])
-        }
-    #endif
+    private func exportJournalSummaryAction() async {
+        model.isExporting = true
+        defer { model.isExporting = false }
+        let url = await model.exportJournalSummary(
+            entries: allEntries, dailyItems: dailyItems, colors: substanceColors,
+        )
+        model.shareRequest = .init(items: [url])
+    }
 
     private func exportImages(stitched: Bool) async {
         model.isExporting = true

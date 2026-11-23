@@ -475,7 +475,7 @@ struct DeepLinkTests {
         "https://kagerou.glass/piru/log/extra?substance=mdma",
         "https://kagerou.glass/piru/",
         "https://kagerou.glass/piru/open",
-        "https://kagerou.glass/get/piru/android",
+        "https://kagerou.glass/get/piru/ios",
         "http://kagerou.glass/piru/log?substance=mdma",
         "https://dose.wiki/piru/log?substance=mdma",
         "https://example.kagerou.glass/piru/log?substance=mdma",

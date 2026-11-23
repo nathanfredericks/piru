@@ -134,7 +134,6 @@ struct EffectEstimatesView: View {
         .scrollContentBackground(.hidden)
         .compactListSectionSpacing()
         .skinBackdrop()
-        .readableWidth()
         .navigationTitle("Effect Estimates")
         .largeNavigationTitle()
     }

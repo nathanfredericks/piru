@@ -18,8 +18,8 @@ template instead. For anything security- or privacy-sensitive, see SECURITY.md â
 ## Environment
 
 - **Piru**: <!-- version + build (Settings shows it) -->
-- **System**: <!-- iOS, Android or macOS, with its version, e.g. iOS 27.0 or Android 15 -->
-- **Device**: <!-- e.g. iPhone 17 Pro Max, Samsung Galaxy S24, MacBook Air -->
+- **System**: <!-- iOS, iPadOS, or watchOS version, e.g. iOS 27.0 -->
+- **Device**: <!-- e.g. iPhone 17 Pro Max, iPad Air, Apple Watch Series 11 -->
 - **Depth mode**: <!-- Casual / Curious / Pharma Nerd -->
 
 ## Steps to reproduce
@@ -39,8 +39,7 @@ template instead. For anything security- or privacy-sensitive, see SECURITY.md â
 ## Crash log (for a crash)
 
 <!--
-Attach the crash log if you can. BUG-REPORTS.md shows where to find it on iPhone, Mac and Android.
-An Android system bug report describes the whole phone: send that one privately on Discord, not here.
+Attach the crash log if you can. BUG-REPORTS.md shows where to find it on iPhone and iPad.
 -->
 
 ## Session (optional, but the most useful thing you can attach)

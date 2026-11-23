@@ -183,8 +183,7 @@ nonisolated enum DoseQuantity: Hashable, Sendable {
 /// 80.00000000000001 mg — enough to drop a dose logged exactly on a tier boundary
 /// into the tier below, and enough that `0.08 g == 80 mg` is false. Through a
 /// milligram base both are exact, and so is every alias unit (a drink is 14 000
-/// mg, a tab its strength). Defined as a dimension of its own because `UnitMass`
-/// is final on the open-source Foundation the Android build compiles against.
+/// mg, a tab its strength).
 final nonisolated class UnitDoseMass: Dimension, @unchecked Sendable {
     static let micrograms = UnitDoseMass(symbol: "µg", converter: UnitConverterLinear(coefficient: 0.001))
     static let milligrams = UnitDoseMass(symbol: "mg", converter: UnitConverterLinear(coefficient: 1))

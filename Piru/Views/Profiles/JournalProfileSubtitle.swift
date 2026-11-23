@@ -16,18 +16,11 @@ private struct JournalProfileSubtitle: ViewModifier {
     func body(content: Content) -> some View {
         let profile = directory.activeProfile
         if enabled, !profile.isOwner {
-            #if os(iOS)
-                content.toolbar {
-                    ToolbarItem(placement: .largeSubtitle) {
-                        JournalOwnerLabel(profile: profile)
-                    }
+            content.toolbar {
+                ToolbarItem(placement: .largeSubtitle) {
+                    JournalOwnerLabel(profile: profile)
                 }
-            #elseif os(macOS)
-                content.navigationSubtitle(Text("\(profile.name)'s journal"))
-            #else
-                // Android has one profile, so never another's journal.
-                content
-            #endif
+            }
         } else {
             content
         }

@@ -22,9 +22,7 @@ struct ProfilePhotoCropView: View {
                 .background(.black)
                 .navigationTitle("Move and Scale")
                 .inlineNavigationTitle()
-            #if os(iOS)
                 .toolbarColorScheme(.dark, for: .navigationBar)
-            #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel", role: .cancel) { dismiss() }

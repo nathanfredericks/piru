@@ -302,9 +302,7 @@ private struct SubstanceDetailHeader: View {
             .textCase(nil)
             .listRowInsets(EdgeInsets())
         }
-        #if canImport(UIKit)
         .listSectionSpacing(8)
-        #endif
     }
 
     private var aliasAccessibilityLabel: String {

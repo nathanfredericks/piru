@@ -1,10 +1,7 @@
 import SwiftData
 import SwiftUI
 import TipKit
-
-#if canImport(UIKit)
-    import UIKit
-#endif
+import UIKit
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -78,8 +75,7 @@ struct ContentView: View {
             }
     }
 
-    /// The tab bar: floating at the top on iPad, at the bottom on iPhone, in the
-    /// window toolbar's center on macOS.
+    /// The tab bar floats at the top on iPad and at the bottom on iPhone.
     private var rootNavigation: some View {
         MainTabView()
     }
@@ -120,9 +116,8 @@ struct ContentView: View {
 }
 
 /// The session the `.sessionDetail` sheet would resolve — the most recent by
-/// start date (mirrors `CurrentSessionHost`). Used by the deep link handler,
-/// the session accessory and the macOS sidebar's session row to reveal an already-open session screen rather
-/// than presenting a duplicate sheet.
+/// start date (mirrors `CurrentSessionHost`). The deep-link handler and session
+/// accessory use it to reveal an open session without presenting a duplicate.
 func mostRecentSessionID(in context: ModelContext) -> UUID? {
     var descriptor = FetchDescriptor<Session>(sortBy: [SortDescriptor(\.startDate, order: .reverse)])
     descriptor.fetchLimit = 1
@@ -137,21 +132,12 @@ private struct OnboardingGateModifier: ViewModifier {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     func body(content: Content) -> some View {
-        #if os(iOS)
-            content.fullScreenCover(isPresented: .init(
-                get: { !hasCompletedOnboarding },
-                set: { if !$0 { hasCompletedOnboarding = true } },
-            )) {
-                OnboardingView()
-            }
-        #else
-            content.sheet(isPresented: .init(
-                get: { !hasCompletedOnboarding },
-                set: { if !$0 { hasCompletedOnboarding = true } },
-            )) {
-                OnboardingView()
-            }
-        #endif
+        content.fullScreenCover(isPresented: .init(
+            get: { !hasCompletedOnboarding },
+            set: { if !$0 { hasCompletedOnboarding = true } },
+        )) {
+            OnboardingView()
+        }
     }
 }
 
@@ -282,29 +268,21 @@ private struct MainTabView: View {
         // Apple-Music-style fold: scrolling down minimizes the tab bar and slides
         // the session accessory into its inline placement, which
         // `BottomAccessoryContent` adapts to.
-        #if os(iOS)
-            #if canImport(UIKit)
-                .tabBarMinimizeBehavior(.onScrollDown)
-            #endif
-        #endif
-            .withSessionAccessory()
-        #if os(macOS)
-            .tabViewStyle(.tabBarOnly)
-            .macWindowActions()
-        #endif
-            .onChange(of: navigator.selectedTab) { oldValue, newValue in
-                if newValue == .search {
-                    // Seed the scope from where the user came from; Library is the
-                    // natural default from Tools/Insights/Search itself.
-                    searchScope = (oldValue == .journal) ? .journal : .library
-                }
-                searchText = ""
-                librarySearchText = ""
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .withSessionAccessory()
+        .onChange(of: navigator.selectedTab) { oldValue, newValue in
+            if newValue == .search {
+                // Seed the scope from where the user came from; Library is the
+                // natural default from Tools/Insights/Search itself.
+                searchScope = (oldValue == .journal) ? .journal : .library
             }
-            // Settings ▸ Tabs and a backup restore both land here.
-            .onChange(of: layout.visible) { _, visible in
-                navigator.reconcile(visible: visible)
-            }
+            searchText = ""
+            librarySearchText = ""
+        }
+        // Settings ▸ Tabs and a backup restore both land here.
+        .onChange(of: layout.visible) { _, visible in
+            navigator.reconcile(visible: visible)
+        }
     }
 }
 
@@ -479,122 +457,115 @@ private extension View {
     /// sheet's zoom. The transition silently does nothing and the sheet slides
     /// up anyway. A zoom needs a source control in the main view tree, and
     /// keeping the primary action here is worth giving it up.
-    @ViewBuilder
     func withSessionAccessory() -> some View {
-        #if os(iOS)
-            tabViewBottomAccessory {
-                SessionAccessoryHost()
-            }
-        #else
-            self
-        #endif
+        tabViewBottomAccessory {
+            SessionAccessoryHost()
+        }
     }
 }
 
 // MARK: - Session Accessory Host
 
-#if os(iOS)
-    /// Decides the accessory's face and wires its two actions. Reading the
-    /// journal's path and the live session here, inside the accessory, is what
-    /// keeps a push, a pop or a session update from re-rendering the tab tree.
-    private struct SessionAccessoryHost: View {
-        @Environment(\.appNavigator) private var navigator
-        @Environment(\.modelContext) private var modelContext
+/// Decides the accessory's face and wires its two actions. Reading the
+/// journal's path and the live session here, inside the accessory, is what
+/// keeps a push, a pop or a session update from re-rendering the tab tree.
+private struct SessionAccessoryHost: View {
+    @Environment(\.appNavigator) private var navigator
+    @Environment(\.modelContext) private var modelContext
 
-        /// Whether the selected tab's top screen is the active session's detail —
-        /// with Journal out of the bar, session links land on whatever tab is
-        /// showing.
-        /// Computed in `.task(id:)` so the membership `fetch` it needs never runs
-        /// during a body pass.
-        @State private var viewingActiveSessionDay = false
+    /// Whether the selected tab's top screen is the active session's detail —
+    /// with Journal out of the bar, session links land on whatever tab is
+    /// showing.
+    /// Computed in `.task(id:)` so the membership `fetch` it needs never runs
+    /// during a body pass.
+    @State private var viewingActiveSessionDay = false
 
-        var body: some View {
-            BottomAccessoryContent(
-                showSessionPill: sessionAccessoryActive,
-                // The "log a dose" tip may only appear on the home root (Journal's,
-                // or the first tab's when Journal is out of the bar) — the
-                // accessory it anchors to is otherwise on every tab and every pushed
-                // screen. Attaching the popover only here (rather than gating it with
-                // a TipKit rule) is what dismisses it on navigate-away: TipKit
-                // doesn't retract a shown popover when a rule flips false.
-                showLogTip: onHomeRoot,
-                // Plain actions, never sheetStack-reading bindings: a getter that
-                // reads `sheetStack` subscribes this view to every sheet present and
-                // dismiss. Closures read it only when tapped.
-                onShowSessionDetail: {
-                    guard navigator.sheetStack.isEmpty else { return }
-                    navigator.revealOrPresentSessionDetail(
-                        currentSessionID: mostRecentSessionID(in: modelContext),
-                    )
-                },
-                onAdd: {
-                    // Tapping the CTA retires the "log a dose" tip whether or not the
-                    // log is completed — the point has been made.
-                    OnboardingTips.logDoseInvoked()
-                    guard navigator.sheetStack.isEmpty else { return }
-                    navigator.present(.quickLog(routine: nil))
-                },
-            )
-            // The key changes when the journal's top route, the selected tab, or
-            // the active doses change — exactly when the answer can flip.
-            .task(id: activeSessionDayKey) {
-                viewingActiveSessionDay = computeViewingActiveSessionDay()
-            }
-        }
-
-        /// Whether the accessory shows the live-session pill rather than the idle
-        /// "Record an entry" call-to-action. The accessory is always mounted; this only
-        /// chooses its content. It falls back to the CTA while the journal already
-        /// surfaces the live session — its day detail, or the journal root, where
-        /// the hero card carries it — since the pill would only duplicate them.
-        private var sessionAccessoryActive: Bool {
-            ActiveSessionManager.shared.hasActiveSession
-                && !viewingActiveSessionDay
-                && !(onHomeRoot && home == .journal)
-        }
-
-        /// Where the first-run tip anchors (`TabLayout.accessoryHome`).
-        private var home: TabID {
-            TabLayoutStore.shared.layout.accessoryHome
-        }
-
-        /// The home tab's root screen — nothing pushed. Gates the first-run tip
-        /// and, when home is Journal with a live session, stands in for the hero
-        /// card that already carries it (the journal root is never a search
-        /// surface, so this matches `EntryListView`'s own hero condition). No
-        /// other root has that card, so elsewhere the pill stays.
-        private var onHomeRoot: Bool {
-            navigator.selectedTab == home && navigator.path(for: home).isEmpty
-        }
-
-        /// Identity for the `viewingActiveSessionDay` task: the selected tab, its
-        /// top route and the active doses.
-        private var activeSessionDayKey: String {
-            let top = navigator.path(for: navigator.selectedTab).last.map { "\($0)" } ?? "none"
-            let stamps = ActiveSessionManager.shared.activeSubstanceStates
-                .map { "\($0.doseTimestamp.timeIntervalSince1970)" }
-                .joined(separator: ",")
-            return "\(navigator.selectedTab)|\(top)|\(stamps)"
-        }
-
-        /// True when the selected tab's top screen is the detail for the session
-        /// the active doses belong to. Matches by membership: the viewed session
-        /// holds any active dose — covering the current cluster even when a
-        /// separate, overlapping session also has a still-active long-acting dose.
-        private func computeViewingActiveSessionDay() -> Bool {
-            guard case let .session(id) = navigator.path(for: navigator.selectedTab).last
-            else { return false }
-            let activeStamps = ActiveSessionManager.shared.activeSubstanceStates.map(\.doseTimestamp)
-            guard !activeStamps.isEmpty else { return false }
-            var descriptor = FetchDescriptor<Session>(predicate: #Predicate { $0.id == id })
-            descriptor.fetchLimit = 1
-            guard let session = try? modelContext.fetch(descriptor).first else { return false }
-            return session.orderedDoses.contains { dose in
-                activeStamps.contains { abs($0.timeIntervalSince(dose.timestamp)) < 1 }
-            }
+    var body: some View {
+        BottomAccessoryContent(
+            showSessionPill: sessionAccessoryActive,
+            // The "log a dose" tip may only appear on the home root (Journal's,
+            // or the first tab's when Journal is out of the bar) — the
+            // accessory it anchors to is otherwise on every tab and every pushed
+            // screen. Attaching the popover only here (rather than gating it with
+            // a TipKit rule) is what dismisses it on navigate-away: TipKit
+            // doesn't retract a shown popover when a rule flips false.
+            showLogTip: onHomeRoot,
+            // Plain actions, never sheetStack-reading bindings: a getter that
+            // reads `sheetStack` subscribes this view to every sheet present and
+            // dismiss. Closures read it only when tapped.
+            onShowSessionDetail: {
+                guard navigator.sheetStack.isEmpty else { return }
+                navigator.revealOrPresentSessionDetail(
+                    currentSessionID: mostRecentSessionID(in: modelContext),
+                )
+            },
+            onAdd: {
+                // Tapping the CTA retires the "log a dose" tip whether or not the
+                // log is completed — the point has been made.
+                OnboardingTips.logDoseInvoked()
+                guard navigator.sheetStack.isEmpty else { return }
+                navigator.present(.quickLog(routine: nil))
+            },
+        )
+        // The key changes when the journal's top route, the selected tab, or
+        // the active doses change — exactly when the answer can flip.
+        .task(id: activeSessionDayKey) {
+            viewingActiveSessionDay = computeViewingActiveSessionDay()
         }
     }
-#endif
+
+    /// Whether the accessory shows the live-session pill rather than the idle
+    /// "Record an entry" call-to-action. The accessory is always mounted; this only
+    /// chooses its content. It falls back to the CTA while the journal already
+    /// surfaces the live session — its day detail, or the journal root, where
+    /// the hero card carries it — since the pill would only duplicate them.
+    private var sessionAccessoryActive: Bool {
+        ActiveSessionManager.shared.hasActiveSession
+            && !viewingActiveSessionDay
+            && !(onHomeRoot && home == .journal)
+    }
+
+    /// Where the first-run tip anchors (`TabLayout.accessoryHome`).
+    private var home: TabID {
+        TabLayoutStore.shared.layout.accessoryHome
+    }
+
+    /// The home tab's root screen — nothing pushed. Gates the first-run tip
+    /// and, when home is Journal with a live session, stands in for the hero
+    /// card that already carries it (the journal root is never a search
+    /// surface, so this matches `EntryListView`'s own hero condition). No
+    /// other root has that card, so elsewhere the pill stays.
+    private var onHomeRoot: Bool {
+        navigator.selectedTab == home && navigator.path(for: home).isEmpty
+    }
+
+    /// Identity for the `viewingActiveSessionDay` task: the selected tab, its
+    /// top route and the active doses.
+    private var activeSessionDayKey: String {
+        let top = navigator.path(for: navigator.selectedTab).last.map { "\($0)" } ?? "none"
+        let stamps = ActiveSessionManager.shared.activeSubstanceStates
+            .map { "\($0.doseTimestamp.timeIntervalSince1970)" }
+            .joined(separator: ",")
+        return "\(navigator.selectedTab)|\(top)|\(stamps)"
+    }
+
+    /// True when the selected tab's top screen is the detail for the session
+    /// the active doses belong to. Matches by membership: the viewed session
+    /// holds any active dose — covering the current cluster even when a
+    /// separate, overlapping session also has a still-active long-acting dose.
+    private func computeViewingActiveSessionDay() -> Bool {
+        guard case let .session(id) = navigator.path(for: navigator.selectedTab).last
+        else { return false }
+        let activeStamps = ActiveSessionManager.shared.activeSubstanceStates.map(\.doseTimestamp)
+        guard !activeStamps.isEmpty else { return false }
+        var descriptor = FetchDescriptor<Session>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        guard let session = try? modelContext.fetch(descriptor).first else { return false }
+        return session.orderedDoses.contains { dose in
+            activeStamps.contains { abs($0.timeIntervalSince(dose.timestamp)) < 1 }
+        }
+    }
+}
 
 // MARK: - Bottom Accessory Content
 
@@ -609,126 +580,124 @@ private extension View {
 // `matchedGeometryEffect` across the swap: iOS hosts accessory content in a
 // context separate from the main view tree, so a geometry match there snaps
 // rather than animates.
-#if os(iOS)
-    private struct BottomAccessoryContent: View {
-        @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+private struct BottomAccessoryContent: View {
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
-        let showSessionPill: Bool
-        /// Whether to offer the first-run "log a dose" tip — true only on the home
-        /// root. See ``LogTipAnchor``.
-        let showLogTip: Bool
-        var onShowSessionDetail: () -> Void
-        var onAdd: () -> Void
+    let showSessionPill: Bool
+    /// Whether to offer the first-run "log a dose" tip — true only on the home
+    /// root. See ``LogTipAnchor``.
+    let showLogTip: Bool
+    var onShowSessionDetail: () -> Void
+    var onAdd: () -> Void
 
-        /// The tab bar is minimized — the accessory is in its folded, inline slot.
-        private var compact: Bool {
-            placement == .inline
-        }
-        /// One control footprint for the leading glyph and the "+", shrunk when
-        /// folded so the idle CTA keeps its label + glyph rather than collapsing.
-        private var controlSide: CGFloat {
-            compact ? 34 : IconSize.touchTarget
-        }
+    /// The tab bar is minimized — the accessory is in its folded, inline slot.
+    private var compact: Bool {
+        placement == .inline
+    }
+    /// One control footprint for the leading glyph and the "+", shrunk when
+    /// folded so the idle CTA keeps its label + glyph rather than collapsing.
+    private var controlSide: CGFloat {
+        compact ? 34 : IconSize.touchTarget
+    }
 
-        @State private var preferences = DockPreferences.shared
-        /// Med slots due right now — the "+" badge; set by the idle label's
-        /// derivation so the badge and the "N due" label never disagree.
-        @State private var dueCount = 0
+    @State private var preferences = DockPreferences.shared
+    /// Med slots due right now — the "+" badge; set by the idle label's
+    /// derivation so the badge and the "N due" label never disagree.
+    @State private var dueCount = 0
 
-        var body: some View {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                ZStack {
-                    Button(action: showSessionPill ? onShowSessionDetail : onAdd) {
-                        bodyContent(currentTime: context.date)
-                            .frame(maxWidth: .infinity)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    // The visible text changes every minute ("Next: … in 12h 2m"),
-                    // so Voice Control gets names that hold still.
-                    .accessibilityInputLabels(showSessionPill ? [Text("Session")] : [Text("Next dose"), Text("Log")])
-
-                    HStack(spacing: 0) {
-                        // Shortcuts need the width the session curve takes, so
-                        // they show only on the idle face.
-                        if !showSessionPill {
-                            DockShortcutSlots(currentTime: context.date, compact: compact, controlSide: controlSide)
-                                .transition(.opacity)
-                        }
-                        Spacer()
-                        plusButton
-                    }
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            ZStack {
+                Button(action: showSessionPill ? onShowSessionDetail : onAdd) {
+                    bodyContent(currentTime: context.date)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
                 }
-                .padding(.leading, Spacing.xxl)
-                .padding(.trailing, 11)
-                .animation(.snappy, value: showSessionPill)
-            }
-            // Attached outside the periodic closure, because re-creating the anchor on
-            // the 60 s tick resurrects a dismissed tip; and only while on the home
-            // root, so leaving tears the popover down.
-            .modifier(LogTipAnchor(active: showLogTip))
-        }
+                .buttonStyle(.plain)
+                // The visible text changes every minute ("Next: … in 12h 2m"),
+                // so Voice Control gets names that hold still.
+                .accessibilityInputLabels(showSessionPill ? [Text("Session")] : [Text("Next dose"), Text("Log")])
 
-        private func bodyContent(currentTime: Date) -> some View {
-            HStack(spacing: Spacing.lg) {
-                if showSessionPill {
-                    SessionAccessoryInfo(
-                        states: ActiveSessionManager.shared.activeSubstanceStates,
-                        currentTime: currentTime,
-                        placement: placement,
+                HStack(spacing: 0) {
+                    // Shortcuts need the width the session curve takes, so
+                    // they show only on the idle face.
+                    if !showSessionPill {
+                        DockShortcutSlots(currentTime: context.date, compact: compact, controlSide: controlSide)
+                            .transition(.opacity)
+                    }
+                    Spacer()
+                    plusButton
+                }
+            }
+            .padding(.leading, Spacing.xxl)
+            .padding(.trailing, 11)
+            .animation(.snappy, value: showSessionPill)
+        }
+        // Attached outside the periodic closure, because re-creating the anchor on
+        // the 60 s tick resurrects a dismissed tip; and only while on the home
+        // root, so leaving tears the popover down.
+        .modifier(LogTipAnchor(active: showLogTip))
+    }
+
+    private func bodyContent(currentTime: Date) -> some View {
+        HStack(spacing: Spacing.lg) {
+            if showSessionPill {
+                SessionAccessoryInfo(
+                    states: ActiveSessionManager.shared.activeSubstanceStates,
+                    currentTime: currentTime,
+                    placement: placement,
+                )
+                .transition(.opacity)
+
+                Spacer(minLength: 0)
+            } else {
+                // Reserve the width the overlaid shortcut slots occupy, so the
+                // label centers between them and the "+". No slots, no room.
+                Color.clear
+                    .frame(
+                        width: DockShortcutSlots.reservedWidth(
+                            slots: DockShortcutSlots.visibleCount(of: preferences.shortcuts.count, compact: compact),
+                            controlSide: controlSide,
+                        ),
+                        height: controlSide,
                     )
+
+                Spacer(minLength: 0)
+
+                DockLabelText(currentTime: currentTime, compact: compact, dueCount: $dueCount)
                     .transition(.opacity)
 
-                    Spacer(minLength: 0)
-                } else {
-                    // Reserve the width the overlaid shortcut slots occupy, so the
-                    // label centers between them and the "+". No slots, no room.
-                    Color.clear
-                        .frame(
-                            width: DockShortcutSlots.reservedWidth(
-                                slots: DockShortcutSlots.visibleCount(of: preferences.shortcuts.count, compact: compact),
-                                controlSide: controlSide,
-                            ),
-                            height: controlSide,
-                        )
-
-                    Spacer(minLength: 0)
-
-                    DockLabelText(currentTime: currentTime, compact: compact, dueCount: $dueCount)
-                        .transition(.opacity)
-
-                    Spacer(minLength: 0)
-                }
-
-                // Reserve the slot the overlaid "+" occupies, so the body's centered
-                // label accounts for it and lands on true center.
-                Color.clear
-                    .frame(width: controlSide, height: controlSide)
+                Spacer(minLength: 0)
             }
-        }
 
-        /// Log another dose. Pinned trailing in every face — no background fill (a
-        /// bare accent glyph avoids glass-on-glass concentricity issues against the
-        /// accessory's own capsule); 11pt trailing so its center lines up with the
-        /// tab bar's search button. Carries the meds-due count badge in both faces.
-        private var plusButton: some View {
-            Button(action: onAdd) {
-                Image(systemName: "plus")
-                    .font((compact ? Font.subheadline : Font.title3).weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: controlSide, height: controlSide)
-                    .contentShape(Circle())
-                    .overlay(alignment: .topTrailing) {
-                        DockDueBadge(count: dueCount)
-                            .offset(x: compact ? 2 : 0, y: compact ? -2 : 2)
-                    }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Record an entry"))
-            .accessibilityInputLabels([Text("Record an entry"), Text("Record"), Text("Add")])
+            // Reserve the slot the overlaid "+" occupies, so the body's centered
+            // label accounts for it and lands on true center.
+            Color.clear
+                .frame(width: controlSide, height: controlSide)
         }
     }
-#endif
+
+    /// Log another dose. Pinned trailing in every face — no background fill (a
+    /// bare accent glyph avoids glass-on-glass concentricity issues against the
+    /// accessory's own capsule); 11pt trailing so its center lines up with the
+    /// tab bar's search button. Carries the meds-due count badge in both faces.
+    private var plusButton: some View {
+        Button(action: onAdd) {
+            Image(systemName: "plus")
+                .font((compact ? Font.subheadline : Font.title3).weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: controlSide, height: controlSide)
+                .contentShape(Circle())
+                .overlay(alignment: .topTrailing) {
+                    DockDueBadge(count: dueCount)
+                        .offset(x: compact ? 2 : 0, y: compact ? -2 : 2)
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Record an entry"))
+        .accessibilityInputLabels([Text("Record an entry"), Text("Record"), Text("Add")])
+    }
+}
 
 /// Attaches the first-run "log a dose" popover only while `active` (the home
 /// root). Removing the `.popoverTip` modifier — rather than gating the tip with a

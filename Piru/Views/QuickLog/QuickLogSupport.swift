@@ -75,7 +75,6 @@ struct DockSheetHost: View {
         }
         // The label scanner stacks on the dock (the cover's slot is taken), like
         // the sheets above — full-screen for the live camera.
-        #if os(iOS)
         .fullScreenCover(isPresented: $showScanner) {
             LabelScannerView(
                 onResolved: stageScanned,
@@ -85,7 +84,6 @@ struct DockSheetHost: View {
                 },
             )
         }
-        #endif
         // Navigator sheets launched from quick log (Manage Routines, Edit
         // Routine…) present here, stacked on the dock — the dock occupies
         // the cover's only presentation slot, so they can't present there.

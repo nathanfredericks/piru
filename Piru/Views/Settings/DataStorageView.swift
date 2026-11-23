@@ -880,8 +880,6 @@ private extension View {
     func passphraseEntry() -> some View {
         autocorrectionDisabled()
             .neverAutocapitalize()
-        #if !os(Android)
             .textContentType(.password)
-        #endif
     }
 }

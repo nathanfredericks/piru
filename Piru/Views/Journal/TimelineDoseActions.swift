@@ -48,124 +48,115 @@ enum TimelineDoseDeletion {
 
 extension View {
     /// On iOS, swipe-left-to-delete on a timeline dose bubble.
-    @ViewBuilder
     func timelineDoseSwipe(_ item: TimelineDayLayout.CardItem, bubbleWidth: CGFloat) -> some View {
-        #if os(iOS)
-            modifier(TimelineDoseSwipeModifier(item: item, bubbleWidth: bubbleWidth))
-        #else
-            self
-        #endif
+        modifier(TimelineDoseSwipeModifier(item: item, bubbleWidth: bubbleWidth))
     }
 }
 
-#if os(iOS)
-    private struct TimelineDoseSwipeModifier: ViewModifier {
-        let item: TimelineDayLayout.CardItem
-        let bubbleWidth: CGFloat
+private struct TimelineDoseSwipeModifier: ViewModifier {
+    let item: TimelineDayLayout.CardItem
+    let bubbleWidth: CGFloat
 
-        @Environment(\.modelContext) private var modelContext
-        @Environment(\.sessionEditingService) private var editing
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.sessionEditingService) private var editing
 
-        func body(content: Content) -> some View {
-            content.modifier(TimelineBubbleSwipe(width: bubbleWidth) {
-                TimelineDoseDeletion.delete(item, in: modelContext, editing: editing)
-            })
-        }
+    func body(content: Content) -> some View {
+        content.modifier(TimelineBubbleSwipe(width: bubbleWidth) {
+            TimelineDoseDeletion.delete(item, in: modelContext, editing: editing)
+        })
     }
-#endif
+}
 
-#if os(iOS)
-    /// Swipe a bubble left to uncover a Delete button in the space it leaves;
-    /// swipe past ``fullSwipeFraction`` of its width and let go to delete
-    /// outright. A tap on an uncovered bubble closes it rather than opening
-    /// the dose.
-    private struct TimelineBubbleSwipe: ViewModifier {
-        let width: CGFloat
-        let onDelete: () -> Void
+/// Swipe a bubble left to uncover a Delete button in the space it leaves;
+/// swipe past ``fullSwipeFraction`` of its width and let go to delete
+/// outright. A tap on an uncovered bubble closes it rather than opening
+/// the dose.
+private struct TimelineBubbleSwipe: ViewModifier {
+    let width: CGFloat
+    let onDelete: () -> Void
 
-        @State private var offset: CGFloat = 0
-        @State private var dragStart: CGFloat?
-        @State private var armed = false
+    @State private var offset: CGFloat = 0
+    @State private var dragStart: CGFloat?
+    @State private var armed = false
 
-        private static let revealWidth: CGFloat = 72
-        private static let buttonGap: CGFloat = 6
-        private static let fullSwipeFraction: CGFloat = 0.6
-        /// Seconds of release velocity folded into where the swipe settles.
-        private static let velocityProjection: CGFloat = 0.15
+    private static let revealWidth: CGFloat = 72
+    private static let buttonGap: CGFloat = 6
+    private static let fullSwipeFraction: CGFloat = 0.6
+    /// Seconds of release velocity folded into where the swipe settles.
+    private static let velocityProjection: CGFloat = 0.15
 
-        private var fullSwipeDistance: CGFloat {
-            width * Self.fullSwipeFraction
-        }
+    private var fullSwipeDistance: CGFloat {
+        width * Self.fullSwipeFraction
+    }
 
-        func body(content: Content) -> some View {
-            content
-                .overlay {
-                    if offset != 0 {
-                        Color.clear
-                            .contentShape(.rect)
-                            .onTapGesture { settle(at: 0) }
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if offset != 0 {
+                    Color.clear
+                        .contentShape(.rect)
+                        .onTapGesture { settle(at: 0) }
+                }
+            }
+            .offset(x: offset)
+            .background(alignment: .trailing) { deleteButton }
+            .gesture(HorizontalSwipePan(onChanged: drag, onEnded: release))
+    }
+
+    @ViewBuilder
+    private var deleteButton: some View {
+        let uncovered = max(0, -offset - Self.buttonGap)
+        if uncovered > 0 {
+            let shape = RoundedRectangle(cornerRadius: TimelineDoseBubble.cornerRadius, style: .continuous)
+            Button(role: .destructive, action: commitDelete) {
+                // The icon rides as an overlay so the button's width is
+                // only ever the uncovered strip, never the glyph's.
+                shape
+                    .fill(Color.red)
+                    .overlay {
+                        Image(systemName: "trash")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .opacity(min(1, uncovered / Self.revealWidth))
                     }
-                }
-                .offset(x: offset)
-                .background(alignment: .trailing) { deleteButton }
-                .gesture(HorizontalSwipePan(onChanged: drag, onEnded: release))
-        }
-
-        @ViewBuilder
-        private var deleteButton: some View {
-            let uncovered = max(0, -offset - Self.buttonGap)
-            if uncovered > 0 {
-                let shape = RoundedRectangle(cornerRadius: TimelineDoseBubble.cornerRadius, style: .continuous)
-                Button(role: .destructive, action: commitDelete) {
-                    // The icon rides as an overlay so the button's width is
-                    // only ever the uncovered strip, never the glyph's.
-                    shape
-                        .fill(Color.red)
-                        .overlay {
-                            Image(systemName: "trash")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(.white)
-                                .opacity(min(1, uncovered / Self.revealWidth))
-                        }
-                        .frame(width: uncovered)
-                        .clipShape(shape)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Delete"))
+                    .frame(width: uncovered)
+                    .clipShape(shape)
             }
-        }
-
-        private func drag(_ translation: CGFloat) {
-            let start = dragStart ?? offset
-            dragStart = start
-            offset = min(0, start + translation)
-            let pastFull = -offset > fullSwipeDistance
-            if pastFull != armed {
-                armed = pastFull
-                PlatformHaptics.impact()
-            }
-        }
-
-        private func release(_ translation: CGFloat, velocity: CGFloat) {
-            let start = dragStart ?? offset
-            dragStart = nil
-            armed = false
-            let final = start + translation
-            if -final > fullSwipeDistance {
-                commitDelete()
-                return
-            }
-            let projected = final + velocity * Self.velocityProjection
-            settle(at: -projected > Self.revealWidth / 2 ? -(Self.revealWidth + Self.buttonGap) : 0)
-        }
-
-        private func settle(at target: CGFloat) {
-            withAnimation(.snappy(duration: 0.25)) { offset = target }
-        }
-
-        private func commitDelete() {
-            withAnimation(.snappy(duration: 0.2)) { offset = -(width + Self.buttonGap) }
-            onDelete()
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Delete"))
         }
     }
-#endif
+
+    private func drag(_ translation: CGFloat) {
+        let start = dragStart ?? offset
+        dragStart = start
+        offset = min(0, start + translation)
+        let pastFull = -offset > fullSwipeDistance
+        if pastFull != armed {
+            armed = pastFull
+            PlatformHaptics.impact()
+        }
+    }
+
+    private func release(_ translation: CGFloat, velocity: CGFloat) {
+        let start = dragStart ?? offset
+        dragStart = nil
+        armed = false
+        let final = start + translation
+        if -final > fullSwipeDistance {
+            commitDelete()
+            return
+        }
+        let projected = final + velocity * Self.velocityProjection
+        settle(at: -projected > Self.revealWidth / 2 ? -(Self.revealWidth + Self.buttonGap) : 0)
+    }
+
+    private func settle(at target: CGFloat) {
+        withAnimation(.snappy(duration: 0.25)) { offset = target }
+    }
+
+    private func commitDelete() {
+        withAnimation(.snappy(duration: 0.2)) { offset = -(width + Self.buttonGap) }
+        onDelete()
+    }
+}

@@ -44,15 +44,13 @@ final class DockDetentBookkeeping {
     /// after ``compactValue`` has been re-minted for the new target.
     var restingLogicalHeight: CGFloat? = QuickLogDockMetrics.peekHeight
 
-    #if canImport(UIKit)
-        /// Memoized handle to the UIKit view controller presenting the dock —
-        /// resolved once by ``SheetHostProbe`` when the content lands in a window.
-        let host = SheetHostBox()
-        /// Display-link driver for the frame-level sheet resize.
-        let frameAnimator = DisplayLinkAnimator()
-        /// The mutable custom detent driving the ramp.
-        let rampDetent = MutableSheetDetent()
-    #endif
+    /// Memoized handle to the UIKit view controller presenting the dock —
+    /// resolved once by ``SheetHostProbe`` when the content lands in a window.
+    let host = SheetHostBox()
+    /// Display-link driver for the frame-level sheet resize.
+    let frameAnimator = DisplayLinkAnimator()
+    /// The mutable custom detent driving the ramp.
+    let rampDetent = MutableSheetDetent()
 }
 
 /// Callbacks waiting for the sheet's next settle. A detent move can be

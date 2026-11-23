@@ -36,9 +36,7 @@ private struct BackupPassphraseAlert: ViewModifier {
             }
             .alert("Enter Passphrase", isPresented: $showingPrompt) {
                 SecureField("Passphrase", text: $passphrase)
-                #if canImport(UIKit)
                     .textContentType(.password)
-                #endif
                 Button("Cancel", role: .cancel) { finish() }
                 Button("Unlock") {
                     if let backup { unlock(backup, passphrase: passphrase) }

@@ -1,12 +1,7 @@
 import PDFKit
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
-
-#if canImport(UIKit)
-    import UIKit
-#elseif canImport(AppKit)
-    import AppKit
-#endif
 
 /// The consolidated "Share Session" surface: one custom sheet reached from the
 /// session screen's share button (and Help / Settings). Offers three artifacts —
@@ -89,12 +84,10 @@ struct SessionShareSheet: View {
             }.value
         }
         if let export = SessionStateExport.build(from: entries, colors: colors, notes: session?.orderedNotes ?? []) {
-            #if canImport(UIKit)
-                let data = SessionReportPDF.render(export)
-                pdfData = data
-                pdfThumbnail = PDFDocument(data: data)?.page(at: 0)?
-                    .thumbnail(of: CGSize(width: 612, height: 792), for: .mediaBox)
-            #endif
+            let data = SessionReportPDF.render(export)
+            pdfData = data
+            pdfThumbnail = PDFDocument(data: data)?.page(at: 0)?
+                .thumbnail(of: CGSize(width: 612, height: 792), for: .mediaBox)
             markdown = export.markdown()
         }
         if let session {

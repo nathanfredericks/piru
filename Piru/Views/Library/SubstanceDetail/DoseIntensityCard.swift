@@ -296,7 +296,6 @@ struct IntensityGauge: View {
                         ),
                     )
                     .animation(slide, value: selected)
-                #if canImport(UIKit)
                     .gesture(
                         ArcPan(
                             coordSpace: coordSpace,
@@ -304,16 +303,6 @@ struct IntensityGauge: View {
                             onMove: { onSelect(band(for: $0, center: center)) },
                         ),
                     )
-                #else
-                    .gesture(
-                        DragGesture(coordinateSpace: .named(coordSpace))
-                            .onChanged { value in
-                                isGrabbed = true
-                                onSelect(band(for: value.location, center: center))
-                            }
-                            .onEnded { _ in isGrabbed = false },
-                    )
-                #endif
             }
             .coordinateSpace(.named(coordSpace))
             // Tapping any band jumps the selector to it.

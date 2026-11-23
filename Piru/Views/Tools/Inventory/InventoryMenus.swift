@@ -14,9 +14,7 @@ struct InventoryOptionsMenu: View {
     /// Every class present in the inventory — the class facet offers only these.
     let categories: [SubstanceCategory]
     // Flipped by "Edit", which is how deletion is reached without a swipe.
-    #if canImport(UIKit)
-        @Binding var editMode: EditMode
-    #endif
+    @Binding var editMode: EditMode
     /// Opens the class-arrangement sheet, which the list owns.
     let onArrangeClasses: () -> Void
 
@@ -37,15 +35,13 @@ struct InventoryOptionsMenu: View {
 
     var body: some View {
         Menu {
-            #if canImport(UIKit)
-                Section {
-                    Button {
-                        editMode = .active
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                    }
+            Section {
+                Button {
+                    editMode = .active
+                } label: {
+                    Label("Edit", systemImage: "pencil")
                 }
-            #endif
+            }
 
             Section {
                 Toggle(isOn: $model.isGrouped) {

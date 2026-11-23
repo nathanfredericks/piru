@@ -66,11 +66,8 @@ struct SkinBackdrop: View {
                 // `visible` says this screen is on top of its stack; the scene
                 // phase says the app is on screen at all, so the clock stops
                 // the moment the app is backgrounded rather than whenever the
-                // timeline notices. It does not catch a macOS scene that state
-                // restoration rebuilt without a window: that scene reports
-                // `.active` and its canvas ticks like a visible one.
-                // And holds still under the arcade cabinet, which covers it: the
-                // round is the only scene worth a frame while it plays.
+                // timeline notices. The backdrop also holds still while the
+                // arcade cabinet covers it.
                 let animate = animates && !decor.scene.isStill && !reduceMotion && visible && scenePhase != .background && !power.isThermallyConstrained && !cabinet.isPlaying
                 let interval = Self.frameInterval(stickers: decor.scene.isStickers, lowPower: power.isLowPower)
                 let atlas = GlyphAtlas.images(for: skin, decor: decor, dark: dark, scale: displayScale)
@@ -812,105 +809,97 @@ private struct TapTrail: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        #if canImport(UIKit)
-            trail(content)
-        #else
-            content
-        #endif
+        trail(content)
     }
 
-    #if canImport(UIKit)
-        /// One shape whatever the skin: the observer and the overlay are
-        /// always attached, and a skin with no tap glyph simply reports to
-        /// nobody. This sits at the root, so an `if`/`else` around `content`
-        /// would swap the identity of the whole app when a try-on crossed from a
-        /// plain skin to a decorated one — which tears the app's tree down under
-        /// an open sheet, and the sheet loses its detent.
-        private func trail(_ content: Content) -> some View {
-            let glyph = reduceMotion || !skins.decorationsEnabled ? nil : skins.current.decorations?.tapGlyph
-            return content
-                // Not a SwiftUI gesture: a `simultaneousGesture` tap on an
-                // ancestor cancels `List` row selection, so NavigationLinks
-                // in the Library stopped opening. A window-level recognizer
-                // that only *observes* (and always fails) never competes.
-                .background {
-                    TouchObserver { point in
-                        ArcadeCabinet.shared.touched(at: point, reduceMotion: reduceMotion)
-                        guard glyph != nil, !ArcadeCabinet.shared.isPlaying else { return }
-                        puffs.append(Puff(point: point))
-                        if puffs.count > 12 { puffs.removeFirst() }
-                    }
+    /// One shape whatever the skin: the observer and the overlay are
+    /// always attached, and a skin with no tap glyph simply reports to
+    /// nobody. This sits at the root, so an `if`/`else` around `content`
+    /// would swap the identity of the whole app when a try-on crossed from a
+    /// plain skin to a decorated one — which tears the app's tree down under
+    /// an open sheet, and the sheet loses its detent.
+    private func trail(_ content: Content) -> some View {
+        let glyph = reduceMotion || !skins.decorationsEnabled ? nil : skins.current.decorations?.tapGlyph
+        return content
+            // Not a SwiftUI gesture: a `simultaneousGesture` tap on an
+            // ancestor cancels `List` row selection, so NavigationLinks
+            // in the Library stopped opening. A window-level recognizer
+            // that only *observes* (and always fails) never competes.
+            .background {
+                TouchObserver { point in
+                    ArcadeCabinet.shared.touched(at: point, reduceMotion: reduceMotion)
+                    guard glyph != nil, !ArcadeCabinet.shared.isPlaying else { return }
+                    puffs.append(Puff(point: point))
+                    if puffs.count > 12 { puffs.removeFirst() }
                 }
-                .overlay {
-                    if let glyph {
-                        ForEach(puffs) { puff in
-                            TapPuff(glyph: glyph, at: puff.point) {
-                                puffs.removeAll { $0.id == puff.id }
-                            }
+            }
+            .overlay {
+                if let glyph {
+                    ForEach(puffs) { puff in
+                        TapPuff(glyph: glyph, at: puff.point) {
+                            puffs.removeAll { $0.id == puff.id }
                         }
-                        .allowsHitTesting(false)
-                        // Touch points come in window coordinates.
-                        .ignoresSafeArea()
                     }
+                    .allowsHitTesting(false)
+                    // Touch points come in window coordinates.
+                    .ignoresSafeArea()
                 }
-        }
-    #endif
+            }
+    }
 }
 
-#if canImport(UIKit)
-    /// Reports every touch-down in the window, in window coordinates, without
-    /// taking part in gesture resolution: the recognizer fails as soon as a touch
-    /// begins, and cancels nothing, so every control underneath sees the touch
-    /// exactly as it would without it.
-    private struct TouchObserver: UIViewRepresentable {
-        let onTouch: (CGPoint) -> Void
+/// Reports every touch-down in the window, in window coordinates, without
+/// taking part in gesture resolution: the recognizer fails as soon as a touch
+/// begins, and cancels nothing, so every control underneath sees the touch
+/// exactly as it would without it.
+private struct TouchObserver: UIViewRepresentable {
+    let onTouch: (CGPoint) -> Void
 
-        func makeUIView(context _: Context) -> HostView {
-            let view = HostView()
-            view.onTouch = onTouch
-            return view
+    func makeUIView(context _: Context) -> HostView {
+        let view = HostView()
+        view.onTouch = onTouch
+        return view
+    }
+
+    func updateUIView(_ uiView: HostView, context _: Context) {
+        uiView.onTouch = onTouch
+    }
+
+    final class HostView: UIView {
+        var onTouch: ((CGPoint) -> Void)?
+        private let spy = TouchSpy()
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            spy.view?.removeGestureRecognizer(spy)
+            guard let window else { return }
+            spy.onTouch = { [weak self] point in self?.onTouch?(point) }
+            window.addGestureRecognizer(spy)
         }
 
-        func updateUIView(_ uiView: HostView, context _: Context) {
-            uiView.onTouch = onTouch
-        }
-
-        final class HostView: UIView {
-            var onTouch: ((CGPoint) -> Void)?
-            private let spy = TouchSpy()
-
-            override func didMoveToWindow() {
-                super.didMoveToWindow()
-                spy.view?.removeGestureRecognizer(spy)
-                guard let window else { return }
-                spy.onTouch = { [weak self] point in self?.onTouch?(point) }
-                window.addGestureRecognizer(spy)
-            }
-
-            override func hitTest(_: CGPoint, with _: UIEvent?) -> UIView? {
-                nil
-            }
-        }
-
-        final class TouchSpy: UIGestureRecognizer {
-            var onTouch: ((CGPoint) -> Void)?
-
-            init() {
-                super.init(target: nil, action: nil)
-                cancelsTouchesInView = false
-                delaysTouchesBegan = false
-                delaysTouchesEnded = false
-            }
-
-            override func touchesBegan(_ touches: Set<UITouch>, with _: UIEvent) {
-                if let touch = touches.first, let view {
-                    onTouch?(touch.location(in: view))
-                }
-                state = .failed
-            }
+        override func hitTest(_: CGPoint, with _: UIEvent?) -> UIView? {
+            nil
         }
     }
-#endif
+
+    final class TouchSpy: UIGestureRecognizer {
+        var onTouch: ((CGPoint) -> Void)?
+
+        init() {
+            super.init(target: nil, action: nil)
+            cancelsTouchesInView = false
+            delaysTouchesBegan = false
+            delaysTouchesEnded = false
+        }
+
+        override func touchesBegan(_ touches: Set<UITouch>, with _: UIEvent) {
+            if let touch = touches.first, let view {
+                onTouch?(touch.location(in: view))
+            }
+            state = .failed
+        }
+    }
+}
 
 /// One glyph from a tap: rises, shrinks, turns and fades over 0.8 s — the
 /// site's `@keyframes tr` — then removes itself.

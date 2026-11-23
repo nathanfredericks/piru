@@ -343,9 +343,6 @@ private struct ProductComponentPicker: View {
                 }
             }
         }
-        #if os(macOS)
-        .frame(minWidth: 420, idealWidth: 460, minHeight: 360, idealHeight: 420)
-        #endif
     }
 }
 

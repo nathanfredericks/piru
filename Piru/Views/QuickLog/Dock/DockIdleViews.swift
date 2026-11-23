@@ -117,8 +117,7 @@ private struct DockShortcutButton: View {
 }
 
 extension DockShortcut {
-    /// What a slot does when pressed — shared by the accessory's slot buttons
-    /// and the macOS sidebar's shortcut rows.
+    /// Runs the selected shortcut from the session accessory.
     @MainActor
     func perform(navigator: AppNavigator, modelContext: ModelContext) {
         switch self {

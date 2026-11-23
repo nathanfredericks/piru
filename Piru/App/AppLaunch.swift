@@ -1,31 +1,9 @@
 import Foundation
 import SwiftData
 
-/// The launch and lifecycle policy every host runs: recovering and opening the
-/// journal store, the passes and migrations after the first frame, and what a
-/// return to the foreground or a move to the background does.
-///
-/// `PiruApp` (iOS, macOS) and the Android host both call these, in this order:
-///
-/// 1. ``openStore()`` once, before any view reads the store;
-/// 2. ``finishLaunching(container:hooks:)`` from the root view's `.task`;
-/// 3. ``becameActive(container:)`` on every return to the foreground;
-/// 4. ``enteredBackground(container:)`` on every move to the background.
-///
-/// A host adds only what its platform owns (widgets, Live Activities, the watch,
-/// background tasks, HealthKit, StoreKit, TipKit), around these calls or through
-/// ``Hooks``, so this file compiles without those frameworks.
+/// Opens the journal before the first frame, runs launch passes and migrations,
+/// and coordinates work at the foreground and background transitions.
 enum AppLaunch {
-    /// Platform work ``finishLaunching(container:hooks:)`` runs at fixed points.
-    struct Hooks {
-        /// Runs once the launch is counted and whether any dose was ever logged
-        /// is known, before the migrations. iOS configures TipKit here.
-        var engagementKnown: (_ hasLoggedDose: Bool) -> Void = { _ in }
-        /// Runs after the migrations and the reminder sync, before the DEBUG
-        /// fixtures. iOS refreshes the HealthKit body weight here.
-        var passesFinished: () -> Void = {}
-    }
-
     // MARK: - Before the first frame
 
     /// Recover and open the active profile's store, and bind every
@@ -86,7 +64,7 @@ enum AppLaunch {
     /// The launch passes: warm the substance catalog, count the launch, run the
     /// store's migrations and backfills, restore the active session, and roll
     /// the reminder horizon forward. Call once from the root view's `.task`.
-    static func finishLaunching(container: ModelContainer, hooks: Hooks = Hooks()) async {
+    static func finishLaunching(container: ModelContainer) async {
         // Touch the store so its singleton init runs (opens the SQLite, seeds
         // preferences) before the first view query — then await the batch
         // prefill it kicked off. Everything below (session backfill's per-dose
@@ -116,7 +94,9 @@ enum AppLaunch {
         let launches = UserDefaults.standard.integer(forKey: "appLaunchCount") + 1
         UserDefaults.standard.set(launches, forKey: "appLaunchCount")
         let hasDose = ((try? container.mainContext.fetchCount(FetchDescriptor<DoseEntry>())) ?? 0) > 0
-        hooks.engagementKnown(hasDose)
+        OnboardingTips.configure()
+        OnboardingTips.updateEngagement(hasLoggedDose: hasDose)
+
         // Warm the search-history store (opens its App Group suite + decodes the
         // recent list) at launch so the first Search-tab open doesn't pay the
         // cold first-touch on its hot path.
@@ -131,7 +111,14 @@ enum AppLaunch {
         await syncOtherProfilesReminders()
         // Shared items' stock follows every profile's dose log from here on.
         SharedInventory.shared.start()
-        hooks.passesFinished()
+
+        // Refresh Apple Health body weight without prompting. Empty or revoked
+        // reads keep the last-known value, and the Body Weight screen lets the
+        // user re-grant access or update it.
+        if UserProfileStore.shared.weightSource == .healthKit {
+            Task { await HealthKitBodyMass.shared.syncLatest() }
+        }
+
         #if DEBUG
             runDebugFixtures(container: container)
         #endif

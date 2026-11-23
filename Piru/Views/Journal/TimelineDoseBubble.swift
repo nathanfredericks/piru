@@ -48,11 +48,7 @@ struct TimelineDoseBubble: View {
     /// the strip would stop reading as a timeline. Text in a capped bubble
     /// stays on one line and truncates.
     static var heightScale: CGFloat {
-        #if canImport(UIKit)
-            min(UIFontMetrics(forTextStyle: .subheadline).scaledValue(for: 1), maximumHeightScale)
-        #else
-            1
-        #endif
+        min(UIFontMetrics(forTextStyle: .subheadline).scaledValue(for: 1), maximumHeightScale)
     }
 
     private static let maximumHeightScale: CGFloat = 2
@@ -213,8 +209,7 @@ private struct DoseElapsedLabel: View {
         return elapsed >= 0 && elapsed < window
     }
 
-    /// "Just now", "12m ago", "3h ago". Built from the app's own strings, which
-    /// Android's Foundation can show; it has no `RelativeDateTimeFormatter`.
+    /// Short localized labels for elapsed time, including "Just now".
     static func label(elapsed: TimeInterval) -> String {
         let minutes = Int(elapsed / 60)
         if minutes < 1 { return String(localized: "Just now") }

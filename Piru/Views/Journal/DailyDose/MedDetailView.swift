@@ -218,9 +218,7 @@ struct MedDetailView: View {
                     Text(MedTimeGroup.group(forMinutes: minutes).label)
                         .foregroundStyle(Theme.secondaryLabel)
                 }
-                // Deletes the row's own time, never an offset: on Android the
-                // swipe can report a delete twice, and a second offset into
-                // the shortened list removes the next time or traps.
+                // Delete by time so a stale row cannot remove a different time.
                 .swipeActions(edge: .trailing) {
                     Button("Delete", role: .destructive) {
                         withAnimation(.snappy) { item.reminderTimesMinutes.removeAll { $0 == minutes } }

@@ -42,10 +42,8 @@ struct EntryListView: View {
     }
     @AppStorage("journalGroupKey", store: UserDefaults(suiteName: AppIdentity.appGroup)) private var groupKey: JournalGroupKey = .substance
 
-    /// Settings ▸ Journal's Day Starts At hour (`Calendar.journalDay`). Observed
-    /// on the view itself, never through `TimelinePreferences`: on Android a
-    /// wrapper nested in a DynamicProperty is read but not observed, so a change
-    /// made in Settings would not re-group the Journal until relaunch.
+    /// Observe Settings ▸ Journal's Day Starts At hour so changes regroup the
+    /// journal immediately.
     @AppStorage(Calendar.dayBoundaryHourKey, store: UserDefaults(suiteName: AppIdentity.appGroup)) private var dayBoundaryHour = 4
     @State private var showingCalendar = false
 
@@ -426,9 +424,7 @@ struct EntryListView: View {
                 content()
             }
             .listStyle(.plain)
-            #if canImport(UIKit)
-                .listSectionSpacing(.custom(2))
-            #endif
+            .listSectionSpacing(.custom(2))
         } else {
             ScrollView {
                 LazyVStack(spacing: Spacing.xl) {

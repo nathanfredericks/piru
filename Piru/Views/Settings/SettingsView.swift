@@ -124,21 +124,11 @@ private struct SubstanceNamesSection: View {
 private struct ScreensSection: View {
     var body: some View {
         Section {
-            #if os(Android)
-                // Android keeps one journal; the people paired from other phones are its part
-                // of Profiles.
-                NavigationLink {
-                    AndroidPeopleView()
-                } label: {
-                    Label("People", systemImage: "person.2")
-                }
-            #else
-                NavigationLink {
-                    ProfilesSettingsView()
-                } label: {
-                    Label("Profiles", systemImage: "person.2")
-                }
-            #endif
+            NavigationLink {
+                ProfilesSettingsView()
+            } label: {
+                Label("Profiles", systemImage: "person.2")
+            }
             NavigationLink {
                 NotificationSettingsView()
             } label: {

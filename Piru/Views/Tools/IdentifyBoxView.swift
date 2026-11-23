@@ -1,8 +1,5 @@
 import SwiftUI
-
-#if canImport(VisionKit)
-    import VisionKit
-#endif
+import VisionKit
 
 /// Tools ▸ Identify a Box. A reference, not a checker: point the camera at any
 /// medication box and see what the library knows about what is inside — the
@@ -47,25 +44,19 @@ struct IdentifyBoxView: View {
             .padding(.bottom, 80)
         }
         .skinBackdrop()
-        #if os(iOS)
-            .fullScreenCover(isPresented: $showScanner) {
-                LabelScannerView { reading in
-                    Task { result = await BoxIdentifier.identify(reading) }
+        .fullScreenCover(isPresented: $showScanner) {
+            LabelScannerView { reading in
+                Task { result = await BoxIdentifier.identify(reading) }
+            }
+        }
+        .task {
+            cameraStatus = DataScannerViewController.isSupported ? .available : .unsupported
+            #if DEBUG
+                if result == nil, let reading = ScanFixtures.launchReading() {
+                    result = await BoxIdentifier.identify(reading)
                 }
-            }
-        #endif
-            .task {
-                #if os(iOS)
-                    cameraStatus = DataScannerViewController.isSupported ? .available : .unsupported
-                #else
-                    cameraStatus = .unsupported
-                #endif
-                #if DEBUG
-                    if result == nil, let reading = ScanFixtures.launchReading() {
-                        result = await BoxIdentifier.identify(reading)
-                    }
-                #endif
-            }
+            #endif
+        }
     }
 
     private var introCard: some View {

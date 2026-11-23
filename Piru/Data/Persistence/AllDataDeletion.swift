@@ -24,9 +24,7 @@ enum AllDataDeletion {
     static func resetEverythingElse(context: ModelContext) async -> [String] {
         JournalResetGeneration.advance()
         DoseLogService.shared.changed()
-        #if os(iOS)
-            PhoneSyncCoordinator.shared.journalWasDeleted()
-        #endif
+        PhoneSyncCoordinator.shared.journalWasDeleted()
         ActiveSessionManager.shared.clearSession()
         DayResolveCache.shared.clear()
         NotificationPreferencesStore.shared.resetAfterDeletion()

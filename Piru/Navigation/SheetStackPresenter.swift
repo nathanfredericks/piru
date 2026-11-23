@@ -47,15 +47,7 @@ private struct SheetLayer: ViewModifier {
                 .sheet(item: binding(fullScreen: false)) { route in
                     routeContent(route)
                         .modifier(SheetLayer(navigator: navigator, depth: depth + 1))
-                    #if os(macOS)
-                        // A `List` or `Form` has no height of its own and a
-                        // macOS sheet sizes to its content, so without a frame
-                        // most sheets open as a bare title bar. iOS sizes sheets
-                        // by detent. The quick-log route below sizes itself.
-                        .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 720)
-                    #endif
                 }
-            #if os(iOS)
                 .fullScreenCover(item: binding(fullScreen: true)) { route in
                     // swiftlint:disable:next redundant_discardable_let
                     let _ = assert(
@@ -64,11 +56,6 @@ private struct SheetLayer: ViewModifier {
                     )
                     routeContent(route)
                 }
-            #else
-                .sheet(item: binding(fullScreen: true)) { route in
-                    routeContent(route)
-                }
-            #endif
         }
     }
 

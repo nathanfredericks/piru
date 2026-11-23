@@ -9,10 +9,8 @@ struct PairingView: View {
     @Environment(\.profileDirectory) private var directory
     @State private var code: PairingCode?
     @State private var error: String?
-    #if os(iOS) || os(Android)
-        @State private var scanning = false
-        @State private var scanned: URL?
-    #endif
+    @State private var scanning = false
+    @State private var scanned: URL?
 
     var body: some View {
         List {
@@ -22,35 +20,31 @@ struct PairingView: View {
                 codeSection
             }
 
-            #if os(iOS) || os(Android)
-                Section {
-                    Button {
-                        scanning = true
-                    } label: {
-                        Label("Scan Their Code", systemImage: "qrcode.viewfinder")
-                    }
+            Section {
+                Button {
+                    scanning = true
+                } label: {
+                    Label("Scan Their Code", systemImage: "qrcode.viewfinder")
                 }
-                .listRowBackground(CardBackground())
-            #endif
+            }
+            .listRowBackground(CardBackground())
         }
         .themedPage()
         .navigationTitle("Pair")
         .inlineNavigationTitle()
         .task(id: directory.activeProfile) { makeCode() }
-        #if os(iOS) || os(Android)
-            // The inbox presents once the scanner is gone, not over its exit.
-            .sheet(isPresented: $scanning, onDismiss: {
-                if let url = scanned {
-                    scanned = nil
-                    _ = ShareInbox.shared.handle(url)
-                }
-            }) {
-                PairingScannerSheet { url in
-                    scanned = url
-                    scanning = false
-                }
+        // The inbox presents once the scanner is gone, not over its exit.
+        .sheet(isPresented: $scanning, onDismiss: {
+            if let url = scanned {
+                scanned = nil
+                _ = ShareInbox.shared.handle(url)
             }
-        #endif
+        }) {
+            PairingScannerSheet { url in
+                scanned = url
+                scanning = false
+            }
+        }
     }
 
     private var codeSection: some View {

@@ -64,7 +64,7 @@ Pinned gaps include dark-mode route pills (2.60–3.93), non-caution status tier
 ```
 design-system/
 └── color/
-    ├── colorimetry.py             Oklab/WCAG math + self-tests (root CLAUDE.md points here)
+    ├── colorimetry.py             Oklab/WCAG math + self-tests
     ├── generate_colorsets.py      palette JSON → Assets.xcassets (emits display-p3 only)
     ├── build_l2_scales.py         generates the multi-step scales
     ├── build_generator_input.py   assembles generator input from L1 + scales

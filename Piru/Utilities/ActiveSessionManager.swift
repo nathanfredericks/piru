@@ -346,14 +346,12 @@ final class ActiveSessionManager {
         }
     }
 
-    #if os(iOS)
-        func buildContentState(colorMap: [String: P3Color]) -> PiruActivityAttributes.ContentState {
-            PiruActivityAttributes.ContentState(
-                activeSubstances: buildSubstanceStates(colorMap: colorMap),
-                lastUpdated: .now,
-            )
-        }
-    #endif
+    func buildContentState(colorMap: [String: P3Color]) -> PiruActivityAttributes.ContentState {
+        PiruActivityAttributes.ContentState(
+            activeSubstances: buildSubstanceStates(colorMap: colorMap),
+            lastUpdated: .now,
+        )
+    }
 
     // MARK: - Private
 

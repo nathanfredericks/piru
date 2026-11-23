@@ -272,8 +272,6 @@ struct NotificationTypeDetailSheet: View {
 
     private var timeSensitiveSection: some View {
         Section {
-            // Ids apart from typesSection's: on Android every section of a List is one
-            // Compose LazyColumn, which aborts on a key it has already placed.
             ForEach(category.types.filter(\.supportsTimeSensitive), id: \.timeSensitiveRowID) { type in
                 Toggle(isOn: timeSensitiveBinding(type)) {
                     Label(type.rowTitle, systemImage: type.rowSymbol)

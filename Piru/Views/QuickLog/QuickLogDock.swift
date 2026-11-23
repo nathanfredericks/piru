@@ -1,9 +1,6 @@
 import OSLog
 import SwiftUI
-
-#if canImport(UIKit)
-    import UIKit
-#endif
+import UIKit
 
 // MARK: - Metrics
 
@@ -18,11 +15,7 @@ import SwiftUI
 enum QuickLogDockMetrics {
     /// The pinned search field's height — one size in every dock state.
     static var fieldHeight: CGFloat {
-        #if canImport(UIKit)
-            UIFontMetrics(forTextStyle: .body).scaledValue(for: 48).rounded()
-        #else
-            48
-        #endif
+        UIFontMetrics(forTextStyle: .body).scaledValue(for: 48).rounded()
     }
     /// How far the compact search bar floats above the physical screen bottom.
     static let bareFloat: CGFloat = 12
@@ -470,9 +463,7 @@ struct QuickLogDock: View {
                 },
             )
         }
-        #if canImport(UIKit)
         .background { SheetHostProbe(box: bookkeeping.host) }
-        #endif
         // The empty⇄staged face swap mounts and unmounts dock content with no
         // animation: the sheet's detent change is the one animated element, and
         // the content, laid out at its final frame, rides under the growing
@@ -616,11 +607,7 @@ struct QuickLogDock: View {
         // bar exists, and minting it at a throwaway height churned the sheet's
         // detent mapping right as it grew. Estimated from type metrics so the
         // pre-measure mint stays close at accessibility sizes too.
-        #if canImport(UIKit)
-            let chipHeight = UIFont.preferredFont(forTextStyle: .subheadline).lineHeight + 20
-        #else
-            let chipHeight: CGFloat = 40
-        #endif
+        let chipHeight = UIFont.preferredFont(forTextStyle: .subheadline).lineHeight + 20
         let barEstimate = 12 + chipHeight + 14 + DoseTrayMetrics.controlHeight
         let bar = commitBarHeight > 0 ? commitBarHeight : barEstimate
         var raw = QuickLogDockMetrics.searchBlockHeight + contentPadding
@@ -741,34 +728,28 @@ struct QuickLogDock: View {
         detents = target.union([detent])
         Task { @MainActor in
             guard generation == bookkeeping.generation else { return }
-            #if canImport(UIKit)
-                guard let sheet = bookkeeping.host.sheetController else {
-                    detent = selection
-                    detents = target
-                    settle()
-                    return
-                }
-                // Wait for the new member to actually reach UIKit. One runloop
-                // turn usually suffices, but a menu dismissing (the Food and
-                // When chips) delays SwiftUI's push past it; the late push then
-                // replaced the ramp's detent mid-move, UIKit fell back to the
-                // smallest member, and the dock dipped to the pill and back.
-                if let height {
-                    for _ in 0 ..< Self.memberWaitFrames where !sheetHasMember(height: height, in: sheet) {
-                        try? await Task.sleep(for: .milliseconds(16))
-                        guard generation == bookkeeping.generation else { return }
-                    }
-                }
-                animateSelection(selection, height: height, in: sheet) {
-                    guard generation == bookkeeping.generation else { return }
-                    detents = target
-                    settle()
-                }
-            #else
+            guard let sheet = bookkeeping.host.sheetController else {
                 detent = selection
                 detents = target
                 settle()
-            #endif
+                return
+            }
+            // Wait for the new member to actually reach UIKit. One runloop
+            // turn usually suffices, but a menu dismissing (the Food and
+            // When chips) delays SwiftUI's push past it; the late push then
+            // replaced the ramp's detent mid-move, UIKit fell back to the
+            // smallest member, and the dock dipped to the pill and back.
+            if let height {
+                for _ in 0 ..< Self.memberWaitFrames where !sheetHasMember(height: height, in: sheet) {
+                    try? await Task.sleep(for: .milliseconds(16))
+                    guard generation == bookkeeping.generation else { return }
+                }
+            }
+            animateSelection(selection, height: height, in: sheet) {
+                guard generation == bookkeeping.generation else { return }
+                detents = target
+                settle()
+            }
         }
     }
 
@@ -780,185 +761,183 @@ struct QuickLogDock: View {
         }
     }
 
-    #if canImport(UIKit)
-        /// Animates the sheet to `selection` through the memoized UIKit handle.
-        ///
-        /// Height→height moves ramp a mutable detent per display frame (see
-        /// ``animateHeightDetent(in:from:to:onSettled:)``): both `animateChanges`
-        /// and SwiftUI's binding animate the platter as a Core Animation
-        /// interpolation over content laid out once at final size, which
-        /// displaces everything (the whole dock, search bar to Log button, dips
-        /// by the height delta and rides back). Only
-        /// per-frame layout — what a real drag does — keeps the bottom-pinned
-        /// bar stationary.
-        ///
-        /// Two kinds of move go through `animateChanges` instead:
-        /// `.medium`/`.large` (search, editors — full content swaps where
-        /// displacement doesn't read), and the shrink to the bare *peek* pill.
-        /// The smallest detent's resting look is the floating pill (scaled,
-        /// lifted off the bottom edge), which only UIKit can animate into — a
-        /// ramp that lands on the logical height leaves UIKit to morph the pill
-        /// treatment afterwards, so the search bar drifts to its spot after the
-        /// resize has visibly finished. The displacement artifact
-        /// needs *bottom-pinned* visible content, and a dock headed to bare has
-        /// none: the commit bar is hidden and the suggestions suppressed — only
-        /// the top-pinned search bar rides the platter, which CA animates
-        /// correctly, in one continuous settle like a released drag.
-        private func animateSelection(
-            _ selection: PresentationDetent,
-            height: CGFloat?,
-            in sheet: UISheetPresentationController,
-            completion: @escaping @MainActor () -> Void,
-        ) {
-            if let height, let fromLogical = currentLogicalHeight(),
-               selection != QuickLogDockMetrics.peekDetent {
-                animateHeightDetent(in: sheet, from: fromLogical, to: height) {
-                    // Land the model on geometry that is already exactly there:
-                    // an un-animated selection change re-resolves the sheet to
-                    // the height the ramp just left it at.
-                    detent = selection
-                    completion()
-                }
-                return
-            }
-            bookkeeping.frameAnimator.cancel()
-            bookkeeping.rampLogicalTarget = nil
-            var identifier: UISheetPresentationController.Detent.Identifier?
-            if selection == .medium {
-                identifier = .medium
-            } else if selection == .large {
-                identifier = .large
-            } else if let height {
-                let context = SheetDetentResolutionContext(
-                    containerTraitCollection: sheet.traitCollection,
-                    maximumDetentValue: maximumDetentValue(of: sheet),
-                )
-                identifier = sheet.detents.first { candidate in
-                    guard candidate.identifier != .medium, candidate.identifier != .large,
-                          let resolved = candidate.resolvedValue(in: context) else { return false }
-                    return abs(resolved - height) < 1
-                }?.identifier
-            }
-            guard let identifier else {
-                // No UIKit counterpart found — fall back to the binding.
-                withAnimation(.snappy) { detent = selection }
+    /// Animates the sheet to `selection` through the memoized UIKit handle.
+    ///
+    /// Height→height moves ramp a mutable detent per display frame (see
+    /// ``animateHeightDetent(in:from:to:onSettled:)``): both `animateChanges`
+    /// and SwiftUI's binding animate the platter as a Core Animation
+    /// interpolation over content laid out once at final size, which
+    /// displaces everything (the whole dock, search bar to Log button, dips
+    /// by the height delta and rides back). Only
+    /// per-frame layout — what a real drag does — keeps the bottom-pinned
+    /// bar stationary.
+    ///
+    /// Two kinds of move go through `animateChanges` instead:
+    /// `.medium`/`.large` (search, editors — full content swaps where
+    /// displacement doesn't read), and the shrink to the bare *peek* pill.
+    /// The smallest detent's resting look is the floating pill (scaled,
+    /// lifted off the bottom edge), which only UIKit can animate into — a
+    /// ramp that lands on the logical height leaves UIKit to morph the pill
+    /// treatment afterwards, so the search bar drifts to its spot after the
+    /// resize has visibly finished. The displacement artifact
+    /// needs *bottom-pinned* visible content, and a dock headed to bare has
+    /// none: the commit bar is hidden and the suggestions suppressed — only
+    /// the top-pinned search bar rides the platter, which CA animates
+    /// correctly, in one continuous settle like a released drag.
+    private func animateSelection(
+        _ selection: PresentationDetent,
+        height: CGFloat?,
+        in sheet: UISheetPresentationController,
+        completion: @escaping @MainActor () -> Void,
+    ) {
+        if let height, let fromLogical = currentLogicalHeight(),
+           selection != QuickLogDockMetrics.peekDetent {
+            animateHeightDetent(in: sheet, from: fromLogical, to: height) {
+                // Land the model on geometry that is already exactly there:
+                // an un-animated selection change re-resolves the sheet to
+                // the height the ramp just left it at.
+                detent = selection
                 completion()
-                return
             }
-            CATransaction.begin()
-            CATransaction.setCompletionBlock {
-                MainActor.assumeIsolated { completion() }
-            }
-            sheet.animateChanges {
-                sheet.selectedDetentIdentifier = identifier
-            }
-            CATransaction.commit()
-            // Sync the SwiftUI model to the member UIKit is now moving to — same
-            // underlying detent, so SwiftUI's re-application is a no-op.
-            detent = selection
+            return
         }
-
-        /// Numeric height of the *current* selection: the in-flight ramp target
-        /// when one is running (chained retargets), otherwise the resting value
-        /// tracked by ``detentChanged(from:to:)``. `nil` for `.medium`/`.large`.
-        private func currentLogicalHeight() -> CGFloat? {
-            bookkeeping.rampLogicalTarget ?? bookkeeping.restingLogicalHeight
-        }
-
-        /// The interpolated drag, through the controller's own machinery: a
-        /// custom detent with a *mutable* height is injected and selected
-        /// un-animated (it resolves to the current height — no motion), then the
-        /// height is eased on a display link with `invalidateDetents()` per tick.
-        /// Each invalidation re-resolves the detent and runs the sheet's full
-        /// resize path at the new height — real layout every frame, exactly like
-        /// the pan gesture, with none of the controller's bookkeeping bypassed.
-        /// Never write `presentedView.frame` directly: the controller reasserts
-        /// its own frame and compensates with residual scale transforms that
-        /// accumulate into permanent layout corruption.
-        private func animateHeightDetent(
-            in sheet: UISheetPresentationController,
-            from fromLogical: CGFloat,
-            to toLogical: CGFloat,
-            onSettled: @escaping @MainActor () -> Void,
-        ) {
-            // Chained retarget: continue from the ramp's live height.
-            let start = bookkeeping.rampLogicalTarget != nil ? bookkeeping.rampDetent.height : fromLogical
-            bookkeeping.rampLogicalTarget = toLogical
-            bookkeeping.rampDetent.height = start
-            installRampDetent(in: sheet)
-            bookkeeping.frameAnimator.run(from: start, to: toLogical) { height in
-                bookkeeping.rampDetent.height = height
-                // Self-heal: a SwiftUI presentation update mid-ramp can rewrite
-                // the sheet's detents/selection; re-assert before invalidating.
-                installRampDetent(in: sheet)
-                sheet.invalidateDetents()
-            } completion: {
-                bookkeeping.rampLogicalTarget = nil
-                handOffRamp(in: sheet, at: toLogical)
-                onSettled()
-            }
-        }
-
-        /// Moves UIKit's selection from the ramp's detent onto the real member at
-        /// the landing height and drops the ramp detent, before SwiftUI's own
-        /// update arrives. Left to SwiftUI, the new detent list could land ahead
-        /// of the new selection (a dismissing menu reorders them): the sheet then
-        /// had no valid selection for a frame, fell to the smallest member, and
-        /// the dock dipped to the pill and sprang back.
-        private func handOffRamp(in sheet: UISheetPresentationController, at height: CGFloat) {
-            guard let identifier = memberIdentifier(height: height, in: sheet) else { return }
-            sheet.selectedDetentIdentifier = identifier
-            sheet.detents.removeAll { $0.identifier == MutableSheetDetent.identifier }
-        }
-
-        /// Ensures the mutable ramp detent is a member of the sheet's detents and
-        /// is the selection (both idempotent — no-ops while already installed).
-        private func installRampDetent(in sheet: UISheetPresentationController) {
-            if !sheet.detents.contains(where: { $0.identifier == MutableSheetDetent.identifier }) {
-                sheet.detents += [bookkeeping.rampDetent.detent]
-            }
-            if sheet.selectedDetentIdentifier != MutableSheetDetent.identifier {
-                sheet.selectedDetentIdentifier = MutableSheetDetent.identifier
-            }
-        }
-
-        /// About half a second at 60 Hz: long enough for a presentation update
-        /// delayed by a dismissing menu, short enough that a lost one can't stall
-        /// the move.
-        private static let memberWaitFrames = 30
-
-        /// Whether the sheet's own detents already hold one at `height`.
-        private func sheetHasMember(height: CGFloat, in sheet: UISheetPresentationController) -> Bool {
-            memberIdentifier(height: height, in: sheet) != nil
-        }
-
-        /// The identifier of the sheet's own `.height` member at `height`, if any.
-        private func memberIdentifier(
-            height: CGFloat,
-            in sheet: UISheetPresentationController,
-        ) -> UISheetPresentationController.Detent.Identifier? {
+        bookkeeping.frameAnimator.cancel()
+        bookkeeping.rampLogicalTarget = nil
+        var identifier: UISheetPresentationController.Detent.Identifier?
+        if selection == .medium {
+            identifier = .medium
+        } else if selection == .large {
+            identifier = .large
+        } else if let height {
             let context = SheetDetentResolutionContext(
                 containerTraitCollection: sheet.traitCollection,
                 maximumDetentValue: maximumDetentValue(of: sheet),
             )
-            // Only custom `.height` members: the system medium/large detents
-            // raise an NSException when resolved outside the sheet's own pass.
-            return sheet.detents.first { candidate in
+            identifier = sheet.detents.first { candidate in
                 guard candidate.identifier != .medium, candidate.identifier != .large,
-                      candidate.identifier != MutableSheetDetent.identifier,
                       let resolved = candidate.resolvedValue(in: context) else { return false }
                 return abs(resolved - height) < 1
             }?.identifier
         }
-
-        /// The container height `.height` detents resolve against — only needs to
-        /// exceed the dock's real heights for exact matching, so the fallback is
-        /// generous.
-        private func maximumDetentValue(of sheet: UISheetPresentationController) -> CGFloat {
-            guard let container = sheet.containerView else { return 2_000 }
-            return container.bounds.height - container.safeAreaInsets.top
+        guard let identifier else {
+            // No UIKit counterpart found — fall back to the binding.
+            withAnimation(.snappy) { detent = selection }
+            completion()
+            return
         }
-    #endif
+        CATransaction.begin()
+        CATransaction.setCompletionBlock {
+            MainActor.assumeIsolated { completion() }
+        }
+        sheet.animateChanges {
+            sheet.selectedDetentIdentifier = identifier
+        }
+        CATransaction.commit()
+        // Sync the SwiftUI model to the member UIKit is now moving to — same
+        // underlying detent, so SwiftUI's re-application is a no-op.
+        detent = selection
+    }
+
+    /// Numeric height of the *current* selection: the in-flight ramp target
+    /// when one is running (chained retargets), otherwise the resting value
+    /// tracked by ``detentChanged(from:to:)``. `nil` for `.medium`/`.large`.
+    private func currentLogicalHeight() -> CGFloat? {
+        bookkeeping.rampLogicalTarget ?? bookkeeping.restingLogicalHeight
+    }
+
+    /// The interpolated drag, through the controller's own machinery: a
+    /// custom detent with a *mutable* height is injected and selected
+    /// un-animated (it resolves to the current height — no motion), then the
+    /// height is eased on a display link with `invalidateDetents()` per tick.
+    /// Each invalidation re-resolves the detent and runs the sheet's full
+    /// resize path at the new height — real layout every frame, exactly like
+    /// the pan gesture, with none of the controller's bookkeeping bypassed.
+    /// Never write `presentedView.frame` directly: the controller reasserts
+    /// its own frame and compensates with residual scale transforms that
+    /// accumulate into permanent layout corruption.
+    private func animateHeightDetent(
+        in sheet: UISheetPresentationController,
+        from fromLogical: CGFloat,
+        to toLogical: CGFloat,
+        onSettled: @escaping @MainActor () -> Void,
+    ) {
+        // Chained retarget: continue from the ramp's live height.
+        let start = bookkeeping.rampLogicalTarget != nil ? bookkeeping.rampDetent.height : fromLogical
+        bookkeeping.rampLogicalTarget = toLogical
+        bookkeeping.rampDetent.height = start
+        installRampDetent(in: sheet)
+        bookkeeping.frameAnimator.run(from: start, to: toLogical) { height in
+            bookkeeping.rampDetent.height = height
+            // Self-heal: a SwiftUI presentation update mid-ramp can rewrite
+            // the sheet's detents/selection; re-assert before invalidating.
+            installRampDetent(in: sheet)
+            sheet.invalidateDetents()
+        } completion: {
+            bookkeeping.rampLogicalTarget = nil
+            handOffRamp(in: sheet, at: toLogical)
+            onSettled()
+        }
+    }
+
+    /// Moves UIKit's selection from the ramp's detent onto the real member at
+    /// the landing height and drops the ramp detent, before SwiftUI's own
+    /// update arrives. Left to SwiftUI, the new detent list could land ahead
+    /// of the new selection (a dismissing menu reorders them): the sheet then
+    /// had no valid selection for a frame, fell to the smallest member, and
+    /// the dock dipped to the pill and sprang back.
+    private func handOffRamp(in sheet: UISheetPresentationController, at height: CGFloat) {
+        guard let identifier = memberIdentifier(height: height, in: sheet) else { return }
+        sheet.selectedDetentIdentifier = identifier
+        sheet.detents.removeAll { $0.identifier == MutableSheetDetent.identifier }
+    }
+
+    /// Ensures the mutable ramp detent is a member of the sheet's detents and
+    /// is the selection (both idempotent — no-ops while already installed).
+    private func installRampDetent(in sheet: UISheetPresentationController) {
+        if !sheet.detents.contains(where: { $0.identifier == MutableSheetDetent.identifier }) {
+            sheet.detents += [bookkeeping.rampDetent.detent]
+        }
+        if sheet.selectedDetentIdentifier != MutableSheetDetent.identifier {
+            sheet.selectedDetentIdentifier = MutableSheetDetent.identifier
+        }
+    }
+
+    /// About half a second at 60 Hz: long enough for a presentation update
+    /// delayed by a dismissing menu, short enough that a lost one can't stall
+    /// the move.
+    private static let memberWaitFrames = 30
+
+    /// Whether the sheet's own detents already hold one at `height`.
+    private func sheetHasMember(height: CGFloat, in sheet: UISheetPresentationController) -> Bool {
+        memberIdentifier(height: height, in: sheet) != nil
+    }
+
+    /// The identifier of the sheet's own `.height` member at `height`, if any.
+    private func memberIdentifier(
+        height: CGFloat,
+        in sheet: UISheetPresentationController,
+    ) -> UISheetPresentationController.Detent.Identifier? {
+        let context = SheetDetentResolutionContext(
+            containerTraitCollection: sheet.traitCollection,
+            maximumDetentValue: maximumDetentValue(of: sheet),
+        )
+        // Only custom `.height` members: the system medium/large detents
+        // raise an NSException when resolved outside the sheet's own pass.
+        return sheet.detents.first { candidate in
+            guard candidate.identifier != .medium, candidate.identifier != .large,
+                  candidate.identifier != MutableSheetDetent.identifier,
+                  let resolved = candidate.resolvedValue(in: context) else { return false }
+            return abs(resolved - height) < 1
+        }?.identifier
+    }
+
+    /// The container height `.height` detents resolve against — only needs to
+    /// exceed the dock's real heights for exact matching, so the fallback is
+    /// generous.
+    private func maximumDetentValue(of sheet: UISheetPresentationController) -> CGFloat {
+        guard let container = sheet.containerView else { return 2_000 }
+        return container.bounds.height - container.safeAreaInsets.top
+    }
 
     /// Detent-selection side effects: leaving `.large` cancels search;
     /// arriving at compact collapses every editor; growing out of compact
@@ -1139,13 +1118,8 @@ private struct TrayDerivedObserver: View {
     /// reports animated in-between frames during expand/collapse, which
     /// churned the fit-to-content detent mid-gesture.
     private static var collapsedRowHeight: CGFloat {
-        #if canImport(UIKit)
-            let title = UIFont.preferredFont(forTextStyle: .body).lineHeight
-            let subtitle = UIFont.preferredFont(forTextStyle: .subheadline).lineHeight
-        #else
-            let title: CGFloat = 20.5
-            let subtitle: CGFloat = 17
-        #endif
+        let title = UIFont.preferredFont(forTextStyle: .body).lineHeight
+        let subtitle = UIFont.preferredFont(forTextStyle: .subheadline).lineHeight
         return (title + subtitle + 2 + 24).rounded(.up)
     }
 

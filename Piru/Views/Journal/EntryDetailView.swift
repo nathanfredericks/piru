@@ -119,73 +119,70 @@ struct EntryDetailView: View {
         .insetGroupedListStyle()
         .scrollContentBackground(.hidden)
         .contentMargins(.top, 0, for: .scrollContent)
-        #if canImport(UIKit)
-            .listSectionSpacing(20)
-        #endif
-            .skinBackdrop()
-            .readableWidth()
-            // Keep the draft amount/unit synced with the by-volume fields in drink mode.
-            .onChange(of: draft.byVolumeGrams(capability: byVolumeCapability)) { draft.syncByVolumeAmount(capability: byVolumeCapability) }
-            .onChange(of: draft.byVolumeMode) { if draft.byVolumeMode { draft.syncByVolumeAmount(capability: byVolumeCapability) } }
-            .onChange(of: draft.volumeUnit) { old, new in
-                ByVolumeDefaults.preferredVolumeUnit = new
-                guard let value = DecimalInput.parse(draft.volumeText), value > 0 else { return }
-                draft.volumeText = ByVolumeDefaults.format(Measurement(value: value, unit: old).converted(to: new).value)
+        .listSectionSpacing(20)
+        .skinBackdrop()
+        // Keep the draft amount/unit synced with the by-volume fields in drink mode.
+        .onChange(of: draft.byVolumeGrams(capability: byVolumeCapability)) { draft.syncByVolumeAmount(capability: byVolumeCapability) }
+        .onChange(of: draft.byVolumeMode) { if draft.byVolumeMode { draft.syncByVolumeAmount(capability: byVolumeCapability) } }
+        .onChange(of: draft.volumeUnit) { old, new in
+            ByVolumeDefaults.preferredVolumeUnit = new
+            guard let value = DecimalInput.parse(draft.volumeText), value > 0 else { return }
+            draft.volumeText = ByVolumeDefaults.format(Measurement(value: value, unit: old).converted(to: new).value)
+        }
+        .navigationTitle(DoseTitle.resolve(for: entry))
+        .largeNavigationTitle()
+        .animation(.snappy(duration: 0.28), value: isEditing)
+        // Opening another record beside the list would drop the draft; the
+        // navigator asks first while this is set.
+        .onChange(of: isEditing) { _, editing in navigator.setEditing(editing, record: entry.id) }
+        .onDisappear { navigator.setEditing(false, record: entry.id) }
+        .toolbar { toolbarContent }
+        // Editing owns the leading slot: its Cancel (an X) is the way out, so a
+        // pushed screen's Back beside it would be a second, unsaved exit.
+        .navigationBarBackButtonHidden(isEditing)
+        .confirmationDialog(
+            "Delete this entry?",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible,
+        ) {
+            Button("Delete", role: .destructive) {
+                deleteEntry()
             }
-            .navigationTitle(DoseTitle.resolve(for: entry))
-            .largeNavigationTitle()
-            .animation(.snappy(duration: 0.28), value: isEditing)
-            // Opening another record beside the list would drop the draft; the
-            // navigator asks first while this is set.
-            .onChange(of: isEditing) { _, editing in navigator.setEditing(editing, record: entry.id) }
-            .onDisappear { navigator.setEditing(false, record: entry.id) }
-            .toolbar { toolbarContent }
-            // Editing owns the leading slot: its Cancel (an X) is the way out, so a
-            // pushed screen's Back beside it would be a second, unsaved exit.
-            .navigationBarBackButtonHidden(isEditing)
-            .confirmationDialog(
-                "Delete this entry?",
-                isPresented: $showingDeleteConfirmation,
-                titleVisibility: .visible,
-            ) {
-                Button("Delete", role: .destructive) {
-                    deleteEntry()
-                }
-            } message: {
-                Text("\(entry.amountDisplay) \(entry.unit) \(DoseTitle.resolve(for: entry)) on \(entry.timestamp.formatted(date: .abbreviated, time: .shortened))")
+        } message: {
+            Text("\(entry.amountDisplay) \(entry.unit) \(DoseTitle.resolve(for: entry)) on \(entry.timestamp.formatted(date: .abbreviated, time: .shortened))")
+        }
+        .sheet(isPresented: $showColorPicker) {
+            SubstanceColorPickerView(substanceName: entry.substance) { showColorPicker = false }
+        }
+        .sheet(isPresented: $showLocationPicker) {
+            LocationPickerView { picked in draft.location = picked }
+        }
+        .task {
+            // Resolve the full substance record once — it feeds the dose ladder,
+            // unit/route/salt lists, and live preview. The `substanceInfo == nil`
+            // guard below skips re-resolving when the screen reappears (e.g. after
+            // a pushed child pops) — `resolveFull` is a blocking lookup.
+            await SubstanceStore.shared.ensureAllLoaded()
+            if substanceInfo == nil {
+                substanceInfo = SubstanceLibrary.resolveFull(entry.substance)
             }
-            .sheet(isPresented: $showColorPicker) {
-                SubstanceColorPickerView(substanceName: entry.substance) { showColorPicker = false }
+            // A row's Edit action opens this screen straight into edit mode.
+            // Consumed only after `substanceInfo` resolves — the draft's
+            // by-volume seeding reads it.
+            if editing.pendingEditEntryID == entry.id {
+                editing.pendingEditEntryID = nil
+                beginEditing()
             }
-            .sheet(isPresented: $showLocationPicker) {
-                LocationPickerView { picked in draft.location = picked }
-            }
-            .task {
-                // Resolve the full substance record once — it feeds the dose ladder,
-                // unit/route/salt lists, and live preview. The `substanceInfo == nil`
-                // guard below skips re-resolving when the screen reappears (e.g. after
-                // a pushed child pops) — `resolveFull` is a blocking lookup.
-                await SubstanceStore.shared.ensureAllLoaded()
-                if substanceInfo == nil {
-                    substanceInfo = SubstanceLibrary.resolveFull(entry.substance)
-                }
-                // A row's Edit action opens this screen straight into edit mode.
-                // Consumed only after `substanceInfo` resolves — the draft's
-                // by-volume seeding reads it.
-                if editing.pendingEditEntryID == entry.id {
-                    editing.pendingEditEntryID = nil
-                    beginEditing()
-                }
-                // The session's worst interaction, for the "Part of Session" echo.
-                // One batch check per screen — not per body pass.
-                if sessionInteraction == nil, let doses = entry.session?.doses, doses.count >= 2 {
-                    let names = Array(Set(doses.map(\.substance)))
-                    if names.count >= 2 {
-                        sessionInteraction = InteractionChecker.checkBatch(names, against: [])
-                            .max { $0.severity.rawValue < $1.severity.rawValue }
-                    }
+            // The session's worst interaction, for the "Part of Session" echo.
+            // One batch check per screen — not per body pass.
+            if sessionInteraction == nil, let doses = entry.session?.doses, doses.count >= 2 {
+                let names = Array(Set(doses.map(\.substance)))
+                if names.count >= 2 {
+                    sessionInteraction = InteractionChecker.checkBatch(names, against: [])
+                        .max { $0.severity.rawValue < $1.severity.rawValue }
                 }
             }
+        }
     }
 
     // MARK: - Toolbar

@@ -7059,11 +7059,6 @@ T = {
     ),
     # Body-load chart: the y value each substance's band sits on.
     "Lane": ("泳道", "泳道"),
-    "Nothing Staged": ("尚无暂存剂量", "尚無暫存劑量"),
-    "Choose a dose on the left, or search for a substance.": (
-        "在左侧选择一个剂量，或搜索物质。",
-        "在左側選擇一個劑量，或搜尋物質。",
-    ),
     "Move Entries": ("移动记录", "移動記錄"),
     "Move Entries…": ("移动记录…", "移動記錄…"),
     "Recent Entries (24h)": ("最近记录（24 小时）", "最近記錄（24 小時）"),
@@ -7295,171 +7290,6 @@ T = {
     "Stomach": ("进食状态", "進食狀態"),
     "Stomach: %@": ("进食状态：%@", "進食狀態：%@"),
     "Food": ("食物", "食物"),
-    # Android-only strings (android/app/Sources): the document stand-in and About's Android licenses.
-    "Nothing to Share": ("没有可分享的内容", "沒有可分享的內容"),
-    "The file picker could not be opened.": ("无法打开文件选择器。", "無法開啟檔案選擇器。"),
-    "The share sheet could not be opened.": ("无法打开分享面板。", "無法開啟分享面板。"),
-    "Camera Off": ("相机已关闭", "相機已關閉"),
-    "Allow Piru to use the camera in Settings to scan their code.": (
-        "请在设置中允许 Piru 使用相机，以扫描对方的配对码。",
-        "請在設定中允許 Piru 使用相機，以掃描對方的配對碼。",
-    ),
-    "This phone has no camera. Let them scan your code, then send you a session.": (
-        "这部手机没有相机。让对方扫描你的配对码，再给你发送一个场次。",
-        "這支手機沒有相機。讓對方掃描你的配對碼，再傳給你一個場次。",
-    ),
-    "The camera could not be started.": ("无法启动相机。", "無法啟動相機。"),
-    "The Swift runtime, Foundation and Dispatch, which run Piru on Android.": (
-        "Swift 运行时、Foundation 和 Dispatch，在 Android 上运行 Piru。",
-        "Swift 執行環境、Foundation 與 Dispatch，在 Android 上執行 Piru。",
-    ),
-    "Skip, which runs Piru's Swift code on Android. Piru's changes to it are in android/vendor in its repository.": (
-        "Skip，在 Android 上运行 Piru 的 Swift 代码。Piru 对它的修改位于其代码库的 android/vendor 中。",
-        "Skip，在 Android 上執行 Piru 的 Swift 程式碼。Piru 對它的修改位於其程式庫的 android/vendor 中。",
-    ),
-    "Kotlin, AndroidX, Jetpack Compose, Coil, ZXing, Material Symbols, swift-crypto, swift-asn1, swift-jni and swift-android-native.": (
-        "Kotlin、AndroidX、Jetpack Compose、Coil、ZXing、Material Symbols、swift-crypto、swift-asn1、swift-jni 和 swift-android-native。",
-        "Kotlin、AndroidX、Jetpack Compose、Coil、ZXing、Material Symbols、swift-crypto、swift-asn1、swift-jni 與 swift-android-native。",
-    ),
-    "ICU, the Unicode data behind dates, numbers and text on Android.": (
-        "ICU，Android 上日期、数字和文本所依赖的 Unicode 数据。",
-        "ICU，Android 上日期、數字與文字所依賴的 Unicode 資料。",
-    ),
-    "curl, part of Foundation's networking on Android.": (
-        "curl，Android 上 Foundation 网络功能的一部分。",
-        "curl，Android 上 Foundation 網路功能的一部分。",
-    ),
-    "BoringSSL, part of Foundation's networking on Android.": (
-        "BoringSSL，Android 上 Foundation 网络功能的一部分。",
-        "BoringSSL，Android 上 Foundation 網路功能的一部分。",
-    ),
-    "commonmark-java. Copyright © Robin Stocker.": (
-        "commonmark-java。版权所有 © Robin Stocker。",
-        "commonmark-java。版權所有 © Robin Stocker。",
-    ),
-    # Android-only strings: folder backup (Android/Backup/FolderBackup+Android.swift).
-    "The folder picker could not be opened.": (
-        "无法打开文件夹选择器。",
-        "無法開啟資料夾選擇器。",
-    ),
-    "The backup folder could not be reached.": (
-        "无法访问备份文件夹。",
-        "無法存取備份資料夾。",
-    ),
-    "Folder": (
-        "文件夹",
-        "資料夾",
-    ),
-    "Back Up Now": (
-        "立即备份",
-        "立即備份",
-    ),
-    "Piru can no longer reach this folder. Choose it again to keep backing up.": (
-        "Piru 已无法访问此文件夹。请重新选择它以继续备份。",
-        "Piru 已無法存取此資料夾。請重新選擇它以繼續備份。",
-    ),
-    "Choose Another Folder…": (
-        "选择其他文件夹…",
-        "選擇其他資料夾…",
-    ),
-    "Turn Off Folder Backup": (
-        "关闭文件夹备份",
-        "關閉資料夾備份",
-    ),
-    "Back Up to a Folder…": (
-        "备份到文件夹…",
-        "備份到資料夾…",
-    ),
-    "Pick a folder, on this phone or in Google Drive, Dropbox or another cloud app, and Piru saves an encrypted copy of your journal there each time you leave the app. Only your passphrase opens it, and the cloud app does the uploading: Piru itself never sends it anywhere. To restore on a new phone, choose the same folder here.": (
-        "选择一个文件夹，可以在本机上，也可以在 Google 云端硬盘、Dropbox 或其他云应用中，每次你离开应用时，Piru 都会在那里保存一份加密的日记副本。只有你的密码短语能打开它，上传由云应用完成：Piru 本身从不把它发送到任何地方。在新手机上恢复时，在这里选择同一个文件夹即可。",
-        "選擇一個資料夾，可以在本機上，也可以在 Google 雲端硬碟、Dropbox 或其他雲端應用程式中，每次你離開應用程式時，Piru 都會在那裡儲存一份加密的日記副本。只有你的密碼短語能打開它，上傳由雲端應用程式完成：Piru 本身從不把它傳送到任何地方。在新手機上還原時，在這裡選擇同一個資料夾即可。",
-    ),
-    "Saved each time you leave the app, encrypted with your passphrase. Turning this off leaves the last backup in the folder.": (
-        "每次你离开应用时保存，并用你的密码短语加密。关闭后，最后一份备份会留在文件夹中。",
-        "每次你離開應用程式時儲存，並以你的密碼短語加密。關閉後，最後一份備份會留在資料夾中。",
-    ),
-    "Backup Found": (
-        "找到备份",
-        "找到備份",
-    ),
-    "This folder already holds a Piru backup. Enter its passphrase to merge it with your journal; later backups use the same passphrase.": (
-        "此文件夹中已有一份 Piru 备份。输入它的密码短语即可将其与你的日记合并；之后的备份也会使用同一密码短语。",
-        "此資料夾中已有一份 Piru 備份。輸入它的密碼短語即可將其與你的日記合併；之後的備份也會使用同一密碼短語。",
-    ),
-    "The backup was merged with your journal.": (
-        "备份已与你的日记合并。",
-        "備份已與你的日記合併。",
-    ),
-    "That passphrase didn't open the backup. Try again.": (
-        "该密码短语无法打开此备份。请重试。",
-        "該密碼短語無法打開此備份。請再試一次。",
-    ),
-    # Android-only strings: Report a Problem (Android/Views/ReportProblem+Android.swift).
-    "Report a Problem": (
-        "报告问题",
-        "回報問題",
-    ),
-    "Create Report": (
-        "生成报告",
-        "產生報告",
-    ),
-    "One file with the app and Android versions, the phone model, how Piru's recent runs ended, any crash traces and Piru's own log. It holds nothing from your journal, and it leaves your phone only if you send it.": (
-        "一个文件，包含应用和 Android 版本、手机型号、Piru 最近几次运行如何结束、崩溃记录以及 Piru 自身的日志。其中不含你日记里的任何内容，只有你发送时它才会离开手机。",
-        "一個檔案，包含應用程式和 Android 版本、手機型號、Piru 最近幾次執行如何結束、當機記錄以及 Piru 本身的日誌。其中不含你日記裡的任何內容，只有你傳送時它才會離開手機。",
-    ),
-    "#bug-reports on Discord": (
-        "Discord 上的 #bug-reports",
-        "Discord 上的 #bug-reports",
-    ),
-    "Open a GitHub Issue": (
-        "在 GitHub 上提交 issue",
-        "在 GitHub 上提交 issue",
-    ),
-    "How to Report a Problem": (
-        "如何报告问题",
-        "如何回報問題",
-    ),
-    "Where to Send It": (
-        "发送到哪里",
-        "傳送到哪裡",
-    ),
-    "Attach the file and say what you were doing when it went wrong.": (
-        "附上这个文件，并说明出问题时你在做什么。",
-        "附上這個檔案，並說明出問題時你在做什麼。",
-    ),
-    "The report could not be written.": (
-        "无法写入报告。",
-        "無法寫入報告。",
-    ),
-    "Piru Closed Unexpectedly": (
-        "Piru 意外关闭",
-        "Piru 意外關閉",
-    ),
-    "A report helps fix it. It holds how Piru closed and its own log, nothing from your journal, and you choose where it goes.": (
-        "一份报告有助于修复它。报告包含 Piru 如何关闭及其自身的日志，不含你日记里的任何内容，发送到哪里由你决定。",
-        "一份報告有助於修復它。報告包含 Piru 如何關閉及其本身的日誌，不含你日記裡的任何內容，傳送到哪裡由你決定。",
-    ),
-    # Android-only strings: the substance-catalog launch gate (Android/Views/CatalogGate+Android.swift).
-    "Piru Couldn't Set Up Its Substance Library": (
-        "Piru 无法设置物质库",
-        "Piru 無法設定物質庫",
-    ),
-    "Setting up the substance library needs %@ of free space on this phone. Free up some space, then try again. Your journal is untouched.": (
-        "设置物质库需要这台手机有 %@ 的可用空间。腾出一些空间后再试一次。你的日记没有受到影响。",
-        "設定物質庫需要這支手機有 %@ 的可用空間。騰出一些空間後再試一次。你的日記沒有受到影響。",
-    ),
-    "The substance library couldn't be copied onto this phone (%@). Your journal is untouched.": (
-        "无法将物质库复制到这台手机上（%@）。你的日记没有受到影响。",
-        "無法將物質庫複製到這支手機上（%@）。你的日記沒有受到影響。",
-    ),
-    "This copy of Piru is missing its substance library. Installing Piru again from its release page restores it and keeps your journal.": (
-        "这个 Piru 缺少物质库。从发布页面重新安装 Piru 即可恢复，你的日记会保留。",
-        "這個 Piru 缺少物質庫。從發布頁面重新安裝 Piru 即可恢復，你的日記會保留。",
-    ),
-    "Try Again": (
-        "再试一次",
-        "再試一次",
-    ),
     "This half-life is out of range: projections take 1 minute to 10 years.": (
         "这个半衰期超出范围：可推算的范围是 1 分钟到 10 年。",
         "這個半衰期超出範圍：可推算的範圍是 1 分鐘到 10 年。",
@@ -7484,8 +7314,7 @@ T = {
         "部分较长的记录已被缩短或省略，以便放得下。",
         "部分較長的紀錄已被縮短或省略，以便放得下。",
     ),
-    # Settings: the Discord row (Views/Settings/DiscordSection.swift); Android's update check
-    # (android/app/Sources/Piru/Android/Views/AppUpdate+Android.swift).
+    # Settings: the Discord row (Views/Settings/DiscordSection.swift).
     "Discord": (
         "Discord",
         "Discord",
@@ -7493,26 +7322,6 @@ T = {
     "Get help with the app or send your suggestions on our Discord server.": (
         "在我们的 Discord 服务器上获取应用帮助，或提出你的建议。",
         "在我們的 Discord 伺服器上取得應用程式協助，或提出你的建議。",
-    ),
-    "Piru %@ is available": (
-        "Piru %@ 已推出",
-        "Piru %@ 已推出",
-    ),
-    "It is on GitHub, where Piru comes from, and installing it over this version keeps your journal.": (
-        "新版本在 GitHub 上，也就是 Piru 的来源；直接安装在当前版本之上会保留你的日记。",
-        "新版本在 GitHub 上，也就是 Piru 的來源；直接安裝在目前版本之上會保留你的日記。",
-    ),
-    "Download": (
-        "下载",
-        "下載",
-    ),
-    "Check for Updates": (
-        "检查更新",
-        "檢查更新",
-    ),
-    "Once a day, Piru asks GitHub for the newest release. Nothing about you or your journal is sent.": (
-        "Piru 每天向 GitHub 查询一次最新版本。不会发送任何关于你或你日记的信息。",
-        "Piru 每天向 GitHub 查詢一次最新版本。不會傳送任何關於你或你日記的資訊。",
     ),
     # Shortcuts actions (Piru/Intents): titles, parameter help, the summary line, the result dialog.
     "Log Dose": ("记录剂量", "記錄劑量"),
@@ -7715,13 +7524,6 @@ T = {
     "Piru, PsychonautWiki, a spreadsheet, or an encrypted backup": (
         "Piru、PsychonautWiki、电子表格或加密备份",
         "Piru、PsychonautWiki、試算表或加密備份",
-    ),
-    # Mac window toolbar and the empty detail column of a split tab
-    "Shortcuts": ("快捷操作", "快速操作"),
-    "Nothing Open": ("未打开内容", "未開啟內容"),
-    "Choose something from the list to see it here.": (
-        "从列表中选择一项，在这里查看。",
-        "從列表中選擇一項，在這裡查看。",
     ),
     # Settings ▸ Language
     "Language": ("语言", "語言"),
@@ -8186,7 +7988,7 @@ def canonicalize_catalogs(project_path: Path, languages=CANONICAL_LANGUAGES) -> 
     `apply_translations` appends new `insert_keys` at the end of the catalog.
     Xcode stores keys in an ICU-collated order Python can't reproduce, and
     `xcstringstool sync` stales or drops live strings outside the build graph
-    (see CLAUDE.md). An `xcodebuild -exportLocalizations` →
+    (see AGENTS.md). An `xcodebuild -exportLocalizations` →
     `-importLocalizations` round-trip rewrites every project `.xcstrings` in
     the order the IDE itself writes. It is idempotent and non-destructive (no
     keys dropped, stale marks and untranslated entries kept), so committing its
@@ -8314,50 +8116,6 @@ if __name__ == "__main__":
         "When did you take %@?",
         "Split Days at Noon",
         "Shows morning and evening doses as two halves of each day. When off, a dose logged at any time counts toward the whole day.",
-        "Nothing to Share",
-        "The file picker could not be opened.",
-        "The share sheet could not be opened.",
-        "Camera Off",
-        "Allow Piru to use the camera in Settings to scan their code.",
-        "This phone has no camera. Let them scan your code, then send you a session.",
-        "The camera could not be started.",
-        "The Swift runtime, Foundation and Dispatch, which run Piru on Android.",
-        "Skip, which runs Piru's Swift code on Android. Piru's changes to it are in android/vendor in its repository.",
-        "Kotlin, AndroidX, Jetpack Compose, Coil, ZXing, Material Symbols, swift-crypto, swift-asn1, swift-jni and swift-android-native.",
-        "ICU, the Unicode data behind dates, numbers and text on Android.",
-        "curl, part of Foundation's networking on Android.",
-        "BoringSSL, part of Foundation's networking on Android.",
-        "commonmark-java. Copyright © Robin Stocker.",
-        "The folder picker could not be opened.",
-        "The backup folder could not be reached.",
-        "Folder",
-        "Back Up Now",
-        "Piru can no longer reach this folder. Choose it again to keep backing up.",
-        "Choose Another Folder…",
-        "Turn Off Folder Backup",
-        "Back Up to a Folder…",
-        "Pick a folder, on this phone or in Google Drive, Dropbox or another cloud app, and Piru saves an encrypted copy of your journal there each time you leave the app. Only your passphrase opens it, and the cloud app does the uploading: Piru itself never sends it anywhere. To restore on a new phone, choose the same folder here.",
-        "Saved each time you leave the app, encrypted with your passphrase. Turning this off leaves the last backup in the folder.",
-        "Backup Found",
-        "This folder already holds a Piru backup. Enter its passphrase to merge it with your journal; later backups use the same passphrase.",
-        "The backup was merged with your journal.",
-        "That passphrase didn't open the backup. Try again.",
-        "Report a Problem",
-        "Create Report",
-        "One file with the app and Android versions, the phone model, how Piru's recent runs ended, any crash traces and Piru's own log. It holds nothing from your journal, and it leaves your phone only if you send it.",
-        "#bug-reports on Discord",
-        "Open a GitHub Issue",
-        "How to Report a Problem",
-        "Where to Send It",
-        "Attach the file and say what you were doing when it went wrong.",
-        "The report could not be written.",
-        "Piru Closed Unexpectedly",
-        "A report helps fix it. It holds how Piru closed and its own log, nothing from your journal, and you choose where it goes.",
-        "Piru Couldn't Set Up Its Substance Library",
-        "Setting up the substance library needs %@ of free space on this phone. Free up some space, then try again. Your journal is untouched.",
-        "The substance library couldn't be copied onto this phone (%@). Your journal is untouched.",
-        "This copy of Piru is missing its substance library. Installing Piru again from its release page restores it and keeps your journal.",
-        "Try Again",
         "Curve Scale",
         "Dose Strength",
         "Largest Dose, 7 Days",
@@ -9190,15 +8948,7 @@ if __name__ == "__main__":
         "Some long notes were shortened or left out to fit.",
         "Discord",
         "Get help with the app or send your suggestions on our Discord server.",
-        "Piru %@ is available",
-        "It is on GitHub, where Piru comes from, and installing it over this version keeps your journal.",
-        "Download",
-        "Check for Updates",
-        "Once a day, Piru asks GitHub for the newest release. Nothing about you or your journal is sent.",
         "Matches “%@”",
-        "Shortcuts",
-        "Nothing Open",
-        "Choose something from the list to see it here.",
     }
 
     NEW_KEYS.update(
@@ -9285,7 +9035,6 @@ if __name__ == "__main__":
             "Custom substance",
         }
     )
-    NEW_KEYS.update({"Nothing Staged", "Choose a dose on the left, or search for a substance."})
     NEW_KEYS.update(
         {
             "Published timing",

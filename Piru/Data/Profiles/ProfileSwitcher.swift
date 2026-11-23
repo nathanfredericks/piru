@@ -3,8 +3,8 @@ import SwiftData
 import UserNotifications
 import WidgetKit
 
-/// Changes whose journal the app shows. One path for the avatar menu, the Mac
-/// shortcuts, a `profile=` deep link and a notification tap:
+/// Changes whose journal the app shows from the avatar menu, a `profile=`
+/// deep link, or a notification tap:
 ///
 /// 1. the previous profile's Live Activity ends and its live session clears;
 /// 2. the new store opens (``ProfileDirectory/activate(_:)``) and every

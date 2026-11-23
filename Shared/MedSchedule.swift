@@ -72,8 +72,7 @@ nonisolated enum MedSchedule {
 
     /// The App Group defaults key of the product-med map the app mirrors for
     /// its widgets and off-main scans: JSON of `[lowercased med name: [name,
-    /// lead]]`, keyed by the product's name and its label. A JSON string
-    /// because Android's `UserDefaults` stores no dictionaries.
+    /// lead]]`, keyed by the product's name and its label.
     static let productMedMapKey = "piru.productMeds.v1"
 
     /// The product-med map as the mirror stores it.

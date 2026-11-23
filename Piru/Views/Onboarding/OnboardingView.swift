@@ -86,9 +86,7 @@ private struct OnboardingStepChrome: ViewModifier {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .skinBackdrop()
             .inlineNavigationTitle()
-        #if canImport(UIKit)
             .toolbarBackground(.hidden, for: .navigationBar)
-        #endif
             .toolbar {
                 if let index = progressSteps.firstIndex(of: step) {
                     ToolbarItem(placement: .principal) {
@@ -120,8 +118,7 @@ enum OnboardingStep: Int, CaseIterable {
     case skins
     case done
 
-    /// The steps a device walks, in order. Apple Health is offered only where Health data is
-    /// available, so an iPad without Health, a Mac, or Android goes from depth to reminders.
+    /// On devices without Health data, onboarding goes from depth to reminders.
     static func flow(healthAvailable: Bool) -> [OnboardingStep] {
         allCases.filter { $0 != .health || healthAvailable }
     }

@@ -107,9 +107,7 @@ struct CheckInScheduleEditor: View {
                 .wheelPickerStyle()
                 .frame(maxWidth: .infinity)
             }
-            #if os(iOS)
             .frame(height: 120)
-            #endif
             .labelsHidden()
 
             Button {

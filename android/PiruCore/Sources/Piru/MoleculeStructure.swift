@@ -1,1 +1,0 @@
-../../../../Piru/Domain/MoleculeStructure.swift

@@ -1,9 +1,6 @@
 import SwiftData
 import SwiftUI
-
-#if canImport(UIKit)
-    import UIKit
-#endif
+import UIKit
 
 /// The staged doses as a grouped-style card (matching the system inset-grouped
 /// list): one row per dose, expanding inline into its editor — never a second
@@ -425,14 +422,8 @@ struct TraySwipeRow<Content: View>: View {
                 }
         }
         .clipped()
-        #if os(iOS)
-            // A UIKit pan that begins only on a sideways drag: a SwiftUI
-            // DragGesture claimed vertical drags too, so a tall staged stack
-            // couldn't be scrolled from its rows.
-            .gesture(HorizontalSwipePan(onChanged: swipeChanged, onEnded: swipeEnded))
-        #else
-            .gesture(swipeGesture)
-        #endif
+        // Begin the pan only on sideways drags so the tray can scroll vertically.
+        .gesture(HorizontalSwipePan(onChanged: swipeChanged, onEnded: swipeEnded))
     }
 
     /// The revealed action: a compact red capsule pill, vertically centered,
@@ -458,17 +449,6 @@ struct TraySwipeRow<Content: View>: View {
         // Hidden until the swipe reveals it — otherwise VoiceOver stops on an
         // invisible button behind every row.
         .accessibilityHidden(offset >= -1)
-    }
-
-    private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 20)
-            .onChanged { value in
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                swipeChanged(value.translation.width)
-            }
-            .onEnded { value in
-                swipeSettled(projected: value.predictedEndTranslation.width)
-            }
     }
 
     private func swipeChanged(_ translation: CGFloat) {

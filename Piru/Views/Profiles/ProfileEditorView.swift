@@ -184,16 +184,12 @@ private struct AvatarSection: View {
             Picker("Avatar", selection: $draft.style) {
                 Text("Letters").tag(ProfileDraft.Style.monogram)
                 Text("Emoji").tag(ProfileDraft.Style.emoji)
-                #if !os(Android)
-                    Text("Photo").tag(ProfileDraft.Style.photo)
-                #endif
+                Text("Photo").tag(ProfileDraft.Style.photo)
             }
             .pickerStyle(.segmented)
             switch draft.style {
             case .photo:
-                #if !os(Android)
-                    ProfilePhotoPickerRow(photo: $draft.photo)
-                #endif
+                ProfilePhotoPickerRow(photo: $draft.photo)
             case .monogram:
                 TextField("From the name", text: $draft.letters)
                     .neverAutocapitalize()
@@ -202,15 +198,7 @@ private struct AvatarSection: View {
                         if trimmed != letters { draft.letters = trimmed }
                     }
             case .emoji:
-                #if os(iOS) || os(macOS)
-                    EmojiTextField(text: $draft.emoji, placeholder: String(localized: "One emoji"))
-                #else
-                    TextField("One emoji", text: $draft.emoji)
-                        .onChange(of: draft.emoji) { _, text in
-                            let one = ProfileAvatar.emoji(text)?.text ?? ""
-                            if one != text { draft.emoji = one }
-                        }
-                #endif
+                EmojiTextField(text: $draft.emoji, placeholder: String(localized: "One emoji"))
             }
         } header: {
             Text("Avatar")

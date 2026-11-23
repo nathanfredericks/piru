@@ -42,7 +42,6 @@ PLATFORMS = {
     # LC_BUILD_VERSION platform → (xcrun SDK name, platform word in availability attributes)
     "IOS": ("iphoneos", "iOS"),
     "WATCHOS": ("watchos", "watchOS"),
-    "MACOS": ("macosx", "macOS"),
     "TVOS": ("appletvos", "tvOS"),
     "VISIONOS": ("xros", "visionOS"),
     "XROS": ("xros", "visionOS"),

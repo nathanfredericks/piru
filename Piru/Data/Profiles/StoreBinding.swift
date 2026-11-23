@@ -17,7 +17,7 @@ protocol StoreBound {
 @MainActor
 enum StoreBinding {
     static var boundTypes: [any StoreBound.Type] {
-        var types: [any StoreBound.Type] = [
+        [
             UserProfileStore.self,
             ToleranceStore.self,
             BodyLevelsManager.self,
@@ -28,15 +28,9 @@ enum StoreBinding {
             DoseNotificationManager.self,
             ActiveSessionManager.self,
             DayResolveCache.self,
+            DoseIntentLogger.self,
+            PhoneSyncCoordinator.self,
         ]
-        // The App Intents, which Android does not build.
-        #if !os(Android)
-            types.append(DoseIntentLogger.self)
-        #endif
-        #if os(iOS)
-            types.append(PhoneSyncCoordinator.self)
-        #endif
-        return types
     }
 
     /// Point every store-backed singleton at `container`, the active profile's
@@ -92,13 +86,11 @@ extension NotificationPreferencesStore: StoreBound {
     }
 }
 
-#if !os(Android)
-    extension DoseIntentLogger: StoreBound {
-        static func bindStore(_ container: ModelContainer) {
-            modelContainer = container
-        }
+extension DoseIntentLogger: StoreBound {
+    static func bindStore(_ container: ModelContainer) {
+        modelContainer = container
     }
-#endif
+}
 
 extension AppLanguageModel: StoreBound {
     static func bindStore(_ container: ModelContainer) {
@@ -126,14 +118,12 @@ extension DayResolveCache: StoreBound {
     }
 }
 
-#if os(iOS)
-    extension PhoneSyncCoordinator: StoreBound {
-        /// The watch always logs into the owner's journal, whoever is active.
-        static func bindStore(_ container: ModelContainer) {
-            let owner = ProfileScope.isOwner
-                ? container
-                : ProfileDirectory.shared.container(for: ProfileDirectory.shared.owner.id, writable: true)
-            shared.configure(container: owner ?? container)
-        }
+extension PhoneSyncCoordinator: StoreBound {
+    /// The watch always logs into the owner's journal, whoever is active.
+    static func bindStore(_ container: ModelContainer) {
+        let owner = ProfileScope.isOwner
+            ? container
+            : ProfileDirectory.shared.container(for: ProfileDirectory.shared.owner.id, writable: true)
+        shared.configure(container: owner ?? container)
     }
-#endif
+}

@@ -76,9 +76,7 @@ private struct SubstanceSearchResultsList: View {
     let searchResults: [SubstanceMatch]
 
     var body: some View {
-        // Built once per body so each row's swipe action reads a set rather than
-        // scanning the query. A `.task` on the `Group` never runs on Android, which
-        // left every label reading "Favorite".
+        // Build once per body so each row's swipe action can check the set directly.
         let favoriteNames = Set(favorites.map { $0.substance.lowercased() })
         Group {
             if isHelpSearch {

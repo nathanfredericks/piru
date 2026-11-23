@@ -3,8 +3,6 @@
 Piru 将剂量、带时间戳的笔记和药物浓度估算曲线放在同一条时间线上。离线物质资料库逐项标明数据来源，并允许你调整来源的优先顺序。
 
 <a href="https://kagerou.glass/get/piru/ios?from=readme"><img src=".github/download-iphone.zh-Hans.svg" alt="在 App Store 上获取 iPhone 版 Piru" width="270" height="60"></a>
-<a href="https://kagerou.glass/get/piru/mac?from=readme"><img src=".github/download-mac.zh-Hans.svg" alt="下载 Mac 版 Piru" width="270" height="60"></a>
-<a href="https://kagerou.glass/get/piru/android?from=readme"><img src=".github/download-android.zh-Hans.svg" alt="下载 Android 版 Piru" width="270" height="60"></a>
 <a href="https://discord.gg/hbpMZhPSdx"><img src=".github/discord.zh-Hans.svg" alt="加入 Discord" width="270" height="60"></a>
 
 > Piru 不是医疗建议。模型结果只是估算。
@@ -30,14 +28,12 @@ Piru 将剂量、带时间戳的笔记和药物浓度估算曲线放在同一条
 - 记录导出、会话报告和加密备份。
 - iPhone 版经授权从 Apple 健康添加心率和血压。
 - Apple Watch 剂量记录、数码表冠输入和表盘复杂功能。
-- iPhone、Android 和 Mac 应用；[Android 功能范围](android/README.md#scope)。
 
 </details>
 
 ## 其他信息
 
-- iOS/watchOS/macOS 26+；Android 9+ 及 64 位 ARM。Mac 支持 Apple 芯片和 Intel；Apple Watch 版随 iPhone 版提供。
-- Android 更新：将本仓库添加到 [Obtainium](https://github.com/ImranR98/Obtainium)，并按 `android-` 筛选发布版本。
+- 需要 iOS、iPadOS 或 watchOS 26 及以上版本。Apple Watch 版随 iPhone 版提供。
 - [网站](https://kagerou.glass/piru/) · [错误报告](BUG-REPORTS.md) · [参与开发](CONTRIBUTING.md) · [English](README.md)。
 
 <details>

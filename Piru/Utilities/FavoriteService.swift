@@ -92,9 +92,7 @@ enum FavoriteService {
     /// favorites/recents manifest otherwise only refreshes on a dose log.
     private static func commit(_ context: ModelContext) {
         try? context.save()
-        #if os(iOS)
-            PhoneSyncCoordinator.shared.pushManifest()
-        #endif
+        PhoneSyncCoordinator.shared.pushManifest()
     }
 
     private static func fetchAll(in context: ModelContext) -> [FavoriteSubstance] {

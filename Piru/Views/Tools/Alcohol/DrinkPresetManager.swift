@@ -1,9 +1,6 @@
 import SwiftData
 import SwiftUI
-
-#if canImport(UIKit)
-    import UIKit
-#endif
+import UIKit
 
 // MARK: - Drink Preset Manager
 
@@ -185,17 +182,10 @@ struct DrinkPresetForm: View {
         Form {
             Section {
                 HStack(spacing: Spacing.xl) {
-                    #if canImport(UIKit)
-                        EmojiField(text: $emoji)
-                            .frame(width: IconSize.touchTarget, height: IconSize.touchTarget)
-                            .background(Color.platformSecondarySystemFill, in: RoundedRectangle(cornerRadius: Theme.CornerRadius.medium, style: .continuous))
-                            .accessibilityLabel(isMassPerVolume ? Text("Concentration emoji") : Text("Drink emoji"))
-                    #else
-                        TextField("", text: $emoji)
-                            .frame(width: IconSize.touchTarget, height: IconSize.touchTarget)
-                            .multilineTextAlignment(.center)
-                            .accessibilityLabel(isMassPerVolume ? Text("Concentration emoji") : Text("Drink emoji"))
-                    #endif
+                    EmojiField(text: $emoji)
+                        .frame(width: IconSize.touchTarget, height: IconSize.touchTarget)
+                        .background(Color.platformSecondarySystemFill, in: RoundedRectangle(cornerRadius: Theme.CornerRadius.medium, style: .continuous))
+                        .accessibilityLabel(isMassPerVolume ? Text("Concentration emoji") : Text("Drink emoji"))
                     TextField(isMassPerVolume ? String(localized: "Name (e.g. EV 40)") : String(localized: "Name (e.g. IPA)"), text: $name)
                         .wordsAutocapitalize()
                 }
@@ -309,57 +299,55 @@ struct DrinkPresetForm: View {
 
 // MARK: - Emoji Field
 
-#if canImport(UIKit)
-    private struct EmojiField: UIViewRepresentable {
+private struct EmojiField: UIViewRepresentable {
+    @Binding var text: String
+
+    func makeUIView(context: Context) -> UITextField {
+        let field = EmojiUITextField()
+        field.text = text
+        field.delegate = context.coordinator
+        field.textAlignment = .center
+        field.font = .systemFont(ofSize: 24)
+        field.tintColor = .clear
+        field.setContentHuggingPriority(.required, for: .horizontal)
+        return field
+    }
+
+    func updateUIView(_ uiView: UITextField, context _: Context) {
+        if uiView.text != text { uiView.text = text }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
         @Binding var text: String
-
-        func makeUIView(context: Context) -> UITextField {
-            let field = EmojiUITextField()
-            field.text = text
-            field.delegate = context.coordinator
-            field.textAlignment = .center
-            field.font = .systemFont(ofSize: 24)
-            field.tintColor = .clear
-            field.setContentHuggingPriority(.required, for: .horizontal)
-            return field
+        init(text: Binding<String>) {
+            _text = text
         }
 
-        func updateUIView(_ uiView: UITextField, context _: Context) {
-            if uiView.text != text { uiView.text = text }
-        }
-
-        func makeCoordinator() -> Coordinator {
-            Coordinator(text: $text)
-        }
-
-        final class Coordinator: NSObject, UITextFieldDelegate {
-            @Binding var text: String
-            init(text: Binding<String>) {
-                _text = text
+        func textField(_ textField: UITextField, shouldChangeCharactersIn _: NSRange, replacementString string: String) -> Bool {
+            // Keep only the newly typed glyph (single emoji), replacing any prior.
+            if string.isEmpty {
+                text = ""
+                textField.text = ""
+            } else {
+                text = string
+                textField.text = string
             }
-
-            func textField(_ textField: UITextField, shouldChangeCharactersIn _: NSRange, replacementString string: String) -> Bool {
-                // Keep only the newly typed glyph (single emoji), replacing any prior.
-                if string.isEmpty {
-                    text = ""
-                    textField.text = ""
-                } else {
-                    text = string
-                    textField.text = string
-                }
-                return false
-            }
+            return false
         }
     }
+}
 
-    /// `UITextField` that forces the emoji keyboard by advertising the emoji input mode.
-    private final class EmojiUITextField: UITextField {
-        override var textInputContextIdentifier: String? {
-            ""
-        }
-
-        override var textInputMode: UITextInputMode? {
-            UITextInputMode.activeInputModes.first { $0.primaryLanguage == "emoji" } ?? super.textInputMode
-        }
+/// `UITextField` that forces the emoji keyboard by advertising the emoji input mode.
+private final class EmojiUITextField: UITextField {
+    override var textInputContextIdentifier: String? {
+        ""
     }
-#endif
+
+    override var textInputMode: UITextInputMode? {
+        UITextInputMode.activeInputModes.first { $0.primaryLanguage == "emoji" } ?? super.textInputMode
+    }
+}

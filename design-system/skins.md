@@ -31,8 +31,8 @@ for the default; `ColorContrastTests` gates each skin against the same floors.
 The default skin (`.piru`) reads the un-namespaced tokens the app shipped with.
 `AccentColor` stays hand-authored and untouched.
 
-Author in Oklch, never hex (root `CLAUDE.md`). A skin's `text` and `accent`
-roles stay split: a colour that is a fine mark can still fail as small copy
+Author in Oklch, never hex (see [AGENTS.md](../AGENTS.md#conventions)).
+A skin's `text` and `accent` roles stay split: a color that is a fine mark can still fail as small copy
 (the whole reason `semantic/*/text` exists). Measure with `colorimetry.py`.
 
 ## What a skin never touches
@@ -339,31 +339,17 @@ night skies never share a star map: `SkinNightSky.seed` differs per skin.
 estimate, then into a resting reference, and reports the deviation as a tilt;
 every layer slides opposite the tilt scaled by its depth (rays far, small
 jellies farther than big ones, bubbles by size, stars by tier, the moon
-nearest) — the window into the aquarium. Zero on the simulator, on the Mac,
-and under Reduce Motion; the accelerometer runs at 20 Hz only while a
+nearest) — the window into the aquarium. Tilt is zero on the simulator and
+when Reduce Motion is enabled. The accelerometer runs at 20 Hz only while a
 backdrop is on screen. Never the fused `deviceMotion` feed: it keeps the
 gyroscope powered for as long as the skin is showing, and the parallax only
 needs which way is down.
 
-**What a frame costs.** Measured on the native macOS build idling on the
-Journal under Jellyfish (Instruments, SwiftUI template): the scene's own
-drawing is about a third of each frame; the SwiftUI transaction around it,
-the display-list build and the Core Animation commit are the rest, and the
-transaction also evaluates every `ForEach` evictor in the screen (~22 on the
-Journal) whether or not the rows changed. So the frame *count* is the lever,
-not the draw code: on the simulator the animated skins idle at 5–9 % of a
-core (Jellyfish, Hotaru, Starfield and Hebi at the top) against 0 % for a
-static skin, and every fps removed is proportional. The policy in
-`SkinBackdrop`: 30 fps (stickers 20), halved under Low Power Mode, stopped at
-a serious thermal state (`SkinPower`), stopped when the screen is not on top
-of its stack, and stopped the moment the app is backgrounded (scene phase).
-Hebi's snake is a cached tape, one array read per frame, rather than a
-replay of every step before it. Two things were measured and rejected:
-hosting the canvas in its own hosting controller (the display link still
-reached the screen's evictors, plus a layout pass per tick), and caching the
-water's static gradients (3 % of the draw; the eight jellies are two thirds).
-Known and open: on macOS, state restoration can rebuild a scene with no
-window behind it, and that scene reports `.active` and ticks at full rate.
+**Animation cost.** On the simulator, animated skins idle at 5–9% of one core,
+against 0% for a static skin. `SkinBackdrop` runs at 30 fps (20 for stickers)
+and halves the rate in Low Power Mode. It stops at a serious thermal state
+(`SkinPower`), when the screen leaves the top of its stack, or when the app
+moves to the background. Hebi's snake reads a cached frame from an array.
 
 Graph code that *fills* with `Theme.background` (dot rings, fades) is
 untouched — it never went through `.background()`.
@@ -417,7 +403,7 @@ edit, so the app still reads the old value — verified through an app restart, 
 
 `pipeline/screenshots.py` shoots every screen in every skin the picker offers,
 per language, into `Store/shots/<locale>/skins/<skin>/` — one command, no
-tapping ("Screenshots" in the repo's CLAUDE.md). For a single ad-hoc screen,
+tapping ([Screenshots](../AGENTS.md#screenshots)). For a single ad-hoc screen,
 DEBUG builds accept `-piruRoute <piru://url>` as a launch argument and land on
 that screen (after `SubstanceStore.ensureAllLoaded()`), because `simctl
 openurl` is stopped by the untappable "Open in Piru?" sheet. Combine with

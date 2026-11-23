@@ -1,9 +1,7 @@
 import AppIntents
 import Foundation
 import SwiftData
-#if canImport(UIKit)
-    import UIKit
-#endif
+import UIKit
 
 /// A substance as a Shortcuts parameter: a catalog substance, named either
 /// canonically or by a brand or synonym, or one of the user's custom
@@ -154,9 +152,7 @@ nonisolated struct SubstanceEntityQuery: EntityStringQuery {
     func suggestedEntities() async throws -> [SubstanceEntity] {
         // Nothing while the device is locked: the medication list is health
         // data and Siri shows suggestions on the lock screen.
-        #if canImport(UIKit)
-            guard UIApplication.shared.isProtectedDataAvailable else { return [] }
-        #endif
+        guard UIApplication.shared.isProtectedDataAvailable else { return [] }
         guard let container = DoseIntentLogger.modelContainer else { return [] }
         await SubstanceStore.shared.ensureAllLoaded()
         let context = container.mainContext

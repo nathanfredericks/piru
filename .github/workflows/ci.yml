@@ -217,7 +217,7 @@ jobs:
     # Pinned release binaries, never `brew install`: brew serves whichever
     # version is current that day, and each SwiftFormat release turns on new
     # default rules, so an unpinned CI goes red on a tree that is clean locally.
-    # These versions are documented in CLAUDE.md and CONTRIBUTING.md; change
+    # These versions are documented in AGENTS.md and CONTRIBUTING.md; change
     # them together.
     env:
       SWIFTFORMAT_VERSION: 0.63.0
