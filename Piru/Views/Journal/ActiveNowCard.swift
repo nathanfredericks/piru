@@ -113,7 +113,7 @@ struct ActiveNowCard: View {
             ROAPill(route: RouteOfAdministration.from(string: state.route), size: .regular)
         }
 
-        // Phase bar carries the current phase + "{elapsed} in · {remaining}
+        // Phase bar carries the current phase + "{elapsed} in, {remaining}
         // left" — unambiguous for a single substance.
         DosePhaseProgressBar(state: state, now: now)
     }

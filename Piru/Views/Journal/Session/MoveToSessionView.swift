@@ -80,7 +80,6 @@ struct MoveToSessionView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(Theme.secondaryLabel)
                             }
-                            .listRowBackground(CardBackground())
                         }
 
                         if canMakeNewSession {
@@ -96,7 +95,6 @@ struct MoveToSessionView: View {
                                             .accessibilityHidden(true)
                                     }
                                 }
-                                .listRowBackground(CardBackground())
                             } footer: {
                                 Text("Move this entry to a separate session.")
                             }
@@ -120,7 +118,6 @@ struct MoveToSessionView: View {
                                         )
                                     }
                                     .buttonStyle(.plain)
-                                    .listRowBackground(CardBackground())
                                 }
                             }
                         }
@@ -128,7 +125,7 @@ struct MoveToSessionView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .skinBackdrop()
+            .piruPageBackground()
             .navigationTitle("Move \(doseName)")
             .inlineNavigationTitle()
             .task(id: dose.persistentModelID) {

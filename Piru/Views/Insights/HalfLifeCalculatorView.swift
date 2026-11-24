@@ -43,7 +43,7 @@ struct HalfLifeCalculatorView: View {
             }
             .padding()
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .task { await model.loadHalfLifeCount() }
     }
 }

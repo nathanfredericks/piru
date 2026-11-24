@@ -14,9 +14,6 @@ struct OffTargetSection: View {
     let substance: Substance
     let model: SubstanceDetailModel
 
-    /// Folded at every tier, like its Pharmacokinetics and Metabolism neighbours
-    /// — hence a plain `Bool` rather than the tier-defaulted optional those
-    /// sections carry: there is no per-tier default here to fall back to.
     @State private var isExpanded = false
 
     var body: some View {

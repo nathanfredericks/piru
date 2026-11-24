@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// The one place that owns the ``FavoriteSubstance`` insert/delete rules, shared
-/// by the Library browse, category lists, substance detail, and quick-log dock
+/// by the Library browse, category lists, substance detail, and Quick Log sheet
 /// rather than each holding its own copy of the toggle.
 ///
 /// Matching is on substance **identity** (``FavoriteSubstance/identityKey`` — the

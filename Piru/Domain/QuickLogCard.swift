@@ -219,7 +219,7 @@ struct DoseChip: Identifiable, Equatable {
                 : "\(ByVolumeDosing.formatTrimmed(abv)) \(unit)/mL")
         }
         parts.append("\(formattedAmount) \(unit)")
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 }
 

@@ -14,7 +14,7 @@ enum CapsuleChipSize {
     /// matching `ROAPill`'s `.regular` metrics.
     case hero
 
-    /// The text style, not a `Font`: the skin's chip primitive sets the face.
+    /// The text style the chip uses.
     var textStyle: Font.TextStyle {
         switch self {
         case .compact, .regular: .caption2
@@ -48,10 +48,9 @@ extension Text {
     /// `text` is the gated label color, `fill` the mark color the chip is
     /// tinted from. They must differ: a color drawn on a tint of itself tops out
     /// around 4.5:1, below WCAG AA for small text. Every scale in
-    /// `design-system/color/` ships both variants for this call. The form
-    /// (capsule or blinky) is the skin's; see ``skinChip``.
+    /// `design-system/color/` ships both variants for this call.
     func capsuleChip(text: Color, fill: Color, size: CapsuleChipSize = .compact) -> some View {
-        skinChip(
+        filledChip(
             text: text,
             fill: fill,
             style: size.textStyle,
@@ -72,7 +71,7 @@ extension Text {
     /// identity-colored stroke on ``ROAPill``'s `.regular` line box, so an
     /// ester badge beside the route pill is one height with it.
     func heroOutlineChip(stroke: Color) -> some View {
-        skinOutlineChip(
+        outlineChip(
             stroke: stroke,
             style: CapsuleChipSize.hero.textStyle,
             weight: .semibold,
@@ -99,6 +98,6 @@ extension Text {
     /// at the 3:1 floor, so the color still identifies the row while the label
     /// stays readable.
     func capsuleOutlineChip(stroke: Color) -> some View {
-        skinOutlineChip(stroke: stroke, style: .caption2, weight: .medium, horizontal: Spacing.md, vertical: 3)
+        outlineChip(stroke: stroke, style: .caption2, weight: .medium, horizontal: Spacing.md, vertical: 3)
     }
 }

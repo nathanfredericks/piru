@@ -356,11 +356,8 @@ final class ActiveSessionManager {
     // MARK: - Private
 
     static func resolveDuration(substance: Substance?, entry: DoseEntry) -> DurationProfile? {
-        // A depot administration (an injectable ester; a formulation flagged depot)
-        // is not acutely active — it releases over days-to-weeks — so it opens no
-        // live-session window and never appears in the dock accessory with an acute
-        // countdown. It is "just there," tracked by the Injection Levels tool and the
-        // body-load readout, not the quick-log dock. See PKResolver.isDepot.
+        // Depot administrations release over days or weeks. Their modeled
+        // levels appear in Injection Levels and body load. See PKResolver.isDepot.
         if PKResolver.isDepot(entry: entry) { return nil }
         // A named ER product (Concerta, Adderall XR) opens its active-session window
         // from its own authored envelope rather than getting no window at all.

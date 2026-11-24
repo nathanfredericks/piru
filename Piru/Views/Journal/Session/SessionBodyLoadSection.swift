@@ -96,7 +96,7 @@ struct BodyLoadRowLabel: View {
     private var statusLine: some View {
         switch status {
         case let .eliminating(percent, clear, _):
-            Text("\(percent)% eliminated in model · threshold ~\(clear)")
+            Text("\(percent)% eliminated in model, threshold ~\(clear)")
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -104,7 +104,7 @@ struct BodyLoadRowLabel: View {
                 .foregroundStyle(Theme.secondaryLabel)
         case let .cleared(hasActiveMetabolite):
             Text(hasActiveMetabolite
-                ? "Below model threshold · active metabolite may persist"
+                ? "Below model threshold, active metabolite may persist"
                 : "Below model threshold")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryLabel)

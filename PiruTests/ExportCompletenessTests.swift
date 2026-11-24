@@ -224,13 +224,13 @@ private let excludedSettingKeys: [String: String] = [
     "sync.bindings.": "device-specific bindings between local stores and cloud profiles",
     "activeProfileID": "which profile is open on this device; a backup carries the profiles themselves",
     "appLanguage": "the app group mirror of AppleLanguages, for the extensions",
-    "appLaunchCount": "launch counter",
     "AppleLanguages": "the app's language, which iOS owns and its per-app language page edits too",
     "AppNavigator.selectedTab": "navigation state",
     "backup.autoICloudEnabled": "this device's backup state",
     "backup.lastPlaintextHash": "this device's backup state",
     "backup.lastSuccessDate": "this device's backup state",
     "backupKey.v1": "Keychain account name, not a default",
+    "bodyWeightDisplayUnit": "this device’s preferred weight unit",
     "checkInOfferDeclines": "prompt counter",
     "legacyHandoff.": "LegacyHandoff's key prefix, not a default",
     "legacyHandoff.completedAt": "this install's handoff bookkeeping",
@@ -240,13 +240,9 @@ private let excludedSettingKeys: [String: String] = [
     "skipTarget": "notification userInfo key, not a default",
     "didOfferSessionVitals": "prompt flag",
     "didResplitOverlongSessionsV1": "migration bookkeeping",
-    "discordPromptDismissedForever": "prompt flag",
-    "discordPromptShown": "prompt flag",
-    "dockLabelsMigrated_v1": "migration bookkeeping",
     "doseLogStoreGeneration": "cache key",
     "ester.identityBackfill.v1.disabled": "migration bookkeeping",
     "ester.identityBackfill.v1.snapshotTaken": "migration bookkeeping",
-    "hasCompletedOnboarding": "onboarding flag",
     "install.firstBuild": "update-notice bookkeeping",
     "journalResetDate": "reset bookkeeping",
     "journalResetGeneration": "reset bookkeeping",
@@ -276,7 +272,6 @@ private let excludedSettingKeys: [String: String] = [
     "psid.repin.20260912.didRun": "migration bookkeeping",
     "quickLogManifest": "watch sync payload",
     "watchDosePayload": "watch sync payload",
-    "skinOwnedProducts": "StoreKit re-establishes ownership on the new install",
     "ternaryTapHintSeen": "hint flag",
 ]
 
@@ -410,6 +405,28 @@ struct ExportRoundTripTests {
         tearDownIsolatedSubstanceStore(side.sources, tempDir: side.tempDir)
     }
 
+    @Test
+    func `Retired appearance and navigation settings are ignored on restore`() throws {
+        let side = try makeSide()
+        defer { tearDown(side) }
+        let file = Data("""
+        {"standard":{"tabLayout":{"strings":["tools","journal"]},"tabNames":{"data":"YQ=="}},
+         "appGroup":{"skin":{"string":"tsuki"},"dockShortcuts":{"data":"YQ=="},"stackRedoses":{"bool":true}}}
+        """.utf8)
+        let preferences = try JSONDecoder().decode(PiruSettingsData.self, from: file)
+
+        DataExportImport.applySettings(preferences, mode: .replace, to: side.settings)
+
+        #expect(side.settings.standard.object(forKey: "tabLayout") == nil)
+        #expect(side.settings.standard.object(forKey: "tabNames") == nil)
+        #expect(side.settings.appGroup.object(forKey: "skin") == nil)
+        #expect(side.settings.appGroup.object(forKey: "dockShortcuts") == nil)
+        #expect(side.settings.appGroup.bool(forKey: "stackRedoses"))
+        let exported = DataExportImport.exportSettings(from: side.settings)
+        #expect(!exported.appGroup.keys.contains("skin"))
+        #expect(!exported.standard.keys.contains("tabLayout"))
+    }
+
     /// A value of the setting's kind that differs from the key being unset.
     private func sampleValue(for setting: ExportedSetting) -> Any {
         switch setting.kind {
@@ -494,7 +511,7 @@ struct ExportRoundTripTests {
         context.insert(stock)
 
         context.insert(UserProfileRecord(
-            disclosureTierRaw: UserProfile.casual.rawValue, bodyWeightKg: 61.5, weightSourceRaw: "manual",
+            disclosureTierRaw: "casual", bodyWeightKg: 61.5, weightSourceRaw: "manual",
             grapefruitLoggingEnabled: true, aldh2Deficient: true,
         ))
 
@@ -732,7 +749,7 @@ struct ExportRoundTripTests {
         let prefs = try #require(try target.context.fetch(FetchDescriptor<NotificationPreferences>()).first)
         #expect(prefs.quietHoursEnabled)
         #expect(target.settings.appGroup.object(forKey: "stackRedoses") as? Bool == false)
-        #expect(target.settings.appGroup.string(forKey: SkinDefaults.skinKey) == "value-\(SkinDefaults.skinKey)")
+        #expect(target.settings.appGroup.string(forKey: "timelineCurveScale") == "value-timelineCurveScale")
         #expect(target.sources.sourcePreferences() == source.sources.sourcePreferences())
 
         // Importing twice added nothing.

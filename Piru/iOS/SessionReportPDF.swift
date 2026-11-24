@@ -118,7 +118,7 @@ struct SessionReportView: View {
                     Text(export.isLive ? "Session Snapshot" : "Session Report")
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                     if export.isLive {
-                        Text("Session started \(shortTime(export.sessionStart)) · \(TimeInterval(export.generatedAt.timeIntervalSince(export.sessionStart)).durationHM) in progress")
+                        Text("Session started \(shortTime(export.sessionStart)), \(TimeInterval(export.generatedAt.timeIntervalSince(export.sessionStart)).durationHM) in progress")
                             .font(.system(size: 12.5))
                             .foregroundStyle(ink2)
                     } else {
@@ -190,7 +190,7 @@ struct SessionReportView: View {
                     Text(verbatim: note.text).font(.system(size: 12.5))
                 }
                 if !note.descriptors.isEmpty {
-                    Text(verbatim: note.descriptors.joined(separator: " · "))
+                    Text(verbatim: note.descriptors.joined(separator: ", "))
                         .font(.system(size: 11))
                         .foregroundStyle(Theme.accent)
                 }
@@ -228,7 +228,7 @@ struct SessionReportView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Text(s.name).font(.system(size: 15, weight: .bold))
-                Text("\(s.amount.doseFormatted) \(s.unit) · \(s.route)")
+                Text("\(s.amount.doseFormatted) \(s.unit), \(s.route)")
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(ink2)
                 Spacer()
@@ -246,7 +246,7 @@ struct SessionReportView: View {
             }
             if export.isLive {
                 HStack(spacing: 16) {
-                    metric(String(localized: "Taken"), "\(shortTime(s.doseTimestamp)) · \(TimeInterval(export.generatedAt.timeIntervalSince(s.doseTimestamp)).durationHM) ago")
+                    metric(String(localized: "Taken"), "\(shortTime(s.doseTimestamp)), \(TimeInterval(export.generatedAt.timeIntervalSince(s.doseTimestamp)).durationHM) ago")
                     metric(String(localized: "Intensity"), "\(Int((s.intensity * 100).rounded()))% of peak")
                     metric(String(localized: "Next"), nextText(s))
                 }
@@ -332,7 +332,7 @@ struct SessionReportView: View {
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(fmt(remaining, group.unit)).font(.system(size: 16, weight: .bold, design: .monospaced))
                 Text("modeled in body").font(.system(size: 12)).foregroundStyle(ink2)
-                Text("\(Text(verbatim: "· \(Int(((1 - fraction) * 100).rounded()))%")) \(Text("gone"))")
+                Text("\(Text(verbatim: "\(Int(((1 - fraction) * 100).rounded()))%")) \(Text("gone"))")
                     .font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.accent)
             }
         case let .zeroOrder(grams, _, _, _, _):

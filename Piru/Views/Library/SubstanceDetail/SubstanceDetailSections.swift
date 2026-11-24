@@ -2,11 +2,9 @@ import SwiftUI
 
 /// Effects — curated subjective effects read as a short summary; the full
 /// PsychonautWiki taxonomy lives one tap away on `EffectsAndIntensityView`. Its own
-/// invalidation boundary keyed on the substance, the disclosure policy, and the
-/// "show all" navigation flag.
+/// invalidation boundary keyed on the substance and the "show all" navigation flag.
 struct EffectsSection: View {
     let substance: Substance
-    let policy: DisclosurePolicy
     @Binding var showAllEffects: Bool
 
     /// How many curated effects show inline before the rest move to "Show All".
@@ -32,7 +30,7 @@ struct EffectsSection: View {
 
     @ViewBuilder
     private var content: some View {
-        let curated = policy.showsRichSubjective ? substance.subjectiveEffects : []
+        let curated = substance.subjectiveEffects
         let hasAllEffects = !substance.effects.isEmpty
         let mainEffects = Array(curated.prefix(mainEffectsLimit))
         let showsMoreEffects = curated.count > mainEffects.count || substance.effects.count > curated.count

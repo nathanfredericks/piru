@@ -30,7 +30,6 @@ struct InventoryClassOrderView: View {
                                 .foregroundStyle(Theme.accent)
                                 .accessibilityHidden(true)
                         }
-                        .listRowBackground(CardBackground())
                     }
                     .onMove(perform: move)
                 } footer: {
@@ -38,7 +37,6 @@ struct InventoryClassOrderView: View {
                 }
             }
             .insetGroupedListStyle()
-            .themedPage()
             // Permanent edit mode: the grips are always visible, and with no
             // delete or toggle the row is unmistakably about order.
             .permanentEditMode()

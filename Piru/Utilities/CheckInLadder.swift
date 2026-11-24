@@ -123,6 +123,6 @@ enum CheckInLadder {
     /// The suggestion as one line — "+45m · +2h · +4h · +7h 30m" — for the
     /// banner button and the editor's empty state.
     nonisolated static func summary(_ offsets: [Int]) -> String {
-        offsets.map(CheckInOffsets.label).joined(separator: " · ")
+        offsets.map(CheckInOffsets.label).joined(separator: ", ")
     }
 }

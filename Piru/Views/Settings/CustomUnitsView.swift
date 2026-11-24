@@ -57,9 +57,7 @@ struct CustomUnitsView: View {
                     }
                 }
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Custom Units")
         .inlineNavigationTitle()
     }
@@ -159,9 +157,7 @@ struct CustomUnitEditorView: View {
                     }
                 }
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle(editing == nil ? "Add Custom Unit" : "Edit Custom Unit")
         .inlineNavigationTitle()
         .toolbar {

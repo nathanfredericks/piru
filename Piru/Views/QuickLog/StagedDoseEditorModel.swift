@@ -141,8 +141,10 @@ final class StagedDoseEditorModel {
     /// Show `amount` in the field without letting the sync write it back.
     func showAmount(_ amount: Double) {
         amountTextIsUnreadable = false
+        let newText = amount > 0 ? amount.doseFormatted : ""
+        guard newText != amountText else { return }
         suppressAmountSync = true
-        amountText = amount > 0 ? amount.doseFormatted : ""
+        amountText = newText
     }
 
     // MARK: - By-volume dials

@@ -77,7 +77,7 @@ struct SignatureCaption: View {
         // No publication year. It sets no expectation the reader can act on — what
         // matters is the basis, the species, and whether one experiment produced all
         // the values, and the citation itself carries the date for anyone who opens it.
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 
     /// "efficacy τ vs DAMGO" / "release EC₅₀" — the measurement, and the yardstick it is expressed

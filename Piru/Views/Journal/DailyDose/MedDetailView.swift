@@ -105,19 +105,16 @@ struct MedDetailView: View {
                     Text("Reminders and adherence tracking stop. Existing entries stay in your journal.")
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .sheet(isPresented: $showingProductEditor) {
             if let product = CustomSubstanceStore.shared.combination(named: item.substance) {
                 MedProductEditSheet(product: product)
             }
         }
-        .themedPage()
         // Titled as the editor it is: every row below writes straight to the
         // med, and a bare page read as a static summary to testers.
         .navigationTitle("Edit Med")
         .inlineNavigationTitle()
-        .tabAccessoryClearance()
         // Every field edits the model directly; one resync on close reschedules
         // reminders from the saved state (times, cadence, quiet grouping).
         .onDisappear {
@@ -145,7 +142,6 @@ struct MedDetailView: View {
                 }
             }
         }
-        .listRowBackground(CardBackground())
     }
 
     private var dosageSection: some View {
@@ -169,7 +165,6 @@ struct MedDetailView: View {
         } footer: {
             Text("Checked off by an entry for the same substance and route.")
         }
-        .listRowBackground(CardBackground())
     }
 
     private var scheduleSection: some View {
@@ -204,7 +199,6 @@ struct MedDetailView: View {
         } footer: {
             scheduleFooter
         }
-        .listRowBackground(CardBackground())
     }
 
     private var timesSection: some View {
@@ -228,8 +222,10 @@ struct MedDetailView: View {
 
             Button {
                 var times = item.reminderTimesMinutes
+                let enablesReminder = times.isEmpty && item.remind
                 times.append(nextSuggestedTime(after: times))
                 withAnimation(.snappy) { item.reminderTimesMinutes = times.sorted() }
+                if enablesReminder { MedReminderPermission.request(in: modelContext) }
             } label: {
                 Label(
                     item.reminderTimesMinutes.isEmpty ? "Add a Time" : "Add Another Time",
@@ -243,7 +239,6 @@ struct MedDetailView: View {
                 Text("No set time. This med still counts toward adherence once per due day.")
             }
         }
-        .listRowBackground(CardBackground())
     }
 
     private var remindersSection: some View {
@@ -268,7 +263,6 @@ struct MedDetailView: View {
         } footer: {
             Text("Ask Again sends another reminder if a dose isn't logged. “Default” uses the intervals in Notification Settings.")
         }
-        .listRowBackground(CardBackground())
     }
 
     private var quietSection: some View {
@@ -283,7 +277,6 @@ struct MedDetailView: View {
         } footer: {
             Text("Grouped under Supplements, off the timeline graphs. Reminders are silent.")
         }
-        .listRowBackground(CardBackground())
     }
 
     /// The model stores the days as an array; the picker edits them as a set.
@@ -345,6 +338,7 @@ struct MedDetailView: View {
                     }
                 }
                 item.remind = isOn
+                if isOn { MedReminderPermission.request(in: modelContext) }
             },
         )
     }
@@ -414,17 +408,17 @@ struct MedDetailView: View {
     }
 
     private var scheduleSummary: String {
-        let dose = "\(item.doseLabel) · \(String(localized: item.route.localizedName))"
+        let dose = "\(item.doseLabel), \(String(localized: item.route.localizedName))"
         if item.isAsNeeded {
             if let limit = item.maxPerDay {
-                return "\(dose) · \(String(localized: "up to \(limit)× daily"))"
+                return "\(dose), \(String(localized: "up to \(limit)× daily"))"
             }
-            return "\(dose) · \(String(localized: "as needed"))"
+            return "\(dose), \(String(localized: "as needed"))"
         }
         let count = item.reminderTimesMinutes.count
         if count > 1 {
-            return "\(dose) · \(String(localized: "\(count)× daily"))"
+            return "\(dose), \(String(localized: "\(count)× daily"))"
         }
-        return "\(dose) · \(item.frequencyShortLabel)"
+        return "\(dose), \(item.frequencyShortLabel)"
     }
 }

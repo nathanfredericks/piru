@@ -103,7 +103,7 @@ extension MedTimeConsequence {
     /// else: a dose that clears before the night, a class the app may not talk
     /// about bedtime for, or a substance with no acute curve.
     ///
-    /// The quick-log dock states this beside the interaction warnings. By the
+    /// The Quick Log sheet states this beside the interaction warnings. By the
     /// time a 6 PM stimulant is being logged, the useful fact is not that it
     /// will work — it is the hour it stops.
     static func nightEnd(
@@ -185,7 +185,7 @@ struct MedTimeConsequenceLine: View {
     private var effectText: some View {
         let moments = times
         if consequence.statesWearOff {
-            Text("Estimated onset ~\(Self.clock(moments.onset)) · easing off ~\(Self.clock(moments.wearOff))")
+            Text("Estimated onset ~\(Self.clock(moments.onset)), easing off ~\(Self.clock(moments.wearOff))")
         } else {
             Text("Estimated onset ~\(Self.clock(moments.onset))")
         }

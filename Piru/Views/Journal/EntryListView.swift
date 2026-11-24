@@ -28,17 +28,14 @@ struct EntryListView: View {
     /// When embedded in the Search tab: drop the "Journal" header + filter bar,
     /// showing only the (recent / searched) entries.
     var isSearchSurface = false
-
-    /// Search-surface only: invoked from the empty-results state to offer
-    /// searching the Library instead when a query finds no journal entries.
-    var onSwitchToLibrary: (() -> Void)?
+    var showsDays = false
 
     @AppStorage("journalGrouping", store: UserDefaults(suiteName: AppIdentity.appGroup)) private var chosenGrouping: JournalGrouping = .timeline
 
     /// The grouping on screen. Search always lists entries by day: a search asks
     /// when something was taken, and the answer is a row with a date on it.
     private var grouping: JournalGrouping {
-        isSearchSurface ? .byDay : chosenGrouping
+        isSearchSurface || showsDays ? .byDay : chosenGrouping
     }
     @AppStorage("journalGroupKey", store: UserDefaults(suiteName: AppIdentity.appGroup)) private var groupKey: JournalGroupKey = .substance
 
@@ -59,11 +56,11 @@ struct EntryListView: View {
         }
     }()
 
-    init(searchText: Binding<String>, isSearchSurface: Bool = false, onSwitchToLibrary: (() -> Void)? = nil) {
+    init(searchText: Binding<String>, isSearchSurface: Bool = false, showsDays: Bool = false) {
         _ = Self.persistedGroupingMigrated
         _searchText = searchText
         self.isSearchSurface = isSearchSurface
-        self.onSwitchToLibrary = onSwitchToLibrary
+        self.showsDays = showsDays
     }
 
     /// The Timeline grouping's day layouts — built lazily, only while that
@@ -83,7 +80,7 @@ struct EntryListView: View {
     /// the live strip, which carries the same doses and phases, so the card is
     /// omitted there rather than shown twice.
     private var showActiveHero: Bool {
-        !isSearchSurface && grouping != .timeline && ActiveSessionManager.shared.hasActiveSession
+        !isSearchSurface && !showsDays && grouping != .timeline && ActiveSessionManager.shared.hasActiveSession
     }
 
     /// The day-list card representing the currently-active session — the cluster
@@ -193,8 +190,7 @@ struct EntryListView: View {
             rows(activeStates: activeStates, activeID: activeID)
         }
         .id(listIdentity)
-        .themedPage()
-        .appNavigationBar("Journal", enabled: !isSearchSurface, showsOverflow: false)
+        .appNavigationBar(showsDays ? "Days" : "Journal", enabled: !isSearchSurface, showsOverflow: false)
         .journalProfileSubtitle(enabled: !isSearchSurface)
         .toolbar {
             // One glass group: the funnel menu shapes what the list shows (the
@@ -223,7 +219,7 @@ struct EntryListView: View {
                 }
                 ProfileToolbarItem()
                 ToolbarItem(placement: .platformTopBarTrailing) {
-                    JournalOptionsButton(grouping: $chosenGrouping, groupKey: $groupKey) { showingCalendar = true }
+                    JournalOptionsButton(grouping: $chosenGrouping, groupKey: $groupKey, showsGrouping: !showsDays) { showingCalendar = true }
                 }
             }
         }
@@ -369,7 +365,7 @@ struct EntryListView: View {
         // The daily meds front door — today's checklist, tap to log.
         // Renders nothing while the
         // user has no meds, so a recreational-only journal never sees it.
-        if !isSearchSurface {
+        if !isSearchSurface, !showsDays {
             MyMedsCard(substanceColors: substanceColors)
                 .listRowInsets(.rowStandard)
                 .listRowSeparator(.hidden)
@@ -541,14 +537,17 @@ struct EntryListView: View {
                 systemImage: searchText.isEmpty && !model.hasActiveFilters ? "pill" : "magnifyingglass",
             )
         } description: {
-            Text(
-                model.hasActiveFilters ? "Try adjusting your filters." :
-                    searchText.isEmpty ? "Tap + to log your first entry." :
-                    "Try a different search term.",
-            )
+            if model.hasActiveFilters {
+                Text("Try adjusting your filters.")
+            } else if !searchText.isEmpty {
+                Text("Try a different search term.")
+            }
         } actions: {
-            if isSearchSurface, !searchText.isEmpty, let onSwitchToLibrary {
-                Button("Search Library instead", action: onSwitchToLibrary)
+            if isSearchSurface, !searchText.isEmpty {
+                Button("Search Library instead") { navigator.openLibrarySearch(searchText) }
+                    .buttonStyle(.borderedProminent)
+            } else if searchText.isEmpty, !model.hasActiveFilters {
+                Button("Log Dose") { navigator.present(.quickLog(routine: nil)) }
                     .buttonStyle(.borderedProminent)
             }
         }
@@ -586,7 +585,6 @@ struct EntryListView: View {
 enum JournalMenuAction {
     case jumpToDate
     case myMeds
-    case skins
     case settings
     case help
 }

@@ -1,96 +1,35 @@
 import SwiftData
 import SwiftUI
 
-// MARK: - Quick-Log Edit Sheet
-
-/// The Log screen's single Edit surface: the meds order, the favorites
-/// order, drink presets, and the dock's shortcuts and label, one sheet. The list is permanently in edit mode
-/// so rows show the standard reorder grabbers and delete controls — a bare
-/// long-press drag technically reorders outside edit mode, but nothing
-/// advertises it. The `editMode` environment stays scoped to the `List`
-/// (with `navigationDestination` registered outside it) so pushed editors
-/// don't inherit edit mode. Local sheet, so `@Environment(\.dismiss)` (NOT
-/// `navigator.dismiss()`, which would pop the whole Log cover).
 struct QuickLogEditSheet: View {
     @Query(sort: \DailyDoseItem.sortOrder) private var items: [DailyDoseItem]
     @Query(sort: [SortDescriptor(\FavoriteSubstance.sortOrder), SortDescriptor(\FavoriteSubstance.createdAt, order: .reverse)]) private var favorites: [FavoriteSubstance]
-    @Query(sort: [SortDescriptor(\CustomDrinkPreset.sortOrder), SortDescriptor(\CustomDrinkPreset.createdAt)]) private var drinkPresets: [CustomDrinkPreset]
-    @Query private var substanceColors: [SubstanceColor]
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.appNavigator) private var navigator
     @State private var customStore = CustomSubstanceStore.shared
     @AppStorage(QuickLogManager.fixedOrderDefaultsKey) private var quickLogFixedOrder = false
-    /// The "Now" pill's quick offsets, under the shared-suite key the pill reads.
+    /// Saved offsets for the When menu.
     @AppStorage(DoseTimeDefaults.choicesKey, store: UserDefaults(suiteName: DoseTimeDefaults.suite))
     private var doseTimeChoicesRaw = DoseTimeDefaults.defaultRaw
 
-    @State private var path = NavigationPath()
-    /// The "Now" pill offsets, edited inline and persisted back to
-    /// `doseTimeChoicesRaw` on change.
     @State private var doseTimeChoices: [Int] = []
-    @State private var showAddDoseTime = false
 
     var body: some View {
-        NavigationStack(path: $path) {
-            List {
-                medsSection
-                favoritesSection
-                drinksSections
-                doseTimesSection
-                DockShortcutsSection(path: $path)
-                    .listRowBackground(CardBackground())
-                DockLabelsSection(path: $path)
-                    .listRowBackground(CardBackground())
-                orderSection
+        List {
+            medsSection
+            favoritesSection
+            Section {
+                NavigationLink("Drinks") { QuickLogDrinkPresets(substanceName: "Alcohol") }
             }
-            .permanentEditMode()
-            .themedPage()
-            .sheet(isPresented: $showAddDoseTime) {
-                DoseTimeAddSheet(existing: doseTimeChoices) { minutes in
-                    doseTimeChoices.append(minutes)
-                }
-            }
-            .onAppear { doseTimeChoices = DoseTimeDefaults.parse(doseTimeChoicesRaw) }
-            .onChange(of: doseTimeChoices) { _, new in
-                doseTimeChoicesRaw = DoseTimeDefaults.format(new)
-            }
-            .navigationDestination(for: AddFavoriteRoute.self) { _ in
-                AddFavoriteView()
-            }
-            .navigationDestination(for: DockEditRoute.self) { route in
-                switch route {
-                case .addShortcut:
-                    DockShortcutPicker()
-                case .addLabel:
-                    DockLabelForm(index: nil, existing: nil)
-                case let .editLabel(index):
-                    let labels = DockPreferences.shared.labels
-                    DockLabelForm(index: index, existing: labels.indices.contains(index) ? labels[index] : nil)
-                }
-            }
-            .navigationDestination(for: CustomDrinkPreset.self) { preset in
-                DrinkPresetForm(preset: preset, substanceName: preset.substanceName)
-            }
-            .navigationDestination(for: NewDrinkRoute.self) { route in
-                DrinkPresetForm(preset: nil, substanceName: route.substanceName)
-            }
-            .navigationTitle("Edit")
-            .inlineNavigationTitle()
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "checkmark")
-                    }
-                    .skinButtonStyle(.prominent)
-                    .accessibilityLabel("Done")
-                }
-            }
+            doseTimesSection
+            orderSection
         }
-        .presentationDetents([.medium, .large])
+        .navigationTitle("Edit Quick Log")
+        .toolbar { EditButton() }
+        .onAppear { doseTimeChoices = DoseTimeDefaults.parse(doseTimeChoicesRaw) }
+        .onChange(of: doseTimeChoices) { _, new in
+            doseTimeChoicesRaw = DoseTimeDefaults.format(new)
+        }
     }
 
     // MARK: Meds
@@ -103,20 +42,10 @@ struct QuickLogEditSheet: View {
             .onMove(perform: moveMeds)
             .onDelete(perform: deleteMeds)
 
-            Button {
-                // This sheet lives on top of the navigator's Log cover, which is
-                // the app's single sheet — so open the hub by swapping the cover,
-                // not by stacking a third sheet (which SwiftUI refuses).
-                dismiss()
-                navigator.present(.dailyDoseSettings, replacingTop: true)
-            } label: {
-                Label("Manage Meds…", systemImage: "pills")
-            }
         } header: {
             Text("My Meds")
                 .textCase(nil)
         }
-        .listRowBackground(CardBackground())
     }
 
     /// Name + dose and reminder times — plain rows, matching the favorites
@@ -130,7 +59,6 @@ struct QuickLogEditSheet: View {
                    let time = Calendar.current.date(
                        bySettingHour: first / 60, minute: first % 60, second: 0, of: .now,
                    ) {
-                    Middot()
                     Text(time, style: .time)
                     if item.reminderTimesMinutes.count > 1 {
                         Text(verbatim: "+\(item.reminderTimesMinutes.count - 1)")
@@ -171,21 +99,15 @@ struct QuickLogEditSheet: View {
     // MARK: Favorites
 
     private var favoritesSection: some View {
-        let colorMap = Array(substanceColors).colorMap
-        return Section {
+        Section {
             ForEach(favorites) { favorite in
-                HStack(spacing: Spacing.lg) {
-                    Circle()
-                        .fill(SubstancePalette.color(for: favorite.substance, colorMap: colorMap))
-                        .frame(width: 10, height: 10)
-                    Text(customStore.displayName(for: favorite.substance))
-                }
+                Text(customStore.displayName(for: favorite.substance))
             }
             .onMove(perform: moveFavorites)
             .onDelete(perform: deleteFavorites)
 
-            Button {
-                path.append(AddFavoriteRoute())
+            NavigationLink {
+                AddFavoriteView()
             } label: {
                 Label("Add Favorite…", systemImage: "star")
             }
@@ -193,7 +115,6 @@ struct QuickLogEditSheet: View {
             Text("Favorites")
                 .textCase(nil)
         }
-        .listRowBackground(CardBackground())
     }
 
     private func moveFavorites(from source: IndexSet, to destination: Int) {
@@ -214,90 +135,6 @@ struct QuickLogEditSheet: View {
         PhoneSyncCoordinator.shared.pushManifest()
     }
 
-    // MARK: Drinks
-
-    /// Presets grouped by their substance, preserving the query's sort inside
-    /// each group. Alcohol is the only by-drink substance in v1, but the model
-    /// carries a substance column — group so a future second substance gets its
-    /// own section instead of an interleaved mess. With no presets at all, a
-    /// single empty alcohol group keeps the section (and its New Drink row)
-    /// discoverable.
-    private var drinkGroups: [(substance: String, presets: [CustomDrinkPreset])] {
-        var order: [String] = []
-        var groups: [String: [CustomDrinkPreset]] = [:]
-        for preset in drinkPresets {
-            if groups[preset.substanceName] == nil { order.append(preset.substanceName) }
-            groups[preset.substanceName, default: []].append(preset)
-        }
-        if order.isEmpty {
-            order = ["alcohol"]
-            groups["alcohol"] = []
-        }
-        return order.map { ($0, groups[$0] ?? []) }
-    }
-
-    private var drinksSections: some View {
-        let groups = drinkGroups
-        return ForEach(groups, id: \.substance) { group in
-            Section {
-                ForEach(group.presets) { preset in
-                    Button {
-                        path.append(preset)
-                    } label: {
-                        DrinkPresetRow(preset: preset)
-                    }
-                    .foregroundStyle(.primary)
-                }
-                .onMove { source, destination in
-                    moveDrinks(in: group.presets, from: source, to: destination)
-                }
-                .onDelete { offsets in
-                    deleteDrinks(in: group.presets, at: offsets)
-                }
-
-                Button {
-                    path.append(NewDrinkRoute(substanceName: group.substance))
-                } label: {
-                    Label("New Drink…", systemImage: "plus.circle")
-                }
-            } header: {
-                drinksHeader(for: group.substance, soleGroup: groups.count == 1)
-            }
-            .listRowBackground(CardBackground())
-        }
-    }
-
-    /// "Drinks" alone while alcohol is the only group; disambiguated with the
-    /// substance's display name if a second by-drink substance ever appears.
-    private func drinksHeader(for substance: String, soleGroup: Bool) -> some View {
-        Group {
-            if soleGroup {
-                Text("Drinks")
-            } else {
-                // Composed as a String so the localized "Drinks" and the verbatim
-                // name join without the deprecated `Text + Text` operator.
-                Text(verbatim: "\(String(localized: "Drinks")) · \(customStore.displayName(for: substance))")
-            }
-        }
-        .textCase(nil)
-    }
-
-    private func moveDrinks(in presets: [CustomDrinkPreset], from source: IndexSet, to destination: Int) {
-        var ordered = presets
-        ordered.move(fromOffsets: source, toOffset: destination)
-        for (index, preset) in ordered.enumerated() {
-            preset.sortOrder = Double(index)
-        }
-        try? modelContext.save()
-    }
-
-    private func deleteDrinks(in presets: [CustomDrinkPreset], at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(presets[index])
-        }
-        try? modelContext.save()
-    }
-
     // MARK: Order
 
     private var orderSection: some View {
@@ -305,17 +142,13 @@ struct QuickLogEditSheet: View {
             Toggle(isOn: $quickLogFixedOrder) {
                 Label("Keep Order", systemImage: "pin")
             }
-            .tint(Theme.accent)
         } footer: {
             Text("Keep substances in a fixed order. When off, recording an entry moves its substance to the front.")
         }
-        .listRowBackground(CardBackground())
     }
 
     // MARK: Dose times
 
-    /// The offsets the tray's "Now" pill offers, with the editor Settings also
-    /// pushes — the pill is edited where it's used, not only under Settings.
     private var doseTimesSection: some View {
         Section {
             ForEach(doseTimeChoices, id: \.self) { minutes in
@@ -325,8 +158,10 @@ struct QuickLogEditSheet: View {
             .onMove(perform: moveDoseTimes)
 
             if doseTimeChoices.count < DoseTimeDefaults.maxCount {
-                Button {
-                    showAddDoseTime = true
+                NavigationLink {
+                    DoseTimePresetForm(existing: doseTimeChoices) { minutes in
+                        doseTimeChoices.append(minutes)
+                    }
                 } label: {
                     Label("Add Preset…", systemImage: "plus.circle")
                 }
@@ -337,7 +172,6 @@ struct QuickLogEditSheet: View {
         } footer: {
             Text("The quick time options in the “Now” menu when recording an entry.")
         }
-        .listRowBackground(CardBackground())
     }
 
     private func deleteDoseTimes(at offsets: IndexSet) {
@@ -350,17 +184,6 @@ struct QuickLogEditSheet: View {
         doseTimeChoices.move(fromOffsets: source, toOffset: destination)
     }
 }
-
-/// Push target for adding a favorite substance from the Edit sheet.
-private struct AddFavoriteRoute: Hashable {}
-
-/// Push target for creating a new drink preset in a given substance's group —
-/// `CustomDrinkPreset` itself routes to the edit form.
-private struct NewDrinkRoute: Hashable {
-    let substanceName: String
-}
-
-// MARK: - Add favorite
 
 /// A substance picker pushed from the Edit sheet's Favorites section: choosing a
 /// substance stars it (creates a ``FavoriteSubstance``) and pops back.
@@ -383,9 +206,7 @@ private struct AddFavoriteView: View {
             } footer: {
                 Text("Star a substance to keep it in your quick-log favorites.")
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Add Favorite")
         .inlineNavigationTitle()
     }
@@ -397,5 +218,57 @@ private struct AddFavoriteView: View {
         }
         FavoriteService.add(substance: substance.name, substanceUID: substance.substanceUID, in: modelContext)
         dismiss()
+    }
+}
+
+struct QuickLogDrinkPresets: View {
+    let substanceName: String
+
+    @Environment(\.modelContext) private var modelContext
+    @Query private var presets: [CustomDrinkPreset]
+
+    init(substanceName: String) {
+        self.substanceName = substanceName
+        let name = substanceName.lowercased()
+        _presets = Query(
+            filter: #Predicate { $0.substanceName == name },
+            sort: [SortDescriptor(\.sortOrder), SortDescriptor(\.createdAt)],
+        )
+    }
+
+    private var isConcentration: Bool {
+        SubstanceLibrary.lookup(substanceName)?.byVolumeDosing?.isMassPerVolume == true
+    }
+
+    var body: some View {
+        List {
+            ForEach(presets) { preset in
+                NavigationLink {
+                    DrinkPresetForm(preset: preset, substanceName: substanceName)
+                } label: {
+                    VStack(alignment: .leading) {
+                        Text(verbatim: preset.name)
+                        Text(verbatim: preset.detailLabel).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .onMove { source, destination in
+                var ordered = presets
+                ordered.move(fromOffsets: source, toOffset: destination)
+                for (index, preset) in ordered.enumerated() { preset.sortOrder = Double(index) }
+                try? modelContext.save()
+            }
+            .onDelete { offsets in
+                for index in offsets { modelContext.delete(presets[index]) }
+                try? modelContext.save()
+            }
+            NavigationLink {
+                DrinkPresetForm(preset: nil, substanceName: substanceName)
+            } label: {
+                Text(isConcentration ? "Add Concentration" : "New Drink…")
+            }
+        }
+        .navigationTitle(isConcentration ? Text("Concentrations") : Text("Drinks"))
+        .toolbar { EditButton() }
     }
 }

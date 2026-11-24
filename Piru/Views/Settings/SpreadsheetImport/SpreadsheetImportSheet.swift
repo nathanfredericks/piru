@@ -15,7 +15,6 @@ struct SpreadsheetImportSheet: View {
     var body: some View {
         NavigationStack {
             content
-                .themedPage()
                 .navigationTitle(title)
                 .inlineNavigationTitle()
                 .toolbar { toolbar }
@@ -133,7 +132,6 @@ private struct SpreadsheetPickStep: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.vertical, Spacing.sm)
-                .listRowBackground(CardBackground())
 
                 Button(action: onPick) {
                     HStack {
@@ -143,7 +141,6 @@ private struct SpreadsheetPickStep: View {
                     }
                 }
                 .disabled(isWorking)
-                .listRowBackground(CardBackground())
             } footer: {
                 Text("A sheet with several tabs exports one file per tab. Import each one; doses already in your journal are skipped.")
             }
@@ -163,12 +160,10 @@ private struct SpreadsheetDoneStep: View {
                 LabeledContent("Doses imported") {
                     Text("\(outcome.imported)").foregroundStyle(Theme.secondaryLabel)
                 }
-                .listRowBackground(CardBackground())
                 if outcome.duplicates > 0 {
                     LabeledContent("Already in your journal") {
                         Text("\(outcome.duplicates)").foregroundStyle(Theme.secondaryLabel)
                     }
-                    .listRowBackground(CardBackground())
                 }
             } footer: {
                 Text("Imported doses are grouped into sessions in your journal.")
@@ -177,7 +172,6 @@ private struct SpreadsheetDoneStep: View {
                 Button(action: onAnother) {
                     Label("Import Another File", systemImage: "doc.badge.plus")
                 }
-                .listRowBackground(CardBackground())
             }
         }
     }

@@ -13,7 +13,7 @@ final class SubstanceDetailModel {
     private let store = SubstanceStore.shared
 
     /// Per-field source attribution (which database supplied category, half-life,
-    /// mechanism, and per-route dose/duration). Fetched for every tier.
+    /// mechanism, and per-route dose/duration).
     var provenance: SubstanceStore.SubstanceProvenance?
 
     var wikiTimings: [WikiTimingRecord] = []
@@ -91,7 +91,7 @@ final class SubstanceDetailModel {
     var monoamineProfile: MonoamineProfile?
 
     /// The heart-valve warning — the substance's own 5-HT2B bindings or its
-    /// class's declaration. Loaded at every tier, like a boxed warning.
+    /// class's declaration.
     var valvularWarning: ValvularWarning?
 
     /// The class signature for the Pharmacology card — the gated comparison that says where this
@@ -123,21 +123,13 @@ final class SubstanceDetailModel {
         var unit: String?
     }
 
-    /// Resolve every store-backed field for the substance at the current
-    /// disclosure tier. Each query is skipped for tiers that don't show its
-    /// surface.
-    func load(substanceName: String, category: SubstanceCategory, policy: DisclosurePolicy) {
-        // Always fetch provenance — per-field source attribution is shown to
-        // every tier so users can see where each fact came from.
+    /// Resolve the store-backed data for this substance reference.
+    func load(substanceName: String, category: SubstanceCategory) {
         provenance = store.provenance(forSubstanceName: substanceName)
         wikiTimings = store.wikiTimings(forSubstanceName: substanceName)
 
         moleculeStructure = store.moleculeStructure(forSubstanceName: substanceName)
 
-        // Ungated by tier. A row here is a consequence ("ulcerative cystitis in
-        // chronic high-dose users"), not an affinity table, and tiering in this
-        // app governs density rather than access — the card ships folded at
-        // every tier instead.
         offTargets = store.offTargets(forSubstanceName: substanceName)
         pharmacogenetics = store.pharmacogenetics(forSubstanceName: substanceName)
         targetEvidence = store.targetEvidence(forSubstanceName: substanceName)
@@ -146,9 +138,6 @@ final class SubstanceDetailModel {
         classContext = store.classContext(forSubstanceName: substanceName)
         sourceContributions = store.sourceContributions(forSubstanceName: substanceName)
 
-        // Contraceptive-efficacy caution — a CYP3A4 inducer (modafinil,
-        // rifampicin…) can lower hormonal-contraception levels. Ungated like a
-        // boxed warning: a safety fact for every tier.
         contraceptionCaution = MetabolicModulation.contraceptiveEfficacyCaution(
             forSubstance: substanceName, in: store.enzymeModulators(),
         )
@@ -156,58 +145,36 @@ final class SubstanceDetailModel {
 
         // Binding rows feed two surfaces, the "Receptor Literature" list and the
         // "Monoamine Profile" card, so fetch once when either is shown.
-        if policy.showsMechanism || policy.showsReceptorLiterature {
-            let binds = store.bindings(forSubstanceName: substanceName)
-            monoamineProfile = MonoamineProfile.from(
-                bindings: binds,
-                isSoldAsMDMA: store.hasFlag(PharmacologyParameters.Flag.missoldAsMDMA, forSubstanceName: substanceName),
-            )
-            literatureBindings = binds
-            visibleLiteratureBindings = ReceptorLiterature.visibleBindings(from: binds)
-        } else {
-            monoamineProfile = nil
-            literatureBindings = []
-            visibleLiteratureBindings = []
-        }
+        let bindings = store.bindings(forSubstanceName: substanceName)
+        monoamineProfile = MonoamineProfile.from(
+            bindings: bindings,
+            isSoldAsMDMA: store.hasFlag(PharmacologyParameters.Flag.missoldAsMDMA, forSubstanceName: substanceName),
+        )
+        literatureBindings = bindings
+        visibleLiteratureBindings = ReceptorLiterature.visibleBindings(from: bindings)
 
-        // The class signature is a *comparison*, so unlike everything else here it reads the whole
-        // family's rows rather than this substance's. Only the mechanism audience sees it.
+        // The class signature compares this substance with others in the same family.
         //
         // Resolved through ``ActiveIngredient`` like the bindings above, and for a sharper reason:
         // the axis marks its focus by NAME. Left unresolved, cannabis would look for a "Cannabis"
         // leg among rows that are all filed under THC, find none, and drop the axis entirely on the
         // one page where "how far does this switch the receptor on" is the whole question.
-        classSignature = policy.showsMechanism
-            ? ClassSignature.family(for: category).flatMap { family in
-                ClassSignature.resolve(
-                    substanceName: ActiveIngredient.pharmacologyName(for: substanceName),
-                    category: category,
-                    legs: store.signatureLegs(family: family),
-                )
-            }
-            : nil
-
-        // Per-route PK and CYP metabolism.
-        if policy.showsPharmacokinetics {
-            pkRoutes = SubstanceStore.displayRows(store.pharmacokinetics(forSubstanceName: substanceName))
-            metabolismRows = store.metabolism(forSubstanceName: substanceName)
-            pkInteractions = store.pkInteractions(forSubstanceName: substanceName)
-        } else {
-            pkRoutes = []
-            metabolismRows = []
-            pkInteractions = []
+        classSignature = ClassSignature.family(for: category).flatMap { family in
+            ClassSignature.resolve(
+                substanceName: ActiveIngredient.pharmacologyName(for: substanceName),
+                category: category,
+                legs: store.signatureLegs(family: family),
+            )
         }
 
-        // One metabolism fetch feeds "Also Active", the CYP2D6 note and the
-        // grapefruit/smoking education.
-        let rows = policy.showsPharmacokinetics ? metabolismRows : store.metabolism(forSubstanceName: substanceName)
-        activeMetabolites = Self.foldActiveMetabolites(from: rows)
-        cyp2d6Info = CYP2D6Info.from(metabolismRows: rows)
-        metabolicEducation = policy.showsMechanism
-            ? MetabolicModulation.educationalEffects(
-                forSubstance: substanceName, metabolism: rows, catalog: store.enzymeModulators(),
-            )
-            : []
+        pkRoutes = SubstanceStore.displayRows(store.pharmacokinetics(forSubstanceName: substanceName))
+        metabolismRows = store.metabolism(forSubstanceName: substanceName)
+        pkInteractions = store.pkInteractions(forSubstanceName: substanceName)
+        activeMetabolites = Self.foldActiveMetabolites(from: metabolismRows)
+        cyp2d6Info = CYP2D6Info.from(metabolismRows: metabolismRows)
+        metabolicEducation = MetabolicModulation.educationalEffects(
+            forSubstance: substanceName, metabolism: metabolismRows, catalog: store.enzymeModulators(),
+        )
     }
 
     /// Group the metabolism rows by metabolite and keep the ones with something

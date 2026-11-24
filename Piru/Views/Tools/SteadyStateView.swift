@@ -30,7 +30,7 @@ struct SteadyStateView: View {
             .padding()
         }
         .scrollDismissesKeyboard(.interactively)
-        .skinBackdrop()
+        .piruPageBackground()
         .onChange(of: inputs.recomputeKey) { inputs.refresh() }
     }
 }
@@ -186,7 +186,7 @@ private struct SteadyStateMetricsCard: View {
             SteadyStateMetricTile(
                 key: String(localized: "Plateau range"),
                 value: "\(result.troughAmount.doseFormatted)–\(result.peakAmount.doseFormatted)",
-                sub: String(localized: "\(unit) · trough to peak"),
+                sub: String(localized: "\(unit), trough to peak"),
             )
             SteadyStateMetricTile(
                 key: String(localized: "Fluctuation"),

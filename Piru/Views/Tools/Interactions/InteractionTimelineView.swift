@@ -279,7 +279,7 @@ private struct InteractionTimelineScreen: View {
             }
             .padding()
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .navigationTitle("Interaction Timeline")
         .inlineNavigationTitle()
         .task(id: model.curveInputs) { model.recompute() }
@@ -634,12 +634,12 @@ private struct TimelineAnalysisCard: View {
     private func depressionCaveat(_ d: CombinedDepressionResult) -> String {
         let confidence = String(localized: d.confidence.label)
         if d.isFullyModeled {
-            return String(localized: "Modeled from receptor occupancy · \(confidence).")
+            return String(localized: "Modeled from receptor occupancy, \(confidence).")
         }
         if d.modeledCount == 0 {
-            return String(localized: "Estimated from effect curves · \(confidence).")
+            return String(localized: "Estimated from effect curves, \(confidence).")
         }
-        return String(localized: "\(d.modeledCount) of \(d.totalCount) substances from receptor occupancy, the rest estimated from effect curves · \(confidence).")
+        return String(localized: "\(d.modeledCount) of \(d.totalCount) substances from receptor occupancy, the rest estimated from effect curves, \(confidence).")
     }
 
     private func peakClockTime(_ date: Date) -> String {

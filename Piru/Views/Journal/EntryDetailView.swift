@@ -83,7 +83,7 @@ struct EntryDetailView: View {
 
     var body: some View {
         if entryIsGone {
-            Color.clear.skinBackdrop()
+            Color.clear.piruPageBackground()
         } else {
             content
         }
@@ -114,13 +114,10 @@ struct EntryDetailView: View {
                     )
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
-        .scrollContentBackground(.hidden)
         .contentMargins(.top, 0, for: .scrollContent)
         .listSectionSpacing(20)
-        .skinBackdrop()
         // Keep the draft amount/unit synced with the by-volume fields in drink mode.
         .onChange(of: draft.byVolumeGrams(capability: byVolumeCapability)) { draft.syncByVolumeAmount(capability: byVolumeCapability) }
         .onChange(of: draft.byVolumeMode) { if draft.byVolumeMode { draft.syncByVolumeAmount(capability: byVolumeCapability) } }

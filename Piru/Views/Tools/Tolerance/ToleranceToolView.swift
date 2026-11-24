@@ -13,24 +13,14 @@ import SwiftUI
 /// substances the model can't score (missing PK), so a class never silently reads "rested" (the
 /// heavy-kratom → "Opioids recovered" trap).
 ///
-/// ## One visual language per card
-/// A family-color dot + tier-aware class name + a tolerance-level capsule; a five-segment gauge of how
-/// much of a normal dose you'd still feel; a one-sentence lede; a linear recovery chart (sensitivity vs
-/// days, starting at the current level); and a trimmed one-sentence safety note where the class has one.
-/// ``UserProfile`` sets the wording: Casual gets plain class names, Curious receptor-level names plus
-/// contributor chips and the chart legend. The section subviews live alongside this file.
 struct ToleranceToolView: View {
     @Query(sort: \DoseEntry.timestamp, order: .reverse) private var entries: [DoseEntry]
 
     @State private var tolerance = ToleranceStore.shared
     @State private var profile = UserProfileStore.shared
 
-    /// What sits **below** the always-on combined recovery chart — mechanism cards or per-substance
-    /// rows. Chosen from the Mail-style options menu; the combined chart shows in both.
+    /// The combined recovery chart stays visible in either mode.
     @State private var detailMode: ToleranceDetailMode = .perReceptor
-
-    /// Drives the Mail-style options popover anchored on the single toolbar button.
-    @State private var showsOptions = false
 
     /// Per-substance rows whose full dose history is expanded (keyed by logged substance name).
     @State private var expandedSubstances: Set<String> = []
@@ -52,7 +42,7 @@ struct ToleranceToolView: View {
                     case .perReceptor:
                         ForEach(rows) { row in
                             Section {
-                                ToleranceCard(row: row, tier: tier)
+                                ToleranceCard(row: row)
                                 // Effect-selective classes (GABA, α2δ) link out to the receptor/subtype
                                 // explanation rather than carrying the education on the card itself.
                                 if !row.snapshot.effectShifts.isEmpty {
@@ -75,7 +65,6 @@ struct ToleranceToolView: View {
                     case .perSubstance:
                         TolerancePerSubstanceSection(
                             groups: substanceGroups,
-                            tier: tier,
                             isReplayRunning: tolerance.perSubstanceStates.isEmpty && !rows.isEmpty,
                             expandedSubstances: $expandedSubstances,
                         )
@@ -84,11 +73,9 @@ struct ToleranceToolView: View {
                 }
                 ToleranceHowItWorksCard()
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
-        .themedPage()
-        .appNavigationBar("Modeled Tolerance", showsOverflow: false)
+        .navigationTitle("Modeled Tolerance")
         .toolbar {
             optionsButton
         }
@@ -109,10 +96,6 @@ struct ToleranceToolView: View {
         "\(detailMode == .perSubstance)|\(recomputeSignature)"
     }
 
-    private var tier: UserProfile {
-        profile.disclosureTier
-    }
-
     private var recomputeSignature: String {
         // The log revision catches edits to existing doses, which count + newest
         // timestamp alone would miss.
@@ -121,29 +104,19 @@ struct ToleranceToolView: View {
 
     // MARK: - Toolbar
 
-    /// The single, Mail-style options button: one glyph opening a popover that carries both the
-    /// display-mode thumbnail picker and the detail-tier list.
     @ToolbarContentBuilder
     private var optionsButton: some ToolbarContent {
         ToolbarItem(placement: .platformTopBarTrailing) {
-            Button {
-                showsOptions = true
+            Menu {
+                Picker("Display options", selection: $detailMode) {
+                    ForEach(ToleranceDetailMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
             } label: {
-                // The current tier's glyph, so the button both opens the menu and advertises the active
-                // detail level (leaf / heart / atom) rather than a generic ellipsis.
-                Image(systemName: tier.icon)
-                    .foregroundStyle(Theme.accent)
-            }
-            .accessibilityLabel("Display options")
-            .popover(isPresented: $showsOptions) {
-                ToleranceOptionsMenu(mode: $detailMode, tier: tierBinding)
-                    .presentationCompactAdaptation(.popover)
+                Label("Display options", systemImage: "ellipsis.circle")
             }
         }
-    }
-
-    private var tierBinding: Binding<UserProfile> {
-        Binding(get: { tier }, set: { profile.setDisclosureTier($0) })
     }
 
     // MARK: - Rows (per-mechanism)
@@ -223,7 +196,7 @@ struct ToleranceToolView: View {
             ToleranceRecoverySeries(
                 id: row.snapshot.receptorClass,
                 legendKey: String(reflecting: row.snapshot.receptorClass),
-                name: toleranceClassName(row.snapshot.receptorClass, tier: tier),
+                name: row.snapshot.receptorClass.casualName,
                 color: row.familyColor,
                 points: row.recoveryCurve(overMinutes: window, sampleCount: sampleCount),
             )

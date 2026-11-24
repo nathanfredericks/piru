@@ -23,9 +23,9 @@ extension PushRoute {
     /// Whether this route is a record that opens beside the list, or one more level of the list itself.
     nonisolated var opensBesideList: Bool {
         switch self {
-        case .libraryCategory, .libraryTag, .libraryFavorites, .libraryCustom, .drugClassGroup, .insightGroup:
+        case .toolsHub, .libraryCategory, .libraryTag, .libraryFavorites, .libraryCustom, .drugClassGroup, .insightGroup:
             false
-        case .session, .entry, .comedownGuide, .timeline, .substance, .libraryUnits, .libraryColors, .tool,
+        case .session, .entry, .comedownGuide, .timeline, .journalDays, .substance, .libraryUnits, .libraryColors, .tool,
              .dataStorage, .drugClass, .insight, .myMeds, .medDetail, .inventoryItem, .substanceData:
             true
         }
@@ -77,17 +77,26 @@ struct RouteLink<Label: View>: View {
     /// Draws the disclosure chevron a `NavigationLink` row gets from `List` on its own.
     var disclosure = false
     let label: Label
+    private let onOpen: (() -> Void)?
 
-    init(_ route: PushRoute, disclosure: Bool = false, @ViewBuilder label: () -> Label) {
+    init(
+        _ route: PushRoute,
+        disclosure: Bool = false,
+        onOpen: (() -> Void)? = nil,
+        @ViewBuilder label: () -> Label,
+    ) {
         self.route = route
         self.disclosure = disclosure
         self.label = label()
+        self.onOpen = onOpen
     }
 
     var body: some View {
-        if opensRecordsBesideList, route.opensBesideList {
+        let besideList = opensRecordsBesideList && route.opensBesideList
+        if besideList || onOpen != nil {
             Button {
-                navigator.openRecord(route, besideList: true)
+                navigator.openRecord(route, besideList: besideList)
+                onOpen?()
             } label: {
                 if disclosure {
                     HStack {

@@ -46,7 +46,7 @@ struct SessionCardView: View, Equatable {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(card.title ?? String(localized: "Medications"))
                     .sectionLabel()
-                Text(verbatim: "\(card.timeLabel)  ·  \(card.substanceSummary)")
+                Text(verbatim: "\(card.timeLabel), \(card.substanceSummary)")
                     .captionSecondary()
                     .lineLimit(1)
             }
@@ -71,7 +71,7 @@ struct SessionCardView: View, Equatable {
                     Text(
                         verbatim: card.title == nil
                             ? card.doseCountText
-                            : "\(card.timeLabel)  ·  \(card.doseCountText)",
+                            : "\(card.timeLabel), \(card.doseCountText)",
                     )
                     .captionSecondary()
                     if let session = card.session {

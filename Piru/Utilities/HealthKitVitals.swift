@@ -58,17 +58,18 @@ final class HealthKitVitals {
         [heartRateType, restingHeartRateType, systolicType, diastolicType, workoutType]
     }
 
-    /// Request read access to the whole Health integration — body weight, heart
-    /// rate, blood pressure, and workouts — in a **single** system prompt. This is
-    /// the only authorization entry point: every opt-in surface (onboarding, the Apple
-    /// Health settings screen, the session discovery banner) calls it, so the user
-    /// only ever sees one combined Health sheet listing them all, never a
-    /// weight-only or vitals-only prompt. Prompts only for still-undetermined types;
-    /// a thrown error is a request failure (not a denial), so already-granted access
-    /// keeps working. No-op when HealthKit is unavailable.
-    func requestFullAccess() async {
+    enum Access {
+        case bodyWeight
+        case sessionVitals
+    }
+
+    /// Request just the Health data used by the action that invoked the prompt.
+    func requestAccess(_ access: Access) async {
         guard isAvailable else { return }
-        let read = readTypes.union([HKQuantityType(.bodyMass)])
+        let read: Set<HKObjectType> = switch access {
+        case .bodyWeight: [HKQuantityType(.bodyMass)]
+        case .sessionVitals: readTypes
+        }
         let store = store
         // HealthKit validates the request *synchronously* and raises an ObjC
         // `NSException` (not a Swift error) when it's unhappy — a device-specific
@@ -81,7 +82,7 @@ final class HealthKitVitals {
             let started = PiruCatchNSException({
                 store.requestAuthorization(toShare: [], read: read) { _, error in
                     if let error {
-                        Logger.healthKitVitals.error("Combined authorization request failed: \(error.localizedDescription, privacy: .public)")
+                        Logger.healthKitVitals.error("Health authorization request failed: \(error.localizedDescription, privacy: .public)")
                     }
                     continuation.resume()
                 }
@@ -93,26 +94,15 @@ final class HealthKitVitals {
         }
     }
 
-    /// Whether tapping "Connect" would actually surface a prompt — i.e. weight, heart
-    /// rate, resting heart rate, or workouts is still undetermined. Once the user has
-    /// answered them all, requesting only flashes an empty sheet that immediately
-    /// dismisses, so callers hide the Connect affordance when this returns false.
-    ///
-    /// Workouts are in this set precisely so someone who granted the earlier types is
-    /// offered Connect once more — there is genuinely something new to grant, and without
-    /// it their workouts would stay undetermined and never be set aside.
-    ///
-    /// **Blood pressure is deliberately excluded from this check.** On iOS 26.5 its
-    /// read status is stuck at `.shouldRequest` forever (FB22735935), which would
-    /// keep Connect visible permanently even after everything grantable is granted;
-    /// BP recovery is handled by the Settings ▸ Privacy ▸ Health guidance instead.
-    func connectWouldPrompt() async -> Bool {
+    /// Blood pressure is excluded from this status check because iOS can report
+    /// it as always undetermined (FB22735935). It is still requested with vitals.
+    func connectWouldPrompt(for access: Access) async -> Bool {
         guard isAvailable else { return false }
         let store = store
-        let promptable: Set<HKObjectType> = [heartRateType, restingHeartRateType, workoutType, HKQuantityType(.bodyMass)]
-        // Same synchronous-`NSException` hazard as `requestFullAccess()` — this is
-        // what crashed on merely opening Settings ▸ Apple Health. Treat a raised
-        // exception as "nothing to prompt for" so the Connect affordance just hides.
+        let promptable: Set<HKObjectType> = switch access {
+        case .bodyWeight: [HKQuantityType(.bodyMass)]
+        case .sessionVitals: [heartRateType, restingHeartRateType, workoutType]
+        }
         return await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
             var thrown: NSError?
             let started = PiruCatchNSException({

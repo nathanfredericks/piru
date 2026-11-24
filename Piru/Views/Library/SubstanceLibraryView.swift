@@ -1,39 +1,60 @@
 import SwiftData
 import SwiftUI
 
-struct SubstanceLibraryView: View {
-    @Binding var searchText: String
+struct LibraryTabRoot: View {
+    @Environment(\.appNavigator) private var navigator
+    @State private var searchText = ""
+    @State private var searchPresented = false
 
-    /// When embedded in the Search tab: drop the "Library" header + category
-    /// browse, showing only recent substances (empty) or results (typed).
-    var isSearchSurface = false
+    var body: some View {
+        LibrarySearchContent(searchText: searchText)
+            .searchable(
+                text: $searchText,
+                isPresented: $searchPresented,
+                prompt: Text("Search substances..."),
+            )
+            .appNavigationBar("Library")
+            .toolbar {
+                ToolbarItem(placement: .platformTopBarTrailing) {
+                    NavigationLink(value: PushRoute.toolsHub) {
+                        Label("Tools", systemImage: "wrench.and.screwdriver")
+                    }
+                }
+            }
+            .onChange(of: navigator.librarySearchRequest, initial: true) { _, request in
+                if request != nil, let query = navigator.takeLibrarySearchRequest() {
+                    searchPresented = true
+                    searchText = query
+                }
+            }
+    }
+}
 
+private struct LibrarySearchContent: View {
+    @Environment(\.isSearching) private var isSearching
+    let searchText: String
+
+    var body: some View {
+        if !isSearching, searchText.isEmpty {
+            LibraryBrowseView()
+        } else if searchText.isEmpty {
+            SearchActivityList()
+        } else {
+            SubstanceLibraryView(searchText: searchText)
+        }
+    }
+}
+
+private struct SubstanceLibraryView: View {
+    let searchText: String
     @State private var search = SubstanceSearchModel()
 
     var body: some View {
-        Group {
-            if searchText.isEmpty, !isSearchSurface {
-                // Library tab browse: the bold family-card flow.
-                LibraryBrowseView()
-            } else {
-                List {
-                    if searchText.isEmpty {
-                        RecentSubstancesSection()
-                    } else {
-                        // The search concern (results, help resources, and the
-                        // favorites @Query) lives in its own child so the browse
-                        // branch above never subscribes to favorites.
-                        SubstanceSearchResultsList(searchText: searchText, searchResults: search.results)
-                    }
-                }
-                .insetGroupedListStyle()
-                .themedPage()
-                // On the list, not a row inside it: the search runs once per query
-                // however the rows below are rebuilt.
-                .task(id: searchText) { await search.update(for: searchText) }
-            }
+        List {
+            SubstanceSearchResultsList(searchText: searchText, searchResults: search.results)
         }
-        .appNavigationBar("Library", enabled: !isSearchSurface)
+        .insetGroupedListStyle()
+        .task(id: searchText) { await search.update(for: searchText) }
     }
 }
 
@@ -93,7 +114,9 @@ private struct SubstanceSearchResultsList: View {
                 Section(String(inflecting: "^[\(searchResults.count) result](inflect: true)")) {
                     ForEach(searchResults) { match in
                         let substance = match.substance
-                        RouteLink(PushRoute.substance(name: substance.name, brand: match.matchedBrand), disclosure: true) {
+                        RouteLink(.substance(name: substance.name, brand: match.matchedBrand), disclosure: true, onOpen: {
+                            SearchHistoryStore.shared.record(substance.name)
+                        }) {
                             SubstanceRowView(
                                 substance: substance,
                                 matchedAlias: match.matchedAlias,
@@ -109,7 +132,6 @@ private struct SubstanceSearchResultsList: View {
                             }
                             .tint(.yellow)
                         }
-                        .listRowBackground(CardBackground())
                     }
                 }
             }
@@ -192,75 +214,6 @@ private struct SubstanceSearchResultsList: View {
                         .font(.caption2)
                         .foregroundStyle(Theme.secondaryLabel)
                         .accessibilityHidden(true)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Recent (Search surface)
-
-/// The Search surface's empty-query content: up to 10 most recently logged
-/// substances, de-duplicated and resolved to their library entries.
-///
-/// Owns the `DoseEntry` query so dose changes invalidate only this section; keep
-/// it off ``SubstanceLibraryView`` so the whole tab does not re-render on every
-/// dose mutation.
-private struct RecentSubstancesSection: View {
-    @Query(sort: \DoseEntry.timestamp, order: .reverse) private var recentEntries: [DoseEntry]
-
-    /// Resolved once per dose-history change instead of per body. The rows
-    /// show name and category, so this is the batch-projection ``SubstanceLibrary/lookup(_:)``
-    /// — never ``SubstanceLibrary/resolveFull(_:)``, which is ~21 SQL on the
-    /// main actor per substance, a 250 ms hang when the Search tab opens.
-    @State private var recentSubstances: [Substance] = []
-
-    private var recentSignature: Int {
-        var hasher = Hasher()
-        // The 10 most-recent distinct substances are what we render; the newest
-        // ~20 timestamps comfortably cover that window for change detection.
-        for entry in recentEntries.prefix(20) {
-            hasher.combine(entry.substance)
-        }
-        return hasher.finalize()
-    }
-
-    private func rebuildRecent() {
-        var seen = Set<String>()
-        var result: [Substance] = []
-        for entry in recentEntries {
-            let key = entry.substance.lowercased()
-            if seen.insert(key).inserted, let substance = SubstanceLibrary.lookup(key) {
-                result.append(substance)
-                if result.count >= 10 { break }
-            }
-        }
-        recentSubstances = result
-    }
-
-    var body: some View {
-        content
-            .task(id: recentSignature) {
-                await SubstanceStore.shared.ensureAllLoaded()
-                rebuildRecent()
-            }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        if recentSubstances.isEmpty {
-            ContentUnavailableView(
-                "Search Substances",
-                systemImage: "magnifyingglass",
-                description: Text("Find any substance by name or alias."),
-            )
-        } else {
-            Section("Recent") {
-                ForEach(recentSubstances) { substance in
-                    RouteLink(PushRoute.substance(name: substance.name), disclosure: true) {
-                        SubstanceRowView(substance: substance, isPersonalized: CustomSubstanceStore.shared.isPersonalized(substance.name))
-                    }
-                    .listRowBackground(CardBackground())
                 }
             }
         }
@@ -414,7 +367,6 @@ struct SubstanceCategoryListView: View {
                     .padding(.vertical, Spacing.xxs)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .listRowBackground(CardBackground())
             }
 
             ForEach(sortedSubstances) { substance in
@@ -434,10 +386,8 @@ struct SubstanceCategoryListView: View {
                     .tint(.yellow)
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
-        .themedPage()
         .task(id: listSignature) {
             await SubstanceStore.shared.ensureAllLoaded()
             await rebuildList()
@@ -541,7 +491,7 @@ struct SubstanceRowView: View {
                 .foregroundStyle(Theme.secondaryLabel)
                 .padding(.horizontal, Spacing.md)
                 .padding(.vertical, 3)
-                .background(.fill.tertiary, in: skinChipShape())
+                .background(.fill.tertiary, in: Capsule())
         } else if showsCategoryBadge {
             Text(substance.category.displayName)
                 .capsuleChip(text: substance.category.labelColor, fill: substance.category.color)

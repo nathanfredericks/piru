@@ -214,7 +214,7 @@ struct TripReport {
         if let energy { parts.append("energy \(signed(energy))") }
         if let social { parts.append("social \(signed(social))") }
         if let heartRate { parts.append("♥ \(heartRate)") }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 
     nonisolated static func signed(_ value: Int) -> String {
@@ -251,7 +251,7 @@ struct TripReport {
             cell = (mood.map(signed) ?? "–") + " / " + (energy.map(signed) ?? "–")
         }
         if let heartRate {
-            cell += (cell.isEmpty ? "" : " · ") + "♥ \(heartRate)"
+            cell += (cell.isEmpty ? "" : ", ") + "♥ \(heartRate)"
         }
         return cell
     }
@@ -289,7 +289,7 @@ struct TripReport {
         var out: [String] = []
         let substanceLine = substances.joined(separator: " + ")
         let headline = title ?? (substanceLine.isEmpty ? "Trip report" : substanceLine)
-        out.append("# \(headline) · \(dateOnly.string(from: sessionStart))")
+        out.append("# \(headline), \(dateOnly.string(from: sessionStart))")
         out.append("")
         if title != nil, !substanceLine.isEmpty {
             out.append("**\(substanceLine)**")
@@ -301,7 +301,7 @@ struct TripReport {
             notes.count == 1 ? "1 note" : "\(notes.count) notes",
         ]
         if let last = notes.last { facts.append("last note at \(tPlus(last.timestamp))") }
-        out.append(facts.joined(separator: " · "))
+        out.append(facts.joined(separator: ", "))
         out.append("")
 
         out.append("## Doses")
@@ -360,7 +360,7 @@ struct TripReport {
             var text: [String] = []
             if note.kind == .checkIn { text.append("**Check-in**") }
             if !note.text.isEmpty { text.append(Self.cell(note.text)) }
-            if !note.descriptors.isEmpty { text.append("_" + note.descriptors.map(\.name).joined(separator: " · ") + "_") }
+            if !note.descriptors.isEmpty { text.append("_" + note.descriptors.map(\.name).joined(separator: ", ") + "_") }
             cells.append(text.joined(separator: "; "))
             out.append("| " + cells.joined(separator: " | ") + " |")
         }

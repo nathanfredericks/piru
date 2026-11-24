@@ -31,7 +31,6 @@ struct EffectsAndIntensityView: View {
             .padding(.horizontal, Spacing.xxl)
             .padding(.vertical, Spacing.lg)
         }
-        .skinBackdrop()
         .navigationTitle(Text("Effects", comment: "Screen title"))
         .inlineNavigationTitle()
         .task(id: substanceName) { model.load(substanceName: substanceName) }

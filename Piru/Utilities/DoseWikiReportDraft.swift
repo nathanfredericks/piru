@@ -218,11 +218,11 @@ struct DoseWikiReportDraft {
         if !structure.isEmpty { header.append(structure) }
 
         var lines: [String] = []
-        if !header.isEmpty { lines.append(header.joined(separator: " · ")) }
+        if !header.isEmpty { lines.append(header.joined(separator: ", ")) }
         let text = note.text.trimmingCharacters(in: .whitespacesAndNewlines)
         if !text.isEmpty { lines.append(text) }
         if !note.descriptors.isEmpty {
-            lines.append(note.descriptors.map(\.name).joined(separator: " · "))
+            lines.append(note.descriptors.map(\.name).joined(separator: ", "))
         }
         return lines.joined(separator: "\n")
     }

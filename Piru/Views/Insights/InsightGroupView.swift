@@ -107,7 +107,7 @@ struct InsightGroupView: View {
             .padding(.top, Spacing.xs)
             .padding(.bottom, 40)
         }
-        .skinBackdrop()
+        .piruPageBackground()
     }
 }
 

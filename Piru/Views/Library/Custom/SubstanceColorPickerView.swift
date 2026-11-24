@@ -40,7 +40,7 @@ struct SubstanceColorPickerView: View {
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .skinBackdrop()
+            .piruPageBackground()
             .navigationTitle("Choose Color")
             .inlineNavigationTitle()
             .toolbar {

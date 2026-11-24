@@ -136,7 +136,7 @@ struct InventoryListView: View {
                 list
             }
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .navigationTitle("Inventory")
         .inlineNavigationTitle()
         .toolbar { toolbarContent }
@@ -251,7 +251,6 @@ struct InventoryListView: View {
             InventoryRow(item: item, owner: owner, colorMap: colorMap)
         }
         .deleteDisabled(owner != nil)
-        .listRowBackground(CardBackground())
     }
 
     private func sectionHeader(_ category: SubstanceCategory, count: Int) -> some View {

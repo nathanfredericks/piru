@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// A dismissible info card (styled like the note row) that introduces the vitals
-/// overlay to users who never opted in — its "Turn On" surfaces the same single
-/// combined Health sheet as everywhere else. Owns its own opt-in state: flipping
+/// overlay to users who never opted in. Its action requests Health access for
+/// session vitals. Flipping
 /// `showSessionVitals` (an app-group `@AppStorage` the detail view also reads)
 /// re-runs the detail's vitals task, and `didOfferSessionVitals` retires the banner.
 struct VitalsOfferBanner: View {
@@ -51,7 +51,7 @@ struct VitalsOfferBanner: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .skinButtonStyle(.prominent)
+                .buttonStyle(.glassProminent)
                 .controlSize(.regular)
                 .tint(Theme.accent)
                 .disabled(isConnectingVitals)
@@ -60,17 +60,14 @@ struct VitalsOfferBanner: View {
         }
     }
 
-    /// Turn the overlay on from the banner: the same single combined Health sheet
-    /// (weight + heart rate + blood pressure), then flip the overlay on and record
-    /// that we've offered so the banner never returns.
+    /// Enable the overlay and retire the offer after requesting access.
     private func enableVitalsFromOffer() async {
         guard !isConnectingVitals else { return }
         isConnectingVitals = true
         // Skip the request (and its empty-sheet flash) if access is already decided.
-        if await HealthKitVitals.shared.connectWouldPrompt() {
-            await HealthKitVitals.shared.requestFullAccess()
+        if await HealthKitVitals.shared.connectWouldPrompt(for: .sessionVitals) {
+            await HealthKitVitals.shared.requestAccess(.sessionVitals)
         }
-        _ = await HealthKitBodyMass.shared.syncLatest()
         isConnectingVitals = false
         didOfferSessionVitals = true
         showSessionVitals = true

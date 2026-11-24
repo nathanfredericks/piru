@@ -157,7 +157,7 @@ struct UsageOverviewSection: View {
             return Text("No dose ladders matched")
         }
         if overview.heavyCount > 0 {
-            return Text("at common or above · \(overview.heavyCount) heavy")
+            return Text("at common or above, \(overview.heavyCount) heavy")
         }
         return Text("at common or above")
     }

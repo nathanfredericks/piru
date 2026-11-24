@@ -24,8 +24,7 @@ struct MythBustList: View {
 
 /// One myth, collapsed to just its claim row. Tapping expands it to reveal the
 /// correction, an optional pull-quote, and the citation chips — one at a time, so
-/// the whole section stays a half-screen rather than an essay. Collapsed by
-/// default at every tier.
+/// the whole section stays compact.
 private struct MythBustRow: View {
     let myth: MythBust
     let accent: Color
@@ -168,7 +167,7 @@ private struct MythCitationChip: View {
         .foregroundStyle(foreground)
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.xs)
-        .background(background, in: skinChipShape())
+        .background(background, in: Capsule())
         .accessibilityLabel(accessibilityLabel)
     }
 

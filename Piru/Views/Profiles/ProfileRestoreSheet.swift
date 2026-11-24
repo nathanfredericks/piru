@@ -19,7 +19,6 @@ struct ProfileRestoreSheet: View {
                     Text("Profiles match by ID, so a renamed profile is still the same person. Pick how each one comes back.")
                 }
             }
-            .themedPage()
             .navigationTitle("Restore Profiles")
             .inlineNavigationTitle()
             .toolbar {
@@ -78,7 +77,6 @@ private struct ProfileRestoreConflictRow: View {
             .pickerStyle(.menu)
             .labelsHidden()
         }
-        .listRowBackground(CardBackground())
     }
 
     private var caption: Text {
@@ -95,21 +93,6 @@ private struct ProfileRestoreConflictRow: View {
         case (.otherOwner, .keepThisDevice): Text("Into Your Journal")
         case (.otherOwner, .useBackup): Text("Into Your Journal as \(conflict.incoming.name)")
         case (.otherOwner, .newProfile): Text("As a New Profile")
-        }
-    }
-}
-
-/// Presents the profile question during onboarding, whose cover hides the
-/// sheet stack the rest of the app uses.
-struct OnboardingProfileRestorePresenter: ViewModifier {
-    @State private var request = ProfileRestoreRequest.shared
-
-    func body(content: Content) -> some View {
-        content.sheet(item: Binding(
-            get: { request.pending.flatMap { $0.presentsInOnboarding ? $0 : nil } },
-            set: { if $0 == nil { request.finish(nil) } },
-        )) { pending in
-            ProfileRestoreSheet(conflicts: pending.conflicts) { request.finish($0) }
         }
     }
 }

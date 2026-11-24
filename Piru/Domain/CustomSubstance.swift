@@ -118,7 +118,7 @@ struct CustomSubstanceEntry: Codable, Identifiable, Hashable {
     @MainActor var componentsListing: String? {
         guard let summary = componentsSummary else { return nil }
         guard isLiquidCombination else { return summary }
-        return String(localized: "\(summary) · per \(unit)")
+        return String(localized: "\(summary), per \(unit)")
     }
 
     /// "500 mg Paracetamol · 30 mg Codeine" — the components in the user's
@@ -128,7 +128,7 @@ struct CustomSubstanceEntry: Codable, Identifiable, Hashable {
         guard let components, !components.isEmpty else { return nil }
         return components
             .map { "\($0.amountPerUnit.doseFormatted) \($0.unit) \(CustomSubstanceStore.shared.displayName(for: $0.substance))" }
-            .joined(separator: " · ")
+            .joined(separator: ", ")
     }
 
     /// The label to show the user — the personal override when set, else the name.

@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import TipKit
 
 /// The Journal's `•••` toolbar button: a Mail-style options popover carrying the
 /// grouping thumbnail picker plus Jump to Date and the app-level Settings/Help,
@@ -9,9 +8,9 @@ import TipKit
 /// custom thumbnail views — same pattern as the Tolerance screen's options menu.
 struct JournalOptionsButton: View {
     @Environment(\.appNavigator) private var navigator
-    @Environment(\.opensRecordsBesideList) private var opensRecordsBesideList
     @Binding var grouping: JournalGrouping
     @Binding var groupKey: JournalGroupKey
+    var showsGrouping = true
     let onJumpToDate: () -> Void
 
     @State private var showsOptions = false
@@ -26,17 +25,12 @@ struct JournalOptionsButton: View {
         }
         .accessibilityLabel(Text("More"))
         .popover(isPresented: $showsOptions) {
-            JournalOptionsMenu(grouping: $grouping, groupKey: $groupKey) { action in
+            JournalOptionsMenu(grouping: $grouping, groupKey: $groupKey, showsGrouping: showsGrouping) { action in
                 pendingAction = action
                 showsOptions = false
             }
             .presentationCompactAdaptation(.popover)
         }
-        // The "your data lives here" tip points at Settings — it anchored to the
-        // Journal's overflow menu before the toolbar consolidation, so it lives
-        // on this button now (Journal is the landing tab; other tabs never
-        // surfaced it).
-        .popoverTip(SettingsDataTip(), arrowEdge: .top)
         .onChange(of: showsOptions) {
             guard !showsOptions, let action = pendingAction else { return }
             pendingAction = nil
@@ -47,8 +41,7 @@ struct JournalOptionsButton: View {
                 try? await Task.sleep(for: UITiming.presentationTeardown)
                 switch action {
                 case .jumpToDate: onJumpToDate()
-                case .myMeds: navigator.openRecord(.myMeds, besideList: opensRecordsBesideList)
-                case .skins: present(.skins)
+                case .myMeds: navigator.select(.myMeds)
                 case .settings: present(.settings)
                 case .help: present(.help)
                 }
@@ -65,43 +58,43 @@ struct JournalOptionsButton: View {
 /// The options popover content, modeled on Mail's view-options menu: the
 /// grouping thumbnail picker across the top (three line-art phones with a radio
 /// each, plus the Grouped key as a segmented control beneath while Grouped is
-/// selected), then Jump to Date, then Help, then the app-level Skins/Settings. Picking a
+/// selected), then Jump to Date, then Help, then Settings. Picking a
 /// grouping keeps the popover open (Mail's behavior — the list re-buckets
 /// behind it); the action rows dismiss.
 struct JournalOptionsMenu: View {
     @Binding var grouping: JournalGrouping
     @Binding var groupKey: JournalGroupKey
+    var showsGrouping = true
     let onAction: (JournalMenuAction) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: Spacing.md) {
-                ForEach(JournalGrouping.allCases, id: \.self) { option in
-                    groupingColumn(option)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, Spacing.xxxl)
-            .padding(.bottom, Spacing.xl)
-
-            if grouping == .grouped {
-                Picker("Group by", selection: $groupKey) {
-                    ForEach(JournalGroupKey.allCases, id: \.self) { key in
-                        Text(key.displayName).tag(key)
+            if showsGrouping {
+                HStack(alignment: .top, spacing: Spacing.md) {
+                    ForEach(JournalGrouping.allCases, id: \.self) { option in
+                        groupingColumn(option)
                     }
                 }
-                .pickerStyle(.segmented)
                 .padding(.horizontal, 14)
-                .padding(.bottom, 14)
-            }
+                .padding(.top, Spacing.xxxl)
+                .padding(.bottom, Spacing.xl)
 
-            sectionDivider
+                if grouping == .grouped {
+                    Picker("Group by", selection: $groupKey) {
+                        ForEach(JournalGroupKey.allCases, id: \.self) { key in
+                            Text(key.displayName).tag(key)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 14)
+                }
+
+                sectionDivider
+            }
 
             VStack(spacing: 0) {
                 actionRow(.jumpToDate, title: Text("Jump to Date"), systemImage: "calendar")
-                // The Journal's standing door to My Meds: the MyMedsCard only
-                // exists once meds do, so before the first med this row is the
-                // only way in from the Journal.
                 actionRow(.myMeds, title: Text("My Meds"), systemImage: "pills")
             }
 
@@ -112,7 +105,6 @@ struct JournalOptionsMenu: View {
             sectionDivider
 
             VStack(spacing: 0) {
-                actionRow(.skins, title: Text("Skins"), systemImage: "paintbrush")
                 actionRow(.settings, title: Text("Settings"), systemImage: "gearshape")
             }
             .padding(.bottom, Spacing.md)
@@ -232,7 +224,7 @@ struct JournalFilterMenu<Display: View>: View {
                     .accessibilityHidden(true)
             }
             .menuStyle(.button)
-            .skinButtonStyle(.prominent)
+            .buttonStyle(.borderedProminent)
             .buttonBorderShape(.circle)
             .controlSize(.regular)
             .tint(Theme.accent)

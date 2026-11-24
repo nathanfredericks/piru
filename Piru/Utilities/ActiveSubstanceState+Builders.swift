@@ -25,7 +25,7 @@ extension ActiveSubstanceState {
         let duration = category.map { rawDuration.fillingMissingPhases(for: $0) } ?? rawDuration
         let boundaries = duration.phaseBoundaries
         // Zero-order substances (alcohol) clear in a dose-scaled time, so the whole readout — phase
-        // bar, phase-band coloring, now-line active window, "{elapsed} in · {remaining} left" — must
+        // bar, phase-band coloring, now-line active window, "{elapsed} in, {remaining} left" — must
         // track the same kinetics the curve draws, not the fixed `DurationProfile`. Falls back to the
         // profile below when the dose can't be read as a mass or is too small to form a BAC peak.
         let zeroOrder = TimelineCurveModel.zeroOrderBoundaries(zeroOrderKinetics, amount: amount, unit: unit)

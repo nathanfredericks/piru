@@ -98,7 +98,6 @@ struct SubstanceColorsListView: View {
                                         }
                                     }
                             }
-                            .listRowBackground(CardBackground())
                         }
                     } header: {
                         CollapsibleCategoryHeader(
@@ -111,7 +110,6 @@ struct SubstanceColorsListView: View {
                 }
             }
         }
-        .themedPage()
         .navigationTitle("Substance Colors")
         .inlineNavigationTitle()
         .alwaysVisibleSearch(text: $searchText, prompt: Text("Search Colors"))

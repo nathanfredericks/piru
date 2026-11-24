@@ -248,12 +248,10 @@ extension ByVolumeDosing {
 // MARK: - Notes Breadcrumb Codec
 
 /// Encodes/decodes the by-volume origin stored on a dose's `notes` — canonical
-/// millilitres + ABV, with an optional drink name (`"IPA · 568 mL · 6% ABV"` or
-/// `"330 mL · 5% ABV"`). The form/tray prepends it on save and re-derives the
-/// name/volume/strength fields from it on edit. The canonical-mL form keeps the
-/// parse locale-independent.
+/// milliliters and ABV, with an optional drink name. The parser accepts
+/// comma-delimited summaries and middle dots from existing journal data.
 enum ByVolumeBreadcrumb {
-    static let separator = " · "
+    private static let separator = ", "
 
     static func make(name: String? = nil, volumeML: Double, abv: Double) -> String {
         let core = "\(ByVolumeDosing.formatTrimmed(volumeML)) mL\(separator)\(ByVolumeDosing.formatTrimmed(abv))% ABV"
@@ -263,11 +261,10 @@ enum ByVolumeBreadcrumb {
         return core
     }
 
-    /// First `"[name · ]<v> mL · <a>% ABV"` found in `notes` (prepended as the
-    /// leading line), or nil. Case-insensitive, whitespace-tolerant. `name` is the
-    /// optional text before the volume, with its trailing separator removed.
+    /// Parse a standalone summary line in a dose note. The optional drink name
+    /// is the text before the volume, with its trailing punctuation removed.
     static func parse(_ notes: String) -> (name: String?, volumeML: Double, abv: Double)? {
-        let pattern = #/([0-9]+(?:\.[0-9]+)?)\s*mL\s*·\s*([0-9]+(?:\.[0-9]+)?)\s*%\s*ABV/#
+        let pattern = #/([0-9]+(?:\.[0-9]+)?)\s*mL\s*[,·]\s*([0-9]+(?:\.[0-9]+)?)\s*%\s*ABV/#
             .ignoresCase()
         for raw in notes.split(separator: "\n", omittingEmptySubsequences: false) {
             let line = String(raw)
@@ -275,7 +272,7 @@ enum ByVolumeBreadcrumb {
                   let ml = Double(m.1), let abv = Double(m.2) else { continue }
             var prefix = String(line[line.startIndex ..< m.range.lowerBound])
                 .trimmingCharacters(in: .whitespaces)
-            if prefix.hasSuffix("·") { prefix = String(prefix.dropLast()).trimmingCharacters(in: .whitespaces) }
+            if prefix.hasSuffix(",") || prefix.hasSuffix("·") { prefix = String(prefix.dropLast()).trimmingCharacters(in: .whitespaces) }
             return (prefix.isEmpty ? nil : prefix, ml, abv)
         }
         return nil

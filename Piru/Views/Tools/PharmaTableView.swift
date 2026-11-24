@@ -49,7 +49,7 @@ struct PharmaTableView: View {
                 PharmaTableGrid(model: model, columns: visibleColumns, headerOffset: headerOffset)
             }
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .navigationTitle(Text("Pharma Table"))
         .inlineNavigationTitle()
         .toolbar {
@@ -662,7 +662,7 @@ enum PharmaColumn: String, CaseIterable, Identifiable {
                 if seen.insert(name).inserted { names.append(name) }
                 if names.count == 3 { break }
             }
-            return names.isEmpty ? nil : names.joined(separator: " · ")
+            return names.isEmpty ? nil : names.joined(separator: ", ")
         default:
             return nil
         }

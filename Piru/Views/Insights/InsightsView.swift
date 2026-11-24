@@ -215,7 +215,7 @@ struct InsightsView: View {
             .padding(.top, Spacing.xs)
             .padding(.bottom, 80)
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .appNavigationBar("Insights")
         .task(id: model.changeToken(substanceColors: substanceColors, dailyItemCount: dailyItems.count)) {
             await model.recompute(
@@ -502,7 +502,6 @@ private struct InsightsToleranceCard: View {
             .buttonStyle(.plain)
         }
         .themeCard()
-        .skinFrameCorners()
     }
 }
 

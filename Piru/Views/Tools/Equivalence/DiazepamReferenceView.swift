@@ -25,7 +25,7 @@ struct DiazepamReferenceView: View {
             }
         }
         .insetGroupedListStyle()
-        .skinBackdrop()
+        .piruPageBackground()
         .appNavigationBar("Diazepam Equivalence")
         .task {
             await SubstanceStore.shared.ensureAllLoaded()

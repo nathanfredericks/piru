@@ -1,48 +1,5 @@
 import SwiftUI
 
-/// The tray-wide "what's in your stomach" chip. A plain choice, Unknown until
-/// picked; what the choice does to each staged dose is stated after it is made,
-/// in ``TrayWarningBanner``, rather than previewed before anything is chosen.
-struct TrayMealChip: View {
-    @Bindable var model: DoseTrayModel
-    let showsLabel: Bool
-
-    var body: some View {
-        TrayChipFace(
-            systemImage: model.meal?.systemImage ?? "fork.knife",
-            title: showsLabel ? (model.meal?.chipLabel ?? String(localized: "Food")) : nil,
-            isSet: model.meal != nil,
-        )
-        .animation(.snappy, value: model.meal)
-        // The overlay Menu is the accessible element, as on the when/location chips.
-        .accessibilityHidden(true)
-        .overlay {
-            Menu {
-                // An inline Picker, not buttons with a checkmark icon: the menu then
-                // draws the selection in its own leading column, apart from the
-                // option icons, the way every system choice menu does.
-                Picker("Stomach", selection: $model.meal.animation(.snappy)) {
-                    Label("Unknown", systemImage: MealState.unknownSystemImage)
-                        .tag(MealState?.none)
-                    ForEach(MealState.allCases, id: \.self) { meal in
-                        Label(meal.label, systemImage: meal.systemImage)
-                            .tag(Optional(meal))
-                    }
-                }
-                .pickerStyle(.inline)
-            } label: {
-                Color.clear.contentShape(Capsule())
-            }
-            // Reading order whichever way the menu opens; from the bottom bar it
-            // opens upward, which would otherwise reverse the list.
-            .menuOrder(.fixed)
-            .accessibilityLabel(Text("Stomach: \(model.meal?.label ?? String(localized: "Unknown"))"))
-            .accessibilityInputLabels([Text("Stomach"), Text("Meal"), Text("Food")])
-        }
-        .sensoryFeedback(.selection, trigger: model.meal)
-    }
-}
-
 /// One line of what the picked meal does. `estimatedFor` names the substance
 /// when the figure is the generic delay rather than its own measured one.
 struct TrayMealLine {
@@ -51,8 +8,7 @@ struct TrayMealLine {
 }
 
 /// What the picked meal does to the staged oral doses, as the lines
-/// ``TrayWarningBanner`` shows above the chips. One line per dose up to two;
-/// past that, one line for all of them, so the banner never outgrows the dock.
+/// ``TrayWarningBanner`` shows before recording. One line per dose up to two, then a summary.
 enum TrayMealConsequence {
     @MainActor
     static func lines(staged: [StagedDose], meal: MealState?) -> [TrayMealLine] {

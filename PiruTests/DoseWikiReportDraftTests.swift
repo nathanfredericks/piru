@@ -183,7 +183,7 @@ struct DoseWikiReportDraftTests {
         let checkIn = note(
             90, "warm", kind: .checkIn, shulgin: 2, mood: 2, heartRate: 84, descriptors: [euphoria],
         )
-        #expect(DoseWikiReportDraft.description(for: checkIn) == "Check-in · ++ · mood +2\nwarm\neuphoria")
+        #expect(DoseWikiReportDraft.description(for: checkIn) == "Check-in, ++, mood +2\nwarm\neuphoria")
     }
 
     @Test
@@ -194,7 +194,7 @@ struct DoseWikiReportDraftTests {
         let raw = try #require(String(data: draft.json, encoding: .utf8))
         #expect(!raw.contains("♥"))
         #expect(!raw.contains("112"))
-        #expect(draft.payload.timeline?.peak?.first?.description == "Check-in · mood +1\nracing a bit")
+        #expect(draft.payload.timeline?.peak?.first?.description == "Check-in, mood +1\nracing a bit")
     }
 
     @Test

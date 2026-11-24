@@ -1,7 +1,6 @@
-import SwiftData
 import SwiftUI
 
-/// A tool surfaced in the Tools tab hub. Each value is pushed as a full-screen
+/// A tool surfaced in the Tools hub. Each value is pushed as a full-screen
 /// destination via `PushRoute.tool`. Kept `nonisolated`/`Codable` so it can ride
 /// inside `PushRoute` (state restoration + potential deep links).
 nonisolated enum Tool: String, Hashable, Codable, CaseIterable, Identifiable {
@@ -91,15 +90,15 @@ nonisolated enum Tool: String, Hashable, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// The Tools tab root: a hub of tools, each pushing a full-screen view.
+/// The Tools hub opens from the Library toolbar.
 ///
-/// Rich cards with preview state (Inventory, My Meds) and safety-relevant
+/// Cards with inventory previews and safety-relevant
 /// summaries (Interactions) render full-width. Simpler tools sit in a
 /// two-column grid to reduce vertical scroll.
 struct ToolsView: View {
     /// Tools rendered as half-width compact cards, in order (left-to-right,
-    /// top-to-bottom). Education sub-tools, Inventory, My Meds, Interactions,
-    /// and Data & Backup have their own full-width cards above the grid.
+    /// top-to-bottom). Education, Inventory, and Interactions have
+    /// full-width cards above the grid.
     private let compactTools: [Tool] = [
         .identify,
         .calculator, .steadyState,
@@ -116,10 +115,8 @@ struct ToolsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                MyMedsToolCard()
                 InventorySummaryCard()
                 InteractionsSummaryCard()
-                DataBackupToolCard()
                 EducationCard()
 
                 LazyVGrid(columns: gridColumns, spacing: Spacing.xl) {
@@ -137,174 +134,7 @@ struct ToolsView: View {
             .padding(.top, Spacing.xs)
             .padding(.bottom, 80)
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .appNavigationBar("Tools")
-    }
-}
-
-/// Pushes `DataStorageView` — the record's own tool: what is stored on the
-/// device, iCloud backup, export and import, recovery snapshots, and the
-/// substance database. The same screen stays reachable from Settings.
-private struct DataBackupToolCard: View {
-    var body: some View {
-        GlanceCard(icon: "externaldrive", title: Text("Data & Backup"), route: .dataStorage) {
-            Text("Export, import, and encrypted backups")
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryLabel)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-}
-
-private struct MyMedsToolCard: View {
-    @Query(sort: \DailyDoseItem.sortOrder) private var items: [DailyDoseItem]
-    @Query private var recentOccurrences: [RoutineOccurrence]
-
-    @State private var warmed = false
-
-    init() {
-        let yesterdayStart = Self.yesterdayStart
-        _recentOccurrences = Query(
-            filter: #Predicate<RoutineOccurrence> { $0.dueDay >= yesterdayStart },
-        )
-    }
-
-    private static var yesterdayStart: Date {
-        let calendar = Calendar.current
-        let today = calendar.journalDay(for: .now)
-        return calendar.date(byAdding: .day, value: -1, to: today) ?? today
-    }
-
-    /// The journal day's occurrences, the same day the My Meds card shows.
-    private var todayOccurrences: [RoutineOccurrence] {
-        let today = Calendar.current.journalDay(for: .now)
-        return recentOccurrences.filter { $0.dueDay >= today }
-    }
-
-    var body: some View {
-        GlanceCard(icon: "pills", title: Text("My Meds"), route: .myMeds) {
-            if items.isEmpty {
-                Text("Set up your daily medications and supplements")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryLabel)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                let slots = MyMedsModel.slots(items: items, occurrences: todayOccurrences)
-                if slots.isEmpty {
-                    // Nothing on today's schedule (an off day, or only
-                    // as-needed meds): the next due day when one is in reach.
-                    if let next = nextScheduledDose() {
-                        footerLine(systemImage: "calendar", text: Text("Next: \(next)"))
-                    } else {
-                        footerLine(systemImage: "checkmark.circle", text: Text("Nothing due"))
-                    }
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(slots.prefix(3), id: \.id) { slot in
-                            medsRow(slot)
-                        }
-                        if slots.count > 3 {
-                            GlanceMoreRow(count: slots.count - 3)
-                                .padding(.top, Spacing.xs)
-                        }
-                    }
-
-                    let nextSlot = slots.first { $0.state == .pending && !$0.isDueNow && $0.time != nil }
-                    if let nextSlot, let time = nextSlot.time {
-                        footerLine(
-                            systemImage: "clock",
-                            text: Text("Next: \(displayName(for: nextSlot.med)) at \(Self.timeText(time))"),
-                        )
-                    } else if slots.allSatisfy({ $0.state == .taken }) {
-                        footerLine(systemImage: "checkmark.circle", text: Text("All taken"))
-                    } else if !slots.contains(where: { $0.state == .pending }) {
-                        footerLine(systemImage: "checkmark.circle", text: Text("Nothing due"))
-                    }
-                }
-            }
-        }
-        .task {
-            await SubstanceStore.shared.ensureAllLoaded()
-            warmed = true
-        }
-    }
-
-    /// The first scheduled med due after today and its day ("Memantine,
-    /// Thursday"), looking as far ahead as the longest cadence repeats.
-    /// `nil` when only as-needed meds are set up.
-    private func nextScheduledDose() -> String? {
-        let calendar = Calendar.current
-        let today = calendar.journalDay(for: .now)
-        let scheduled = items.filter { !$0.isAsNeeded }
-        guard !scheduled.isEmpty else { return nil }
-        for offset in 1 ... DoseFrequency.intervalRange.upperBound {
-            guard let day = calendar.date(byAdding: .day, value: offset, to: today),
-                  let item = scheduled.first(where: { AdherenceCalculator.isDue($0, on: day) })
-            else { continue }
-            let dayText = offset < 7
-                ? day.formatted(.dateTime.weekday(.wide))
-                : day.formatted(.dateTime.month(.abbreviated).day())
-            return String(localized: "\(displayName(for: DailyMedSnapshot(item))), \(dayText)")
-        }
-        return nil
-    }
-
-    private func medsRow(_ slot: MyMedsCard.MedSlot) -> some View {
-        HStack(spacing: Spacing.lg) {
-            MedSlotCheck(state: slot.state, due: slot.isDueNow)
-            Text(displayName(for: slot.med))
-                .font(.subheadline.weight(slot.taken ? .regular : .medium))
-                .foregroundStyle(slot.taken ? Theme.secondaryLabel : .primary)
-                .lineLimit(1)
-            Spacer(minLength: 4)
-            HStack(spacing: Spacing.xs) {
-                Text("\(slot.med.amount.doseFormatted) \(slot.med.unit)")
-                    .font(.footnote.monospacedDigit())
-                if let time = slot.time {
-                    Text("·")
-                    Text(Self.timeText(time))
-                        .font(.footnote.monospacedDigit())
-                }
-            }
-            .foregroundStyle(Theme.secondaryLabel)
-            .lineLimit(1)
-        }
-        .padding(.vertical, Spacing.xs)
-    }
-
-    /// The quiet line under the rows: the next timed dose, or today's state
-    /// when nothing is left to come.
-    private func footerLine(systemImage: String, text: Text) -> some View {
-        HStack(spacing: Spacing.lg) {
-            Image(systemName: systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.secondaryLabel)
-                .frame(width: 18)
-                .accessibilityHidden(true)
-            text
-                .font(.footnote)
-                .foregroundStyle(Theme.secondaryLabel)
-                .lineLimit(1)
-            Spacer(minLength: 4)
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Theme.tertiaryLabel)
-        }
-        .padding(.vertical, Spacing.sm)
-    }
-
-    private func displayName(for item: DailyMedSnapshot) -> String {
-        if warmed {
-            item.productName ?? CustomSubstanceStore.shared.displayName(for: item.substance)
-        } else {
-            item.productName ?? item.substance
-        }
-    }
-
-    private static func timeText(_ minutes: Int) -> String {
-        let date = Calendar.current.date(
-            bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now,
-        ) ?? .now
-        return date.formatted(date: .omitted, time: .shortened)
     }
 }

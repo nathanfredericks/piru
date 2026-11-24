@@ -36,7 +36,6 @@ struct PsyLogImportSheet: View {
                     }
                 }
             }
-            .themedPage()
             .navigationTitle("Import")
             .inlineNavigationTitle()
             .toolbar {
@@ -139,7 +138,6 @@ private struct PsyLogImportSummary: View {
                     .captionSecondary()
             }
             .padding(.vertical, Spacing.xs)
-            .listRowBackground(CardBackground())
         }
     }
 }
@@ -174,7 +172,6 @@ private struct PsyLogConsumerRow: View {
                 }
             }
         }
-        .listRowBackground(CardBackground())
         .accessibilityElement(children: .combine)
     }
 }

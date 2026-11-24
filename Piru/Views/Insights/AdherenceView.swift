@@ -30,7 +30,7 @@ struct AdherenceView: View {
                 }
                 .padding()
             }
-            .skinBackdrop()
+            .piruPageBackground()
             .task(id: DoseLogService.shared.revision) {
                 model.recompute(entries: allEntries, dailyItems: dailyItems, month: displayedMonth)
             }
@@ -62,11 +62,11 @@ private struct AdherenceEmptyState: View {
                     .font(.body.weight(.semibold))
                     .padding(.horizontal, Spacing.xxxl)
             }
-            .skinButtonStyle(.prominent)
+            .buttonStyle(.glassProminent)
             .tint(Theme.accent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .skinBackdrop()
+        .piruPageBackground()
     }
 }
 
@@ -130,7 +130,7 @@ private struct AdherenceTodayCard: View {
                             .sectionLabel()
                             .frame(maxWidth: .infinity)
                     }
-                    .skinButtonStyle(.neutral)
+                    .buttonStyle(.glass)
                     .tint(Theme.accent)
                 }
             }
@@ -528,7 +528,7 @@ struct AdherenceDayDetailSheet: View {
                                 )
                                 .font(.body)
 
-                                Text("\(itemAdherence.item.amount.doseFormatted) \(itemAdherence.item.unit) · \(itemAdherence.item.frequencyShortLabel)")
+                                Text("\(itemAdherence.item.amount.doseFormatted) \(itemAdherence.item.unit), \(itemAdherence.item.frequencyShortLabel)")
                                     .captionSecondary()
                             }
                         }

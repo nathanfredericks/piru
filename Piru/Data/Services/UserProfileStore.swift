@@ -4,17 +4,7 @@ import Observation
 import os
 import SwiftData
 
-/// Single home for user *profile / physiology* state, persisted via SwiftData.
-///
-/// The disclosure tier, body weight, and the phenotype/context flags are user data, so they live in
-/// one ``UserProfileRecord`` in the same SwiftData store as doses/colors/favorites: one store, one
-/// backup and recovery path, typed fields, and lightweight migration. The extension-shared feature
-/// flags stay in the app-group `UserDefaults` where widgets can read them.
-///
-/// Wraps the app's shared `ModelContainer` (set once at launch via ``configure(container:)``) and a
-/// single ``UserProfileRecord`` row, created lazily on first write. On first launch it migrates the
-/// disclosure tier out of the legacy GRDB `piru-user-prefs.sqlite`, so a user who set it there keeps
-/// that choice.
+/// Body weight and physiology flags for the active journal, backed by its SwiftData store.
 @Observable @MainActor
 final class UserProfileStore {
     static let shared = UserProfileStore()
@@ -53,9 +43,6 @@ final class UserProfileStore {
     init() {}
 
     // MARK: - Published state (the observed source of truth for views)
-
-    /// The user's chosen disclosure tier (drives progressive-disclosure defaults in detail views).
-    private(set) var disclosureTier: UserProfile = .curious
 
     /// The user's body weight in kg, or `nil` if never set (→ population default, estimated).
     private(set) var weightKg: Double?
@@ -97,14 +84,12 @@ final class UserProfileStore {
     /// Mirror the durable record into the published value properties that views observe.
     private func publishFromRecord() {
         guard let record else {
-            disclosureTier = .curious
             weightKg = nil
             weightSource = .estimated
             grapefruitLoggingEnabled = false
             aldh2Deficient = false
             return
         }
-        disclosureTier = UserProfile(wire: record.disclosureTierRaw) ?? .curious
         weightKg = record.bodyWeightKg
         weightSource = WeightSource(rawValue: record.weightSourceRaw)
             ?? (record.bodyWeightKg == nil ? .estimated : .manual)
@@ -116,17 +101,6 @@ final class UserProfileStore {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Documents")
         return docs.appendingPathComponent("piru-user-prefs.sqlite")
-    }
-
-    // MARK: - Disclosure tier
-
-    /// Persist a new disclosure tier. Immediate and `@Observable`, so detail views re-render with the
-    /// new defaults.
-    func setDisclosureTier(_ tier: UserProfile) {
-        guard tier != disclosureTier else { return }
-        disclosureTier = tier
-        ensureRecord().disclosureTierRaw = tier.rawValue
-        save()
     }
 
     // MARK: - Metabolic context flags (Stage 4c)
@@ -223,15 +197,8 @@ final class UserProfileStore {
 
     // MARK: - Legacy migration
 
-    /// One-time copy of the disclosure tier from the legacy GRDB `piru-user-prefs.sqlite`
-    /// `user_profile` table into a fresh SwiftData record. Runs only when no record exists yet and the
-    /// legacy file/table is present, so existing users keep their chosen tier across the storage move.
-    ///
-    /// LEGACY — plan to remove. Bridges installs still carrying a GRDB-stored disclosure tier to the
-    /// SwiftData store exactly once on first launch. Once ASC confirms all installs have launched a
-    /// SwiftData-tier build, delete this method and stop reading the GRDB prefs DB (the
-    /// `legacyPrefsDBURL` plumbing in ``configure(container:)`` goes with it). See the legacy-removal
-    /// tracking note.
+    /// Preserve the retired detail preference for older app versions and profile exports.
+    /// This only runs for the owner's journal when it has no profile record.
     private func migrateLegacyTier(into ctx: ModelContext, from legacyURL: URL?) {
         guard let legacyURL, FileManager.default.fileExists(atPath: legacyURL.path) else { return }
         do {
@@ -251,8 +218,8 @@ final class UserProfileStore {
                     sql: "SELECT value FROM user_profile WHERE key = 'profile'",
                 )
             }
-            guard let raw, let tier = UserProfile(wire: raw) else { return }
-            let migrated = UserProfileRecord(disclosureTierRaw: tier.rawValue)
+            guard let raw, ["casual", "harm-reduction", "pharma-nerd"].contains(raw) else { return }
+            let migrated = UserProfileRecord(disclosureTierRaw: raw)
             ctx.insert(migrated)
             record = migrated
             try ctx.save()

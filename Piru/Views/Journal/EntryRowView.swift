@@ -43,7 +43,7 @@ struct DayEntryCore: Equatable {
     var combinationLine: String? {
         guard let combinationName else { return nil }
         if let combinationVolumeML {
-            return String(localized: "Part of \(combinationName) · \(combinationVolumeML.doseFormatted) mL")
+            return String(localized: "Part of \(combinationName), \(combinationVolumeML.doseFormatted) mL")
         }
         return String(localized: "Part of \(combinationName)")
     }
@@ -360,10 +360,9 @@ struct EntryRowView: View {
 
     /// Clock time plus the optional "8h ago" relative phrase.
     private var timeLine: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: Spacing.sm) {
             Text(display.core.timestamp.formatted(date: .omitted, time: .shortened))
             if showRelativeTime {
-                Text(verbatim: "  ·  ").foregroundStyle(.tertiary)
                 Text(relativeTime)
             }
         }

@@ -125,20 +125,6 @@ T = {
         "终点：模型估算的“任何药物效应”视觉模拟量表评分",
         "終點：模型估算的「任何藥物效應」視覺類比量表評分",
     ),
-    # Hebi Arcade: the cabinet you get by tapping the backdrop's ship
-    "Score": ("得分", "得分"),
-    "Best": ("最高分", "最高分"),
-    "Game over": ("游戏结束", "遊戲結束"),
-    "Leave the game": ("退出游戏", "退出遊戲"),
-    "Drag to fly, double-tap to roll": ("拖动来飞行，双击来翻滚", "拖曳來飛行，點兩下來翻滾"),
-    "Wide!": ("散射！", "散射！"),
-    "Wider!": ("更广！", "更廣！"),
-    "Wingmen!": ("僚机！", "僚機！"),
-    "Shields!": ("护盾！", "護盾！"),
-    "Extra roll!": ("多一次翻滚！", "多一次翻滾！"),
-    "Bomb!": ("炸弹！", "炸彈！"),
-    "Laser!": ("激光！", "雷射！"),
-    "Snake charmed!": ("蛇被驯服了！", "蛇被馴服了！"),
     "Limitations": ("局限性", "局限性"),
     # Settings → substance names in the app language, or English
     "English Substance Names": ("英文物质名称", "英文物質名稱"),
@@ -482,76 +468,8 @@ T = {
         "抑制过度的神经元放电，视药物不同，通过阻断钠通道、增强 GABA 或结合 SV2A 实现。",
         "抑制過度的神經元放電，視藥物不同，透過阻斷鈉通道、增強 GABA 或結合 SV2A 實現。",
     ),
-    # Skins (Settings → Appearance)
     "Piru": ("Piru", "Piru"),
-    "Soft pink, hot pink, liquid glass": ("柔粉、亮粉、液态玻璃", "柔粉、亮粉、液態玻璃"),
-    "ely.pink": ("ely.pink", "ely.pink"),
-    "Night and pink, stickers and pixels": ("夜色与粉色，贴纸与像素", "夜色與粉色，貼紙與像素"),
-    "Tsuki": ("Tsuki", "Tsuki"),
-    "Deep purple night, a sleeping moon": ("深紫夜色，一轮睡着的月亮", "深紫夜色，一輪睡著的月亮"),
-    "Starfield": ("星野", "星野"),
-    "Steel blue and gold under a thousand stars": ("千星之下的钢蓝与金", "千星之下的鋼藍與金"),
-    "Jellyfish": ("水母", "水母"),
-    "Deep water, bioluminescence, jellyfish": ("深水、生物荧光、水母", "深水、生物螢光、水母"),
-    "Graphite": ("石墨", "石墨"),
-    "Neutral grays, nothing moving": ("中性灰，静止不动", "中性灰，靜止不動"),
-    "Linen": ("亚麻", "亞麻"),
-    "Warm paper and charcoal, quiet": ("暖纸与炭色，安静", "暖紙與炭色，安靜"),
-    "Slate": ("板岩", "板岩"),
-    "Cool blue-gray, quiet": ("冷蓝灰，安静", "冷藍灰，安靜"),
-    "Paper Garden": ("纸庭", "紙庭"),
-    "Washi, raked sand, sakura": ("和纸、枯山水、樱花", "和紙、枯山水、櫻花"),
-    # The skin's picker name is Aurora; the case and raw value stay `hotaru`.
-    "Aurora": ("极光", "極光"),
-    "Fireflies over a dark meadow": ("暗色草原上的萤火虫", "暗色草原上的螢火蟲"),
-    "Yuki": ("Yuki", "Yuki"),
-    "Periwinkle, snow and frost": ("长春花蓝、雪与霜", "長春花藍、雪與霜"),
-    "Hebi Arcade": ("Hebi 街机", "Hebi 街機"),
-    "Neon City on a CRT": ("CRT 上的霓虹城", "CRT 上的霓虹城"),
-    # Romanized Japanese app names stay as they are, like Tsuki / Yuki / Kumo.
-    "Hanabi": ("Hanabi", "Hanabi"),
-    "Selenia": ("Selenia", "Selenia"),
-    "Engraved gold, a plum night, a turning wheel": (
-        "镌刻的金色、梅紫夜空、缓缓旋转的星盘",
-        "鐫刻的金色、梅紫夜空、緩緩旋轉的星盤",
-    ),
-    # Named for what they evoke in Chinese rather than transliterated:
-    # 纸醉金迷 is the idiom for lavish gilded decadence, 雷鬼 is reggae.
-    "Gatsby": ("纸醉金迷", "紙醉金迷"),
-    "Irie": ("雷鬼", "雷鬼"),
-    "Black lacquer, gold leaf, a city after dark": (
-        "黑漆、金箔、入夜的城市",
-        "黑漆、金箔、入夜的城市",
-    ),
-    "Emerald velvet, gold foil, red, gold and green": (
-        "祖母绿丝绒、金箔、红金绿",
-        "祖母綠絲絨、金箔、紅金綠",
-    ),
-    "A night sky, five suits, fireworks": ("夜空、五种花色、烟花", "夜空、五種花色、煙火"),
-    "Kumo": ("Kumo", "Kumo"),
-    "A sky that follows the day": ("随一天变化的天空", "隨一天變化的天空"),
     "dose.wiki": ("dose.wiki", "dose.wiki"),
-    "Plum and fuchsia, from the open encyclopedia": (
-        "梅紫与紫红，来自开放百科",
-        "梅紫與紫紅，來自開放百科",
-    ),
-    "In partnership with dose.wiki ↗": ("与 dose.wiki 合作 ↗", "與 dose.wiki 合作 ↗"),
-    "A skin changes the app's colors, cards, and type. Your substance colors, the timeline, and every chart stay as they are.": (
-        "皮肤会改变应用的颜色、卡片和字体。你的物质颜色、时间轴和所有图表都保持原样。",
-        "皮膚會改變應用程式的顏色、卡片和字體。你的物質顏色、時間軸和所有圖表都保持原樣。",
-    ),
-    "Follow System": ("跟随系统", "跟隨系統"),
-    "Light Mode": ("浅色模式", "淺色模式"),
-    "Dark Mode": ("深色模式", "深色模式"),
-    "Decorations": ("装饰", "裝飾"),
-    "Stars, hearts, and stickers behind everything. Off automatically with Reduce Motion.": (
-        "背后的星星、爱心和贴纸。开启“减弱动态效果”时会自动关闭。",
-        "背後的星星、愛心和貼紙。開啟「減少動態效果」時會自動關閉。",
-    ),
-    "Every skin has a light and a dark side. Follow System switches with iOS.": (
-        "每个皮肤都有浅色和深色两面。跟随系统会随 iOS 切换。",
-        "每個皮膚都有淺色和深色兩面。跟隨系統會隨 iOS 切換。",
-    ),
     # Quick-log Edit sheet
     "New Drink…": ("新增饮品…", "新增飲品…"),
     "Add Favorite…": ("添加收藏…", "新增收藏…"),
@@ -664,8 +582,8 @@ T = {
     "Cannabis": ("大麻", "大麻"),
     "Ethylphenidate": ("乙苯哌酯", "乙苯哌酯"),
     "Tramadol → O-DSMT": ("曲马多 → O-DSMT", "曲馬多 → O-DSMT"),
-    "Dose · %@": ("剂量 · %@", "劑量 · %@"),
-    "By dose · %@": ("按剂量 · %@", "按劑量 · %@"),
+    "Dose, %@": ("剂量，%@", "劑量，%@"),
+    "By dose, %@": ("按剂量，%@", "按劑量，%@"),
     "/day": ("/天", "/天"),
     "": ("", ""),
     "—": ("—", "—"),
@@ -677,7 +595,6 @@ T = {
         "“%@”",
         "「%@」",
     ),
-    "%@ · %@": ("%@ · %@", "%@ · %@"),
     "%@ mg": ("%@ mg", "%@ mg"),
     "%@–%@ %@": ("%@–%@ %@", "%@–%@ %@"),
     "%@%%": ("%@%%", "%@%%"),
@@ -958,7 +875,7 @@ T = {
     ),
     "Uncalibrated": ("未校准", "未校準"),
     "1 result": ("1 项结果", "1 項結果"),
-    "Calibrated · %lld results": ("已校准 · %lld 项结果", "已校準 · %lld 項結果"),
+    "Calibrated, %lld results": ("已校准，%lld 项结果", "已校準，%lld 項結果"),
     "Add lab result": ("添加化验结果", "加入化驗結果"),
     "Reference lines": ("参考线", "參考線"),
     "Low line": ("下参考线", "下參考線"),
@@ -1006,11 +923,6 @@ T = {
     "Notes at their T+ offsets, descriptors by domain. %lld sessions with notes": (
         "按 T+ 偏移列出的笔记，按领域分组的描述词。%lld 个场次有笔记",
         "按 T+ 偏移列出的筆記，按領域分組的描述詞。%lld 個場次有筆記",
-    ),
-    "Notes live here": ("笔记在这里", "筆記在這裡"),
-    "Notes, check-ins and splitting live under this menu.": (
-        "笔记、状态确认和拆分都在这个菜单里。",
-        "筆記、狀態確認和拆分都在這個選單裡。",
     ),
     "Notes at their T+ offsets, descriptors by domain. None of the selected sessions has notes yet": (
         "按 T+ 偏移列出的笔记，按领域分组的描述词。所选场次还没有笔记",
@@ -1180,7 +1092,7 @@ T = {
         "「2 項待服」，或僅一項時的藥名",
     ),
     "%@ is due": ("%@ 该服用了", "%@ 該服用了"),
-    "%@ · %lld days left": ("%@ · 剩余 %lld 天", "%@ · 剩餘 %lld 天"),
+    "%@, %lld days left": ("%@，剩余 %lld 天", "%@，剩餘 %lld 天"),
     "Add Title…": ("添加标题…", "新增標題…"),
     "By Category": ("按类别", "按類別"),
     "By Substance": ("按物质", "按物質"),
@@ -1214,8 +1126,8 @@ T = {
     "%lld lines read": ("已读取 %lld 行", "已讀取 %lld 行"),
     "Add to Inventory": ("加入库存", "加入庫存"),
     "Barcode": ("条码", "條碼"),
-    "Barcode read · %@": ("已读取条码 · %@", "已讀取條碼 · %@"),
-    "Barcode recognized · %@": ("已识别条码 · %@", "已識別條碼 · %@"),
+    "Barcode read, %@": ("已读取条码，%@", "已讀取條碼，%@"),
+    "Barcode recognized, %@": ("已识别条码，%@", "已識別條碼，%@"),
     "Barcodes are matched offline against the US and French registries the app ships with. Anything else resolves by name.": (
         "条码离线匹配 App 内置的美国和法国药品登记数据；其他情况按名称解析。",
         "條碼離線比對 App 內建的美國和法國藥品登記資料；其他情況按名稱解析。",
@@ -1270,11 +1182,6 @@ T = {
     "probable": ("可能", "可能"),
     "unrecognized": ("未识别", "未識別"),
     # Settings hints, daily progress, colors, plot labels
-    "Backups, export & import are under Tools › Data & Backup; preferences are under Settings.": (
-        "备份、导出与导入在“工具 › 数据与备份”；偏好设置在“设置”。",
-        "備份、匯出與匯入在「工具 › 資料與備份」；偏好設定在「設定」。",
-    ),
-    "· %lld of %lld": ("· 已服 %1$lld / %2$lld", "· 已服 %1$lld / %2$lld"),
     "%lld of %lld logged today": ("今天已记录 %1$lld / %2$lld", "今天已記錄 %1$lld / %2$lld"),
     "Colors": ("颜色", "顏色"),
     "A color for every substance you log": (
@@ -1295,9 +1202,9 @@ T = {
         "还没有记录",
         "還沒有記錄",
     ),
-    "Projected · %@": (
-        "预测 · %@",
-        "預測 · %@",
+    "Projected, %@": (
+        "预测，%@",
+        "預測，%@",
     ),
     "Effect curves": (
         "效应曲线",
@@ -1378,7 +1285,6 @@ T = {
         "纯文本场次数据，用于笔记、AI 或存档",
         "純文字場次資料，用於筆記、AI 或存檔",
     ),
-    "· %lld entries": ("· %lld 条记录", "· %lld 條記錄"),
     "%lld sessions as individual images": (
         "%lld 个场次导出为单独图片",
         "%lld 個場次匯出為單獨圖片",
@@ -1489,7 +1395,7 @@ T = {
     "Accumulation": ("蓄积", "蓄積"),
     "at the peak, vs. one dose": ("峰值时，相对于单次剂量", "峰值時，相對於單次劑量"),
     "Plateau range": ("平台范围", "平台範圍"),
-    "%@ · trough to peak": ("%@ · 谷值到峰值", "%@ · 谷值到峰值"),
+    "%@, trough to peak": ("%@，谷值到峰值", "%@，谷值到峰值"),
     "Fluctuation": ("波动", "波動"),
     "smooth": ("平稳", "平穩"),
     "moderate swing": ("中等波动", "中等波動"),
@@ -1632,7 +1538,7 @@ T = {
     "Partial agonist": ("部分激动剂", "部分促效劑"),
     "no activation": ("无激活", "無活化"),
     "full activation": ("完全激活", "完全活化"),
-    "full activation · %@": ("完全激活 · %@", "完全活化 · %@"),
+    "full activation, %@": ("完全激活，%@", "完全活化，%@"),
     "mixed species": ("混合物种", "混合物種"),
     "one panel": ("同一组实验", "同一組實驗"),
     "one study": ("同一研究", "同一研究"),
@@ -1716,9 +1622,9 @@ T = {
         "达到中等或以上",
         "達到中等或以上",
     ),
-    "at common or above · %lld heavy": (
-        "达到中等或以上 · %lld 次大剂量",
-        "達到中等或以上 · %lld 次大劑量",
+    "at common or above, %lld heavy": (
+        "达到中等或以上，%lld 次大剂量",
+        "達到中等或以上，%lld 次大劑量",
     ),
     "Based on %lld of %lld entries with dose data": (
         "基于 %2$lld 条条目中有剂量数据的 %1$lld 条",
@@ -1814,9 +1720,9 @@ T = {
     ),
     "Toggles this substance's line": ("切换该物质的曲线显示", "切換該物質的曲線顯示"),
     # ---- Med times, heavy-tier band, combination metabolites ----
-    "Kicks in ~%@ · easing off ~%@": (
-        "约 %1$@ 起效 · 约 %2$@ 开始消退",
-        "約 %1$@ 起效 · 約 %2$@ 開始消退",
+    "Kicks in ~%@, easing off ~%@": (
+        "约 %1$@ 起效，约 %2$@ 开始消退",
+        "約 %1$@ 起效，約 %2$@ 開始消退",
     ),
     "Clear for sleep ~%@, after most bedtimes.": (
         "约 %@ 后才不再影响入睡，晚于多数人的就寝时间。",
@@ -1854,12 +1760,12 @@ T = {
     "In use": ("使用中", "使用中"),
     "About metabolites": ("关于代谢物", "關於代謝物"),
     "Compare all %lld sources": ("对比全部 %lld 个来源", "對比全部 %lld 個來源"),
-    "%@ · %lld sources": ("%1$@ · %2$lld 个来源", "%1$@ · %2$lld 個來源"),
+    "%@, %lld sources": ("%1$@，%2$lld 个来源", "%1$@，%2$lld 個來源"),
     "Every bar is drawn on the same scale. Piru shows the source you rank highest.": (
         "所有条形按同一刻度绘制。Piru 显示你排序最高的来源。",
         "所有長條按同一刻度繪製。Piru 顯示你排序最高的來源。",
     ),
-    "%@ · %@ · %lld sources": ("%1$@ · %2$@ · %3$lld 个来源", "%1$@ · %2$@ · %3$lld 個來源"),
+    "%@, %@, %lld sources": ("%1$@，%2$@，%3$lld 个来源", "%1$@，%2$@，%3$lld 個來源"),
     # Card overflow menu.
     "More actions": ("更多操作", "更多操作"),
     # Substance detail: header chips, dose card, bar-first pharmacology,
@@ -1951,7 +1857,8 @@ T = {
     "Standard": ("标准", "標準"),
     "Rich": ("详尽", "詳盡"),
     "EFFECT OVER TIME": ("效应时程", "效應時程"),
-    "Most common effects · by dose": ("最常见效应 · 按剂量", "最常見效應 · 按劑量"),
+    "Most common effects by dose": ("按剂量划分的常见效应", "按劑量劃分的常見效應"),
+    "Most common effects, by dose": ("最常见效应，按剂量", "最常見效應，按劑量"),
     "release": ("释放", "釋放"),
     "uptake": ("再摄取", "再攝取"),
     "Reported effects": ("报告的效应", "報告的效應"),
@@ -2135,7 +2042,7 @@ T = {
     ),
     "On": ("开", "開"),
     "Off": ("关", "關"),
-    "avg %lld · peak %lld bpm": ("平均 %lld · 峰值 %lld bpm", "平均 %lld · 峰值 %lld bpm"),
+    "avg %lld, peak %lld bpm": ("平均 %lld，峰值 %lld bpm", "平均 %lld，峰值 %lld bpm"),
     "%lld bpm": ("%lld bpm", "%lld bpm"),
     "Elevated vs your resting %lld bpm": ("高于静息心率 %lld bpm", "高於靜息心率 %lld bpm"),
     "Includes %lld min of workout, which the dose rows leave out": (
@@ -2197,9 +2104,9 @@ T = {
         "場次快照",
     ),
     "Generated": ("生成时间", "產生時間"),
-    "Session started %@ · %@ in progress": (
-        "场次开始于 %1$@ · %2$@ 进行中",
-        "場次開始於 %1$@ · %2$@ 進行中",
+    "Session started %@, %@ in progress": (
+        "场次开始于 %1$@，%2$@ 进行中",
+        "場次開始於 %1$@，%2$@ 進行中",
     ),
     "Right now: subjective state": (
         "此刻：主观感受",
@@ -2305,7 +2212,7 @@ T = {
     "Raise strength": ("提高浓度", "提高濃度"),
     "Lower volume": ("减少容量", "減少容量"),
     "Raise volume": ("增加容量", "增加容量"),
-    "· %@ std drinks": ("· %@ 标准杯", "· %@ 標準杯"),
+    "%@ std drinks": ("%@ 标准杯", "%@ 標準杯"),
     "Drink: %@": ("饮品：%@", "飲品：%@"),
     "Log %@, %@": ("记录 %@，%@", "記錄 %@，%@"),
     # Tolerance tool toolbar: Mail-style options menu and per-substance mode.
@@ -2332,7 +2239,6 @@ T = {
         "Piru 可以保持簡潔，也可以深入藥理。隨時可在設定中更改。",
     ),
     "Turning On…": ("正在开启…", "正在開啟…"),
-    "Your data lives here": ("你的数据都在这里", "你的資料都在這裡"),
     "Not Now": ("暂不", "暫不"),
     "You're all set": ("一切就绪", "一切就緒"),
     "Live Activity, when you want it": ("需要时，随手开启实时活动", "需要時，隨手開啟即時動態"),
@@ -2377,10 +2283,6 @@ T = {
         "從 PsyLog 或任何使用該格式的應用程式匯入，新舊版本皆支援。",
     ),
     "Start Fresh": ("从头开始", "從頭開始"),
-    "Tap here any time to record what you've taken. It only takes a few seconds.": (
-        "随时点这里记录你所摄入的。只需几秒钟。",
-        "隨時點這裡記錄你所攝入的。只需幾秒鐘。",
-    ),
     # Substance inventory tracking: manager, detail, restock/edit forms, stock cards, widget.
     "Inventory": ("库存", "庫存"),
     "No Inventory Yet": ("还没有库存", "尚無庫存"),
@@ -2390,8 +2292,8 @@ T = {
     ),
     "Track a Substance": ("追踪物质", "追蹤物質"),
     "Track Substance": ("追踪物质", "追蹤物質"),
-    "Restock · %@": ("补充 · %@", "補充 · %@"),
-    "Track · %@": ("追踪 · %@", "追蹤 · %@"),
+    "Restock, %@": ("补充，%@", "補充，%@"),
+    "Track, %@": ("追踪，%@", "追蹤，%@"),
     "Add Inventory Item": ("添加库存项目", "新增庫存項目"),
     "Track how much you have on hand": ("追踪你的现有用量", "追蹤你的現有用量"),
     "Starting amount": ("初始数量", "初始數量"),
@@ -2449,11 +2351,11 @@ T = {
     ),
     "How this is calculated": ("如何计算", "如何計算"),
     "Daily avg %@": ("日均 %@", "日均 %@"),
-    "Single dose %@ %@ · daily avg %@": ("单次剂量 %@ %@ · 日均 %@", "單次劑量 %@ %@ · 日均 %@"),
+    "Single dose %@ %@, daily avg %@": ("单次剂量 %@ %@，日均 %@", "單次劑量 %@ %@，日均 %@"),
     "Doses in other units aren't counted.": ("其他单位的剂量不计入。", "其他單位的劑量不計入。"),
     "last dose %@": ("上次剂量 %@", "上次劑量 %@"),
     "~%lld doses left": ("剩约 %lld 次", "剩約 %lld 次"),
-    "~%lld doses · %@ left": ("剩约 %lld 次 · %@", "剩約 %lld 次 · %@"),
+    "~%lld doses, %@ left": ("剩约 %lld 次，%@", "剩約 %lld 次，%@"),
     "%@, %@ %@ in stock": ("%@，库存 %@ %@", "%@，庫存 %@ %@"),
     "%@, %@ %@ in stock, low": ("%@，库存 %@ %@，偏低", "%@，庫存 %@ %@，偏低"),
     "%@, out of stock": ("%@，库存用尽", "%@，庫存用盡"),
@@ -2718,13 +2620,13 @@ T = {
     "Severe": ("严重", "嚴重"),
     "High": ("高", "高"),
     "Moderate": ("中等", "中等"),
-    "Estimated from effect curves · %@.": (
-        "依据效应曲线估算 · %@。",
-        "依據效應曲線估算 · %@。",
+    "Estimated from effect curves, %@.": (
+        "依据效应曲线估算，%@。",
+        "依據效應曲線估算，%@。",
     ),
-    "%lld of %lld substances from receptor occupancy, the rest estimated from effect curves · %@.": (
-        "%lld/%lld 种物质来自受体占有率，其余依据效应曲线估算 · %@。",
-        "%lld/%lld 種物質來自受體佔有率，其餘依據效應曲線估算 · %@。",
+    "%lld of %lld substances from receptor occupancy, the rest estimated from effect curves, %@.": (
+        "%lld/%lld 种物质来自受体占有率，其余依据效应曲线估算，%@。",
+        "%lld/%lld 種物質來自受體佔有率，其餘依據效應曲線估算，%@。",
     ),
     # Effect attenuation
     "serotonin transporter": ("血清素转运体", "血清素轉運體"),
@@ -2774,13 +2676,13 @@ T = {
     # ", not X" clause, so the Chinese carries no 而非／並非／不是 clause. The
     # negation stays only where it names a belief the reader actively holds:
     # "not medical advice", "not clinical potency", and the tolerance-by-receptor title.
-    "Based on first-pass metabolism of oral THC · educational. Onset and duration vary with dose, product, and tolerance.": (
-        "基于口服 THC 的首过代谢 · 仅供教育参考。起效与持续时间因剂量、产品和耐受性而异。",
-        "基於口服 THC 的首過代謝 · 僅供教育參考。起效與持續時間因劑量、產品和耐受性而異。",
+    "Based on first-pass metabolism of oral THC, educational. Onset and duration vary with dose, product, and tolerance.": (
+        "基于口服 THC 的首过代谢，仅供教育参考。起效与持续时间因剂量、产品和耐受性而异。",
+        "基於口服 THC 的首過代謝，僅供教育參考。起效與持續時間因劑量、產品和耐受性而異。",
     ),
-    "Based on your self-reported alcohol flush · educational.": (
-        "依据你自报的喝酒脸红 · 仅供参考。",
-        "依據你自報的喝酒臉紅 · 僅供參考。",
+    "Based on your self-reported alcohol flush, educational.": (
+        "依据你自报的喝酒脸红，仅供参考。",
+        "依據你自報的喝酒臉紅，僅供參考。",
     ),
     "Don't try to 'figure it all out' right now. Integration takes days.": (
         "现在不要试图“想通一切”。整合需要数天。",
@@ -2825,6 +2727,7 @@ T = {
     "Real but bounded": ("确有影响但有限", "確有影響但有限"),
     # Benzodiazepine duration ladder. The caption's negation is deliberate: every
     # reader arrives believing half-life is how long the drug is felt.
+    "How It Works": ("作用原理", "作用原理"),
     "How Long It Stays": ("在体内停留多久", "在體內停留多久"),
     "Elimination half-life, not how long you feel it.": (
         "消除半衰期，不是你能感觉到的时长。",
@@ -3159,6 +3062,7 @@ T = {
     "Dose & Duration": ("剂量与时长", "劑量與時長"),
     # FreeOD Wiki overview section (locale-first Chinese substance descriptions).
     "Overview": ("概述", "概述"),
+    "Machine-translated": ("机器翻译", "機器翻譯"),
     "Machine-translated from FreeOD Wiki": ("由 FreeOD Wiki 机器翻译", "由 FreeOD Wiki 機器翻譯"),
     "Read more": ("展开", "展開"),
     "Read less": ("收起", "收起"),
@@ -3400,11 +3304,11 @@ T = {
     "About this section": ("关于此部分", "關於此部分"),
     # Quick-log morphing dock and Daily routine card
     "Add another…": ("再添加一个…", "再新增一個…"),
-    "≈%@ %@ active · %@ ago · %@ left": (
-        "体内约 %1$@ %2$@ · %3$@前 · 剩 %4$@",
-        "體內約 %1$@ %2$@ · %3$@前 · 剩 %4$@",
+    "≈%@ %@ active, %@ ago, %@ left": (
+        "体内约 %1$@ %2$@，%3$@前，剩 %4$@",
+        "體內約 %1$@ %2$@，%3$@前，剩 %4$@",
     ),
-    "≈%@ %@ active · %@ ago": ("体内约 %1$@ %2$@ · %3$@前", "體內約 %1$@ %2$@ · %3$@前"),
+    "≈%@ %@ active, %@ ago": ("体内约 %1$@ %2$@，%3$@前", "體內約 %1$@ %2$@，%3$@前"),
     "Create custom substance": ("创建自定义物质", "建立自訂物質"),
     # Combination products (custom-substance editor, quick-log search, journal).
     "Type": ("类型", "類型"),
@@ -3416,12 +3320,12 @@ T = {
     "Add Component": ("添加成分", "新增成分"),
     "Amount per %@": ("每%@的用量", "每%@的用量"),
     "per %@": ("每%@", "每%@"),
-    "%@ · per %@": ("%@ · 每%@", "%@ · 每%@"),
+    "%@, per %@": ("%@，每%@", "%@，每%@"),
     "Part of %@": ("%@ 的一部分", "%@ 的一部分"),
     # Liquid combination products, logged by volume.
     "Measured": ("计量方式", "計量方式"),
     "Volume of %@": ("%@ 的容量", "%@ 的容量"),
-    "Part of %@ · %@ mL": ("%@ 的一部分 · %@ mL", "%@ 的一部分 · %@ mL"),
+    "Part of %@, %@ mL": ("%@ 的一部分，%@ mL", "%@ 的一部分，%@ mL"),
     "Leave empty to log the dose with its amount unknown. For a combination product, the number of units taken, or the volume in mL for a liquid.": (
         "留空则以用量未知记录这份剂量。对于复方制剂，填写服用的单位数；液体则填写毫升数。",
         "留空則以用量未知記錄這份劑量。對於複方製劑，填寫服用的單位數；液體則填寫毫升數。",
@@ -3599,9 +3503,9 @@ T = {
     "Daily Medications": ("每日用药", "每日用藥"),
     "Export & Import": ("导出与导入", "匯出與匯入"),
     "Export…": ("导出…", "匯出…"),
-    "Generated by Piru · kagerou.glass/piru": (
-        "由 Piru 生成 · kagerou.glass/piru",
-        "由 Piru 產生 · kagerou.glass/piru",
+    "Generated by Piru, kagerou.glass/piru": (
+        "由 Piru 生成，kagerou.glass/piru",
+        "由 Piru 產生，kagerou.glass/piru",
     ),
     "No recoverable copies on this device.": (
         "此设备上没有可恢复的副本。",
@@ -4022,8 +3926,6 @@ T = {
     "Show all %lld entries": ("显示全部 %lld 条记录", "顯示全部 %lld 筆記錄"),
     "Entries per day": ("每日条目", "每日條目"),
     # Profile & Disclosure Tier
-    "Casual": ("休闲", "休閒"),
-    "Curious": ("好奇", "好奇"),
     # Mechanistic effect lenses + readouts.
     "Feeling": ("感受", "感受"),
     "Energy": ("精力", "精力"),
@@ -4449,9 +4351,9 @@ T = {
     "with %@": ("同服 %@", "同服 %@"),
     "+ %lld more": ("还有 %lld 条", "還有 %lld 條"),
     "Effects ended ~%@": ("效果已于 ~%@ 结束", "效果已於 ~%@ 結束"),
-    "Effects ended ~%@ · cleared ~%@": (
-        "效果已于 ~%1$@ 结束 · 约 %2$@ 清除",
-        "效果已於 ~%1$@ 結束 · 約 %2$@ 清除",
+    "Effects ended ~%@, cleared ~%@": (
+        "效果已于 ~%1$@ 结束，约 %2$@ 清除",
+        "效果已於 ~%1$@ 結束，約 %2$@ 清除",
     ),
     "Universal recovery basics": ("通用恢复基础", "通用恢復基礎"),
     "Hydrate: water or electrolyte drinks, sip steadily": (
@@ -5060,18 +4962,18 @@ T = {
     "Milestones": ("里程碑", "里程碑"),
     # Frequency-related
     # Distance / time formatted
-    "%@ in · %@ left": (
-        "已过 %1$@ · 剩 %2$@",
-        "已過 %1$@ · 剩 %2$@",
+    "%@ in, %@ left": (
+        "已过 %1$@，剩 %2$@",
+        "已過 %1$@，剩 %2$@",
     ),
     "%@ %@ left": ("剩 %@ %@", "剩 %@ %@"),
     "%@ %@ remaining after %@": (
         "%3$@ 后剩 %1$@ %2$@",
         "%3$@ 後剩 %1$@ %2$@",
     ),
-    "%@ %@ total · est. ~%lld%% remaining": (
-        "总计 %@ %@ · 预计剩约 %lld%%",
-        "總計 %@ %@ · 預計剩約 %lld%%",
+    "%@ %@ total, est. ~%lld%% remaining": (
+        "总计 %@ %@，预计剩约 %lld%%",
+        "總計 %@ %@，預計剩約 %lld%%",
     ),
     # Adherence
     "Taken %@": ("已服用 %@", "已服用 %@"),
@@ -5097,8 +4999,6 @@ T = {
     "%lldh": ("%lld 小时", "%lld 小時"),
     "%lld": ("%lld", "%lld"),
     # Single chars / passthrough
-    "·": ("·", "·"),
-    "•": ("•", "•"),
     "–": ("–", "–"),
     "S": ("S", "S"),
     "#": ("#", "#"),
@@ -5113,9 +5013,9 @@ T = {
     "%@ - %@ %@": ("%@ - %@ %@", "%@ - %@ %@"),
     "%@ – %@": ("%@ – %@", "%@ – %@"),
     "%@ – %@ %@": ("%@ – %@ %@", "%@ – %@ %@"),
-    "%@ %@ · %@": (
-        "%1$@ %2$@ · %3$@",
-        "%1$@ %2$@ · %3$@",
+    "%@ %@, %@": (
+        "%1$@ %2$@, %3$@",
+        "%1$@ %2$@, %3$@",
     ),
     "%@ %@ %@ on %@": ("%@ %@ %@ 于 %@", "%@ %@ %@ 於 %@"),
     "%@: %@ + %@": ("%@:%@ + %@", "%@:%@ + %@"),
@@ -5152,9 +5052,9 @@ T = {
     "988 Suicide & Crisis Lifeline": ("988 自杀与危机生命线", "988 自殺與危機生命線"),
     "Call or text 988": ("拨打或发送短信至 988", "撥打或傳送簡訊至 988"),
     "Text HOME to 741741": ("发送 HOME 至 741741", "傳送 HOME 至 741741"),
-    "1-800-662-4357 · Free, confidential, 24/7": (
-        "1-800-662-4357 · 免费、保密、全天候",
-        "1-800-662-4357 · 免費、保密、全天候",
+    "1-800-662-4357, Free, confidential, 24/7": (
+        "1-800-662-4357，免费、保密、全天候",
+        "1-800-662-4357，免費、保密、全天候",
     ),
     # Inflected plurals: use these, never a hand-rolled "s"/"ies" suffix
     "^[%lld substance](inflect: true)": ("%lld 种物质", "%lld 種物質"),
@@ -5270,7 +5170,7 @@ T = {
     "Wine": ("葡萄酒", "葡萄酒"),
     "Shot": ("烈酒", "烈酒"),
     "Pint": ("品脱", "品脫"),
-    "ethanol · ≈ %@ standard drinks": ("乙醇 · ≈ %@ 标准杯", "乙醇 · ≈ %@ 標準杯"),
+    "ethanol, ≈ %@ standard drinks": ("乙醇，≈ %@ 标准杯", "乙醇，≈ %@ 標準杯"),
     "%lld g": ("%lld g", "%lld g"),
     "Input": ("输入", "輸入"),
     "Volume unit": ("容量单位", "容量單位"),
@@ -5494,100 +5394,10 @@ T = {
     # GABA cognitive impairment safety note (§B).
     # Phenibut protracted-withdrawal warning (§L.2).
     # Detail level (UserProfile).
-    "Detail Level": (
-        "详细程度",
-        "詳細程度",
-    ),
-    "How much pharmacology is shown by default on substance pages and in the Tolerance tool.": (
-        "物质页面和耐受工具默认显示多少药理学内容。",
-        "物質頁面和耐受工具預設顯示多少藥理學內容。",
-    ),
-    "Plain names, pharmacology folded away until you open it.": (
-        "使用通俗名称，药理内容默认折叠，需要时再展开。",
-        "使用通俗名稱，藥理內容預設折疊，需要時再展開。",
-    ),
-    "Mechanism and pharmacokinetics open on the page, receptor names in the Tolerance tool.": (
-        "机制和药代动力学默认展开，耐受工具使用受体名称。",
-        "機制和藥物動力學預設展開，耐受工具使用受體名稱。",
-    ),
     # Check-in times (CheckInOfferBanner, CheckInScheduleEditor).
     "Use the suggested times": ("使用建议的时间", "使用建議的時間"),
     "Reset to the suggested times": ("恢复为建议的时间", "恢復為建議的時間"),
     "Adjust these times": ("调整这些时间", "調整這些時間"),
-    # Skins store (SkinWardrobe, OnboardingSkinsStep).
-    "Black, paper and signal cyan, from the effects index": (
-        "黑底、纸白与信号青，来自效应索引",
-        "黑底、紙白與訊號青，來自效應索引",
-    ),
-    "In partnership with substance.wiki ↗": (
-        "与 substance.wiki 合作 ↗",
-        "與 substance.wiki 合作 ↗",
-    ),
-    "Skins": ("皮肤", "皮膚"),
-    "Make it yours": (
-        "让它成为你的样子",
-        "讓它成為你的樣子",
-    ),
-    "Skins pay for Piru's development. The journal, the library, and every tool are free.": (
-        "皮肤的收入用于支持 Piru 的开发。日记、物质库和所有工具均免费。",
-        "皮膚的收入用於支持 Piru 的開發。日記、物質庫和所有工具均免費。",
-    ),
-    "Free": (
-        "免费",
-        "免費",
-    ),
-    "Paid": (
-        "付费",
-        "付費",
-    ),
-    "Wearing This Skin": (
-        "正在使用此皮肤",
-        "正在使用此皮膚",
-    ),
-    "Use This Skin": (
-        "使用此皮肤",
-        "使用此皮膚",
-    ),
-    "Unlock %@ · %@": (
-        "解锁 %@ · %@",
-        "解鎖 %@ · %@",
-    ),
-    "Everything, Forever": (
-        "全部皮肤，永久拥有",
-        "全部皮膚，永久擁有",
-    ),
-    "Every skin there is and every skin still to come.": (
-        "现有的每一款皮肤，以及今后推出的每一款。",
-        "現有的每一款皮膚，以及今後推出的每一款。",
-    ),
-    "Restore Purchases": (
-        "恢复购买",
-        "回復購買項目",
-    ),
-    "Waiting for Approval": (
-        "等待批准",
-        "等待批准",
-    ),
-    "Nothing to Restore": (
-        "没有可恢复的购买",
-        "沒有可恢復的購買",
-    ),
-    "Purchase Not Completed": (
-        "购买未完成",
-        "購買未完成",
-    ),
-    "The skin unlocks as soon as the purchase is approved.": (
-        "购买获批后，皮肤会立即解锁。",
-        "購買獲批後，皮膚會立即解鎖。",
-    ),
-    "This Apple Account has no Piru purchases.": (
-        "此 Apple 账户没有 Piru 的购买记录。",
-        "此 Apple 帳號沒有 Piru 的購買記錄。",
-    ),
-    "Nothing was charged. You can try again.": (
-        "没有扣款。你可以再试一次。",
-        "沒有扣款。你可以再試一次。",
-    ),
     # What CYP2D6 does to a substance (CYP2D6NoteSection).
     "Activated by CYP2D6": ("由 CYP2D6 活化", "由 CYP2D6 活化"),
     "Cleared by CYP2D6": ("由 CYP2D6 清除", "由 CYP2D6 清除"),
@@ -5660,13 +5470,13 @@ T = {
         "添加你手头的存量，或扫描药盒。每记录一次剂量都会自动扣除，并显示剩余天数，在用完之前提醒你。",
         "新增你手邊的存量，或掃描藥盒。每記錄一次劑量都會自動扣除，並顯示剩餘天數，在用完之前提醒你。",
     ),
-    "Dose logged · 1 tab taken off": (
-        "已记录剂量 · 扣除 1 片",
-        "已記錄劑量 · 扣除 1 錠",
+    "Dose logged, 1 tab taken off": (
+        "已记录剂量，扣除 1 片",
+        "已記錄劑量，扣除 1 錠",
     ),
-    "%lld tabs · about %lld days left": (
-        "%lld 片 · 约剩 %lld 天",
-        "%lld 錠 · 約剩 %lld 天",
+    "%lld tabs, about %lld days left": (
+        "%lld 片，约剩 %lld 天",
+        "%lld 錠，約剩 %lld 天",
     ),
     "A Piru, PsychonautWiki, or DrugsPRO file, or an encrypted backup": (
         "Piru、PsychonautWiki 或 DrugsPRO 文件，或加密备份",
@@ -5732,8 +5542,8 @@ T = {
     "%@ g/mol": ("%@ g/mol", "%@ g/mol"),
     "%@ left": ("还剩 %@", "還剩 %@"),
     "%@ modeled active until ~%@": ("%@ 模型估计活跃至约 %@", "%@ 模型估計活躍至約 %@"),
-    "with %@ %@ · %@ ago": ("与 %@ %@ 同用 · %@前", "與 %@ %@ 同用 · %@前"),
-    "with %@ · %@ ago": ("与 %@ 同用 · %@前", "與 %@ 同用 · %@前"),
+    "with %@ %@, %@ ago": ("与 %@ %@ 同用，%@前", "與 %@ %@ 同用，%@前"),
+    "with %@, %@ ago": ("与 %@ 同用，%@前", "與 %@ 同用，%@前"),
     "%@ → %@": ("%@ → %@", "%@ → %@"),
     "%@, source: %@": ("%@，来源：%@", "%@，來源：%@"),
     "%@h": ("%@ 小时", "%@ 小時"),
@@ -6037,9 +5847,9 @@ T = {
         "根據參考資料估計的起效時間。你現在感覺怎麼樣？",
     ),
     "Estimated onset ~%@": ("估计起效约 %@", "估計起效約 %@"),
-    "Estimated onset ~%@ · easing off ~%@": (
-        "估计起效约 %@ · 约 %@ 开始减弱",
-        "估計起效約 %@ · 約 %@ 開始減弱",
+    "Estimated onset ~%@, easing off ~%@": (
+        "估计起效约 %@，约 %@ 开始减弱",
+        "估計起效約 %@，約 %@ 開始減弱",
     ),
     "Estimated peak window from reference data. How are you feeling?": (
         "根据参考数据估计的峰值时段。你现在感觉怎么样？",
@@ -6096,10 +5906,6 @@ T = {
     "h": ("小时", "小時"),
     "modeled at %@": ("按 %@ 建模", "按 %@ 建模"),
     "Handling & storage": ("处理与储存", "處理與儲存"),
-    "Have feedback, questions, or want to discuss the app? Join our Discord.": (
-        "有反馈、疑问，或想讨论这款应用？加入我们的 Discord。",
-        "有回饋、疑問，或想討論這款應用程式？加入我們的 Discord。",
-    ),
     "Headaches and fatigue are common.": ("头痛和疲劳很常见。", "頭痛和疲勞很常見。"),
     "Help": ("帮助", "說明"),
     "How Encryption Works": ("加密原理", "加密原理"),
@@ -6162,7 +5968,6 @@ T = {
         "常有人会咬紧下颌。嚼点东西可以保护牙齿。",
         "常有人會咬緊下頜。嚼點東西可以保護牙齒。",
     ),
-    "Join Discord": ("加入 Discord", "加入 Discord"),
     "Join the community": ("加入社区", "加入社群"),
     "Just now": ("刚刚", "剛剛"),
     "Ki %@ nM": ("Ki %@ nM", "Ki %@ nM"),
@@ -6636,23 +6441,23 @@ T = {
         "你記錄的用量、時間和自我報告的效果，一目瞭然。",
     ),
     "amount": ("数量", "數量"),
-    "dailymed.nlm.nih.gov · NLM/FDA Drug Label Database": (
-        "dailymed.nlm.nih.gov · NLM/FDA 药品说明书数据库",
-        "dailymed.nlm.nih.gov · NLM/FDA 藥品說明書資料庫",
+    "dailymed.nlm.nih.gov, NLM/FDA Drug Label Database": (
+        "dailymed.nlm.nih.gov，NLM/FDA 药品说明书数据库",
+        "dailymed.nlm.nih.gov，NLM/FDA 藥品說明書資料庫",
     ),
     "drug.community": ("drug.community", "drug.community"),
-    "est. %@ %@ active · %@ ago": (
-        "估计体内有 %@ %@ · %@ 前",
-        "估計體內有 %@ %@ · %@ 前",
+    "est. %@ %@ active, %@ ago": (
+        "估计体内有 %@ %@，%@ 前",
+        "估計體內有 %@ %@，%@ 前",
     ),
     "estimated %@ %@ active, last dose %@ ago": (
         "估计体内有 %@ %@，上一剂在 %@ 前",
         "估計體內有 %@ %@，上一劑在 %@ 前",
     ),
     "freeodwiki.org": ("freeodwiki.org", "freeodwiki.org"),
-    "github.com/Di-lemma/SubFxOnEx · subjective-effects ontology": (
-        "github.com/Di-lemma/SubFxOnEx · 主观效应本体",
-        "github.com/Di-lemma/SubFxOnEx · 主觀效應本體",
+    "github.com/Di-lemma/SubFxOnEx, subjective-effects ontology": (
+        "github.com/Di-lemma/SubFxOnEx，主观效应本体",
+        "github.com/Di-lemma/SubFxOnEx，主觀效應本體",
     ),
     "iCloud Drive isn't available. Check that you're signed in to iCloud and that iCloud Drive is on.": (
         "iCloud 云盘不可用。请确认你已登录 iCloud 并已开启 iCloud 云盘。",
@@ -6661,25 +6466,24 @@ T = {
     "just now": ("刚刚", "剛剛"),
     "minutes": ("分钟", "分鐘"),
     "modeled in body": ("模型估计体内含量", "模型估計體內含量"),
-    "open.fda.gov · National Drug Code directory": (
-        "open.fda.gov · 国家药品代码（NDC）目录",
-        "open.fda.gov · 國家藥品代碼（NDC）目錄",
+    "open.fda.gov, National Drug Code directory": (
+        "open.fda.gov，国家药品代码（NDC）目录",
+        "open.fda.gov，國家藥品代碼（NDC）目錄",
     ),
     "psychonautwiki.org": ("psychonautwiki.org", "psychonautwiki.org"),
-    "pubchem.ncbi.nlm.nih.gov · National Library of Medicine": (
-        "pubchem.ncbi.nlm.nih.gov · 美国国家医学图书馆",
-        "pubchem.ncbi.nlm.nih.gov · 美國國家醫學圖書館",
+    "pubchem.ncbi.nlm.nih.gov, National Library of Medicine": (
+        "pubchem.ncbi.nlm.nih.gov，美国国家医学图书馆",
+        "pubchem.ncbi.nlm.nih.gov，美國國家醫學圖書館",
     ),
     "pubmed.ncbi.nlm.nih.gov": ("pubmed.ncbi.nlm.nih.gov", "pubmed.ncbi.nlm.nih.gov"),
     "tripsit.me": ("tripsit.me", "tripsit.me"),
     "wikidata.org": ("wikidata.org", "wikidata.org"),
-    "· DOI": ("· DOI", "· DOI"),
-    "· PMID %lld": ("· PMID %lld", "· PMID %lld"),
+    "PMID %lld": ("PMID %lld", "PMID %lld"),
     "≈ %@ MME": ("≈ %@ MME", "≈ %@ MME"),
     # Screen names, the modeled-tolerance wording, the license and privacy copy,
     # and the sources described as community databases.
     "%@ mg %@": ("%@ mg %@", "%@ mg %@"),
-    "%@ · modeled (%@).": ("%@ · 模型推算（%@）。", "%@ · 模型推算（%@）。"),
+    "%@, modeled (%@).": ("%@，模型推算（%@）。", "%@，模型推算（%@）。"),
     "%lld mechanisms plotted from their modeled level now.": (
         "%lld 条机制，按各自当前的模型推算水平绘制。",
         "%lld 條機制，按各自目前的模型推算水平繪製。",
@@ -6871,9 +6675,9 @@ T = {
         "相对于你近期峰值的模型推算合并负荷，现在约为百分之 %lld。",
         "相對於你近期峰值的模型推算合併負荷，目前約為百分之 %lld。",
     ),
-    "Modeled from receptor occupancy · %@.": (
-        "由受体占有率模型推算 · %@。",
-        "由受體佔有率模型推算 · %@。",
+    "Modeled from receptor occupancy, %@.": (
+        "由受体占有率模型推算，%@。",
+        "由受體佔有率模型推算，%@。",
     ),
     "Modeled receptor load": ("模型推算受体负荷", "模型推算受體負荷"),
     "Modeled tolerance": ("模型推算耐受", "模型推算耐受"),
@@ -7066,7 +6870,6 @@ T = {
     "Move Entries": ("移动记录", "移動記錄"),
     "Move Entries…": ("移动记录…", "移動記錄…"),
     "Recent Entries (24h)": ("最近记录（24 小时）", "最近記錄（24 小時）"),
-    "Record your first entry": ("添加第一条记录", "新增第一筆記錄"),
     "No entries yet": ("暂无记录", "目前沒有記錄"),
     "No recent entries": ("暂无近期记录", "目前沒有近期記錄"),
     "No entries recorded yet": ("尚未添加记录", "尚未新增記錄"),
@@ -7232,13 +7035,13 @@ T = {
         "透過狀態確認記下你的實際感受。請遵循處方說明，並在作出醫療決定前諮詢合格的醫療專業人員。",
     ),
     "Below model threshold": ("低于模型阈值", "低於模型閾值"),
-    "Below model threshold · active metabolite may persist": (
-        "低于模型阈值 · 活性代谢物可能仍存在",
-        "低於模型閾值 · 活性代謝物可能仍存在",
+    "Below model threshold, active metabolite may persist": (
+        "低于模型阈值，活性代谢物可能仍存在",
+        "低於模型閾值，活性代謝物可能仍存在",
     ),
-    "%lld%% eliminated in model · threshold ~%@": (
-        "模型估计已消除 %lld%% · 约 %@ 低于阈值",
-        "模型估計已消除 %lld%% · 約 %@ 低於閾值",
+    "%lld%% eliminated in model, threshold ~%@": (
+        "模型估计已消除 %lld%%，约 %@ 低于阈值",
+        "模型估計已消除 %lld%%，約 %@ 低於閾值",
     ),
     "Favorite a substance or record an entry on your iPhone to find it here.": (
         "在 iPhone 上收藏物质或添加记录，即可在这里找到。",
@@ -7319,14 +7122,6 @@ T = {
         "部分較長的紀錄已被縮短或省略，以便放得下。",
     ),
     # Settings: the Discord row (Views/Settings/DiscordSection.swift).
-    "Discord": (
-        "Discord",
-        "Discord",
-    ),
-    "Get help with the app or send your suggestions on our Discord server.": (
-        "在我们的 Discord 服务器上获取应用帮助，或提出你的建议。",
-        "在我們的 Discord 伺服器上取得應用程式協助，或提出你的建議。",
-    ),
     # Shortcuts actions (Piru/Intents): titles, parameter help, the summary line, the result dialog.
     "Log Dose": ("记录剂量", "記錄劑量"),
     "Start Dose Log": ("开始记录剂量", "開始記錄劑量"),
@@ -7553,7 +7348,7 @@ T = {
         "每個個人檔案都有自己的日記。刪除個人檔案會一併刪除其日記。",
     ),
     "Add Profile": ("添加个人资料", "新增個人檔案"),
-    "This device · Apple Health": ("本设备 · Apple 健康", "本裝置 · Apple 健康"),
+    "This device, Apple Health": ("本设备，Apple 健康", "本裝置，Apple 健康"),
     "New Profile": ("新建个人资料", "新增個人檔案"),
     "Couldn't Save Profile": ("无法保存个人资料", "無法儲存個人檔案"),
     "Avatar": ("头像", "頭像"),
@@ -7829,7 +7624,7 @@ WT = {
         "全部已服用",
     ),
     "That's everything today.": ("今天的都完成了。", "今天的都完成了。"),
-    "Due · %@": ("待服用 · %@", "待服用 · %@"),
+    "Due, %@": ("待服用，%@", "待服用，%@"),
     "Take %@": ("服用 %@", "服用 %@"),
     "Take all supplements": ("服用全部补剂", "服用全部補劑"),
     "Take Med": ("服用用药", "服用用藥"),
@@ -7897,8 +7692,8 @@ WATCH_T = {
     "Decrease ABV": ("降低酒精度", "降低酒精度"),
     "Increase ABV": ("提高酒精度", "提高酒精度"),
     "%@%% ABV": ("%@%% 酒精度", "%@%% 酒精度"),
-    "≈ %@ g · ≈ %@ drinks": ("≈ %1$@ g · ≈ %2$@ 标准杯", "≈ %1$@ g · ≈ %2$@ 標準杯"),
-    "%@ mL · %@%%": ("%1$@ 毫升 · %2$@%%", "%1$@ 毫升 · %2$@%%"),
+    "≈ %@ g, ≈ %@ drinks": ("≈ %1$@ g，≈ %2$@ 标准杯", "≈ %1$@ g，≈ %2$@ 標準杯"),
+    "%@ mL, %@%%": ("%1$@ 毫升，%2$@%%", "%1$@ 毫升，%2$@%%"),
 }
 
 
@@ -8316,6 +8111,105 @@ JOURNAL_SYNC_T = {
 }
 T.update(JOURNAL_SYNC_T)
 
+BODY_WEIGHT_T = {
+    "Weight Unit": ("体重单位", "體重單位"),
+    "Body Weight": ("体重", "體重"),
+    "Kilograms": ("千克", "公斤"),
+    "Pounds": ("磅", "磅"),
+    "Save Weight": ("保存体重", "儲存體重"),
+    "Use Estimated Weight": ("使用估算体重", "使用估算體重"),
+    "Enter a weight between 20 and 300 kg or the equivalent in pounds.": (
+        "输入 20 至 300 千克的体重，或等值的磅数。",
+        "輸入 20 至 300 公斤的體重，或等值的磅數。",
+    ),
+    "Weight from Apple Health. Piru uses it in modeled estimates.": (
+        "体重来自 Apple 健康。Piru 用它进行模型估算。",
+        "體重來自 Apple 健康。Piru 用它進行模型估算。",
+    ),
+    "Weight entered manually. Piru uses it in modeled estimates.": (
+        "体重由你手动输入。Piru 用它进行模型估算。",
+        "體重由你手動輸入。Piru 用它進行模型估算。",
+    ),
+    "Piru is using an estimated weight for its models.": (
+        "Piru 在模型中使用估算体重。",
+        "Piru 在模型中使用估算體重。",
+    ),
+    "Use Weight from Apple Health": ("使用 Apple 健康中的体重", "使用 Apple 健康中的體重"),
+    "No weight was available from Apple Health. Check your Health data and access settings.": (
+        "Apple 健康中没有可读取的体重。请检查健康数据和访问权限。",
+        "Apple 健康中沒有可讀取的體重。請檢查健康資料和存取權限。",
+    ),
+    "Show heart rate, blood pressure, and workouts from Apple Health alongside your journal.": (
+        "在日记中显示来自 Apple 健康的心率、血压和训练记录。",
+        "在日記中顯示來自 Apple 健康的心率、血壓和訓練記錄。",
+    ),
+}
+T.update(BODY_WEIGHT_T)
+TODAY_JOURNAL_T = {
+    "Couldn’t Save Doses": ("无法保存剂量记录", "無法儲存劑量記錄"),
+    "Couldn’t Update Medication": ("无法更新用药记录", "無法更新用藥記錄"),
+    "Mark All Outstanding as Taken": (
+        "将所有未记录的剂量标为已服用",
+        "將所有未記錄的劑量標為已服用",
+    ),
+    "Mark Skipped": ("标为已跳过", "標為已略過"),
+    "Mark Taken": ("标为已服用", "標為已服用"),
+    "No entries for this day.": ("这一天没有记录。", "這一天沒有記錄。"),
+    "Not Logged": ("未记录", "未記錄"),
+    "Recorded Entries": ("已保存的记录", "已儲存的記錄"),
+    "Remove Logged Dose": ("删除剂量记录", "刪除劑量記錄"),
+    "Remove Logged Dose?": ("要删除这条剂量记录吗？", "要刪除這筆劑量記錄嗎？"),
+    "Review Doses": ("核对剂量", "核對劑量"),
+    "The record may have changed. Review the current entry and try again.": (
+        "这条记录可能已更改。请核对当前记录后重试。",
+        "這筆記錄可能已變更。請核對目前的記錄後再試一次。",
+    ),
+    "Undo Skip": ("取消跳过", "取消略過"),
+    "Your draft is still here. Review it and try again.": (
+        "草稿仍在。请核对后重试。",
+        "草稿仍在。請核對後再試一次。",
+    ),
+}
+T.update(TODAY_JOURNAL_T)
+
+NATIVE_LOG_T = {
+    "Adjust Amount": ("调整用量", "調整用量"),
+    "Adjust Volume": ("调整体积", "調整容量"),
+    "Date and Time": ("日期和时间", "日期和時間"),
+    "Hours: %lld": ("小时：%lld", "小時：%lld"),
+    "Minutes: %lld": ("分钟：%lld", "分鐘：%lld"),
+    "Volume Unit": ("体积单位", "容量單位"),
+    "^[%lld capsule](inflect: true)": ("%lld 粒胶囊", "%lld 粒膠囊"),
+    "^[%lld tablet](inflect: true)": ("%lld 片", "%lld 錠"),
+    "Add Another": ("再添加一项", "再加入一項"),
+    "Add Concentration": ("添加浓度", "加入濃度"),
+    "Before Recording": ("记录前", "記錄前"),
+    "Browse": ("浏览", "瀏覽"),
+    "Choose a profile to record these entries.": (
+        "选择要将这些条目记入的档案。",
+        "選擇要記入這些項目的個人檔案。",
+    ),
+    "Couldn’t save entries. Try again.": ("无法保存记录。请重试。", "無法儲存記錄。請再試一次。"),
+    "Create Custom Substance": ("创建自定义物质", "製作自訂物質"),
+    "Custom Amount": ("自定义用量", "自訂用量"),
+    "Details": ("详情", "詳細資料"),
+    "Discard Entries": ("舍弃条目", "捨棄項目"),
+    "Discard Entries?": ("舍弃这些条目？", "要捨棄這些項目嗎？"),
+    "Dose Level": ("剂量级别", "劑量等級"),
+    "Edit Quick Log": ("编辑快速记录", "編輯快速記錄"),
+    "Enter a volume above zero.": ("输入大于零的体积。", "輸入大於零的容量。"),
+    "Enter the concentration and volume.": ("输入浓度和体积。", "輸入濃度和容量。"),
+    "Profile unavailable": ("档案不可用", "個人檔案無法使用"),
+    "Recent Amounts": ("最近用量", "最近用量"),
+    "Record %lld Entries for %@": ("为 %2$@ 记录 %1$lld 项", "為 %2$@ 記錄 %1$lld 項"),
+    "Record %lld Entries": ("记录 %lld 项", "記錄 %lld 項"),
+    "Record for %@": ("为 %@ 记录", "為 %@ 記錄"),
+    "Remove from Recents": ("从最近记录中移除", "從最近記錄中移除"),
+    "Standard Drinks": ("标准杯", "標準杯"),
+    "Volume (mL)": ("体积（mL）", "容量（mL）"),
+}
+T.update(NATIVE_LOG_T)
+
 if __name__ == "__main__":
     project_root = Path(__file__).resolve().parent
 
@@ -8323,6 +8217,9 @@ if __name__ == "__main__":
     # catalog yet. List them here so they get inserted; clear once Xcode has
     # picked them up on a real build (after which they're update-only).
     NEW_KEYS: set[str] = {
+        "How It Works",
+        "Machine-translated",
+        "Most common effects by dose",
         "Me",
         "This device's own profile can't be deleted.",
         "That profile no longer exists.",
@@ -8334,7 +8231,7 @@ if __name__ == "__main__":
         "%@'s journal",
         "Each profile is its own journal. Deleting one deletes its journal.",
         "Add Profile",
-        "This device · Apple Health",
+        "This device, Apple Health",
         "New Profile",
         "Couldn't Save Profile",
         "Avatar",
@@ -8393,19 +8290,6 @@ if __name__ == "__main__":
         "Stomach",
         "Stomach: %@",
         "Food",
-        "Score",
-        "Best",
-        "Game over",
-        "Leave the game",
-        "Drag to fly, double-tap to roll",
-        "Wide!",
-        "Wider!",
-        "Wingmen!",
-        "Shields!",
-        "Extra roll!",
-        "Bomb!",
-        "Laser!",
-        "Snake charmed!",
         "Rename Tab",
         "Tab name",
         "Use Original Name",
@@ -8458,51 +8342,8 @@ if __name__ == "__main__":
         "Vitamins, minerals, amino acids and plant preparations. Pharmacologically a mixed bag, and the place where interactions are most often assumed to be absent.",
         "Short chains of amino acids acting at hormone or growth-factor receptors. Almost all are injected, and almost none have long-term human data.",
         "Damp excessive neuronal firing, by sodium-channel block, GABA enhancement or SV2A binding depending on the drug.",
-        # Skins
         "Piru",
-        "Soft pink, hot pink, liquid glass",
-        "ely.pink",
-        "Night and pink, stickers and pixels",
-        "Tsuki",
-        "Deep purple night, a sleeping moon",
-        "Starfield",
-        "Steel blue and gold under a thousand stars",
-        "Jellyfish",
-        "Deep water, bioluminescence, jellyfish",
-        "Graphite",
-        "Neutral grays, nothing moving",
-        "Linen",
-        "Warm paper and charcoal, quiet",
-        "Slate",
-        "Cool blue-gray, quiet",
-        "Paper Garden",
-        "Washi, raked sand, sakura",
-        "Aurora",
-        "Fireflies over a dark meadow",
-        "Hanabi",
-        "A night sky, five suits, fireworks",
-        "Selenia",
-        "Engraved gold, a plum night, a turning wheel",
-        "Gatsby",
-        "Irie",
-        "Black lacquer, gold leaf, a city after dark",
-        "Emerald velvet, gold foil, red, gold and green",
-        "Yuki",
-        "Periwinkle, snow and frost",
-        "Hebi Arcade",
-        "Neon City on a CRT",
-        "Kumo",
-        "A sky that follows the day",
         "dose.wiki",
-        "Plum and fuchsia, from the open encyclopedia",
-        "In partnership with dose.wiki ↗",
-        "A skin changes the app's colors, cards, and type. Your substance colors, the timeline, and every chart stay as they are.",
-        "Follow System",
-        "Light Mode",
-        "Dark Mode",
-        "Every skin has a light and a dark side. Follow System switches with iOS.",
-        "Decorations",
-        "Stars, hearts, and stickers behind everything. Off automatically with Reduce Motion.",
         # Quick-log Edit sheet
         "New Drink…",
         "Add Favorite…",
@@ -8571,7 +8412,7 @@ if __name__ == "__main__":
         "Calibrate to your lab results",
         "Uncalibrated",
         "1 result",
-        "Calibrated · %lld results",
+        "Calibrated, %lld results",
         "Add a blood test to pin this curve to your own levels. The band narrows once you do.",
         "Add lab result",
         "Reference lines",
@@ -8617,7 +8458,7 @@ if __name__ == "__main__":
         "Backups, export & import are under Tools › Data & Backup; preferences are under Settings.",
         "That's everything today — %lld days and counting",
         "Scale by Dose Strength",
-        "· %lld of %lld",
+        "%lld of %lld",
         "%lld of %lld logged today",
         "Edit Dose Times…",
         "Colors",
@@ -8652,7 +8493,7 @@ if __name__ == "__main__":
         "All selected sessions in one tall image",
         "Plain-text session data, for notes, AI, or records",
         "No entries in this range",
-        "· %lld entries",
+        "%lld entries",
         "%lld sessions as individual images",
         "Sessions in this range as individual images",
         "No sessions yet",
@@ -8896,9 +8737,9 @@ if __name__ == "__main__":
         "In use",
         "About metabolites",
         "Compare all %lld sources",
-        "%@ · %lld sources",
+        "%@, %lld sources",
         "Every bar is drawn on the same scale. Piru shows the source you rank highest.",
-        "%@ · %@ · %lld sources",
+        "%@, %@, %lld sources",
         "Buccal",
         "More actions",
         "Computed from the molecular structure (PubChem, NPS-DataHub) rather than measured in a lab.",
@@ -8990,27 +8831,7 @@ if __name__ == "__main__":
         # Insights cards.
         "Modeled Levels",
         "scheduled",
-        # Skins store (SkinWardrobe, OnboardingSkinsStep).
         "substance.wiki",
-        "Black, paper and signal cyan, from the effects index",
-        "In partnership with substance.wiki ↗",
-        "Skins",
-        "Make it yours",
-        "Skins pay for Piru's development. The journal, the library, and every tool are free.",
-        "Free",
-        "Paid",
-        "Wearing This Skin",
-        "Use This Skin",
-        "Unlock %@ · %@",
-        "Everything, Forever",
-        "Every skin there is and every skin still to come.",
-        "Restore Purchases",
-        "Waiting for Approval",
-        "Nothing to Restore",
-        "Purchase Not Completed",
-        "The skin unlocks as soon as the purchase is approved.",
-        "This Apple Account has no Piru purchases.",
-        "Nothing was charged. You can try again.",
         # What CYP2D6 does to a substance (CYP2D6NoteSection).
         "Activated by CYP2D6",
         "Cleared by CYP2D6",
@@ -9118,7 +8939,7 @@ if __name__ == "__main__":
         "Accumulation",
         "at the peak, vs. one dose",
         "Plateau range",
-        "%@ · trough to peak",
+        "%@, trough to peak",
         "Fluctuation",
         "smooth",
         "moderate swing",
@@ -9162,8 +8983,8 @@ if __name__ == "__main__":
         "Pick the .piruenc file and enter its passphrase.",
         "Stock that counts itself",
         "Add what you have on hand, or scan the box. Every dose you log comes off it, with days left and a heads-up before you run out.",
-        "Dose logged · 1 tab taken off",
-        "%lld tabs · about %lld days left",
+        "Dose logged, 1 tab taken off",
+        "%lld tabs, about %lld days left",
         "A Piru, PsychonautWiki, or DrugsPRO file, or an encrypted backup",
         "This file uses export format %lld, which this version of Piru can't read yet. Update Piru, then import it.",
         "%@ The file was written by %@.",
@@ -9265,7 +9086,7 @@ if __name__ == "__main__":
     )
     NEW_KEYS.update({"h", "modeled at %@"})
     NEW_KEYS.update({"%@ min"})
-    NEW_KEYS.update({"with %@ %@ · %@ ago", "with %@ · %@ ago"})
+    NEW_KEYS.update({"with %@ %@, %@ ago", "with %@, %@ ago"})
     NEW_KEYS.update(
         {
             "Log Dose",
@@ -9400,7 +9221,7 @@ if __name__ == "__main__":
             "Add Component",
             "Amount per %@",
             "per %@",
-            "%@ · per %@",
+            "%@, per %@",
             "Part of %@",
         }
     )
@@ -9409,7 +9230,7 @@ if __name__ == "__main__":
         {
             "Measured",
             "Volume of %@",
-            "Part of %@ · %@ mL",
+            "Part of %@, %@ mL",
             "Leave empty to log the dose with its amount unknown. For a combination product, the number of units taken, or the volume in mL for a liquid.",
         }
     )
@@ -9692,6 +9513,9 @@ if __name__ == "__main__":
     )
     NEW_KEYS.add("Automerge. Copyright © 2019–2023 the Automerge contributors.")
     NEW_KEYS.update(JOURNAL_SYNC_T)
+    NEW_KEYS.update(BODY_WEIGHT_T)
+    NEW_KEYS.update(TODAY_JOURNAL_T)
+    NEW_KEYS.update(NATIVE_LOG_T)
     print("--- Piru main app catalog ---")
     n, added, missing = apply_translations(
         project_root / "Piru/Localizable.xcstrings",

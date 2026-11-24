@@ -48,9 +48,9 @@ extension InteractionCounterpart {
     var trayLine: String {
         let ago = Date.now.timeIntervalSince(timestamp).durationHM
         guard !isUnknownAmount else {
-            return String(localized: "with \(title) · \(ago) ago")
+            return String(localized: "with \(title), \(ago) ago")
         }
         let dose = "\(amount.doseFormatted) \(unit.unitDisplay(for: amount))"
-        return String(localized: "with \(title) \(dose) · \(ago) ago")
+        return String(localized: "with \(title) \(dose), \(ago) ago")
     }
 }

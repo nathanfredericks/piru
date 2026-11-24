@@ -45,7 +45,7 @@ struct PatternsView: View {
             .padding()
             .padding(.bottom, 40)
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .toolbar {
             if !allEntries.isEmpty {
                 ToolbarItem(placement: .platformTopBarTrailing) { rangeMenu }
@@ -324,7 +324,7 @@ private struct OverlapCard: View {
                     HStack(spacing: Spacing.md) {
                         LegendDot(color: a.tint.color)
                         LegendDot(color: b.tint.color)
-                        Text("\(a.displayName) · \(b.displayName)")
+                        Text("\(a.displayName), \(b.displayName)")
                             .font(.subheadline)
                             .lineLimit(1)
                         Spacer(minLength: 8)

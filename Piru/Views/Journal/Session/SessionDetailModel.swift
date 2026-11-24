@@ -92,14 +92,7 @@ final class SessionDetailModel {
             }
         #endif
         guard showSessionVitals, HealthKitVitals.shared.isAvailable else { return .empty }
-        // Pure read — authorization is requested only at the opt-in points (the
-        // Apple Health onboarding step, the Apple Health settings screen, and the
-        // discovery banner), never here. Presenting the HealthKit system sheet from
-        // inside this already-presented session sheet is a double-presentation
-        // conflict: the prompt flashes up and is instantly dismissed, so the
-        // request never completes and re-fires on every open. Reading with no
-        // access simply returns empty (iOS never reports read status), which
-        // renders as nothing on the timeline.
+        // The explicit opt-in controls own authorization. Reads return empty when Health has no readable samples.
         return await HealthKitVitals.shared.vitals(from: start, to: end)
     }
 

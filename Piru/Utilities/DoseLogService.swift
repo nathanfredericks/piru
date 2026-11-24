@@ -103,17 +103,7 @@ final class DoseLogService {
         deferredBookkeeping: @escaping @MainActor () -> Void = {},
     ) {
         guard !doses.isEmpty else { return }
-        var colors = colors
-        for (entry, _) in doses {
-            context.insert(entry)
-            SessionService.assignSession(for: entry, in: context)
-            // A brand-new substance gets its class-color row up front, tracked
-            // in the local snapshot so the live session picks it up without a
-            // store round-trip.
-            if let newColor = SubstanceColorStore.ensureRow(for: entry.substance, existing: colors, in: context) {
-                colors.append(newColor)
-            }
-        }
+        let colors = prepareBatch(doses, colors: colors, in: context)
         beforeSave()
         do {
             try context.save()
@@ -126,12 +116,85 @@ final class DoseLogService {
             // them; record it loudly instead of vanishing the evidence.
             Logger.doseLog.fault("Batch dose commit save failed for \(doses.count) dose(s): \(error)")
         }
+        finishBatch(
+            doses, colors: colors, in: context, activatesLiveSession: true,
+            schedulesCheckIns: true, deferredBookkeeping: deferredBookkeeping,
+        )
+    }
+
+    enum CheckedCommitError: Error, Equatable {
+        case pendingChanges
+    }
+
+    /// Saves one batch and its caller-owned edits together. The hook runs after
+    /// session assignment and receives the exact entries that will be committed.
+    /// A failed hook or save rolls back only this operation: the context must
+    /// enter clean so unrelated pending edits are never discarded.
+    @discardableResult
+    func checkedLogBatch(
+        _ doses: [(entry: DoseEntry, substance: Substance?)],
+        colors: [SubstanceColor],
+        in context: ModelContext,
+        activatesLiveSession: Bool = true,
+        schedulesCheckIns: Bool? = nil,
+        beforeSave: ([DoseEntry]) throws -> Void = { _ in },
+        deferredBookkeeping: @escaping @MainActor () -> Void = {},
+    ) throws -> [UUID] {
+        guard !doses.isEmpty else { return [] }
+        guard !context.hasChanges else { throw CheckedCommitError.pendingChanges }
+        let entries = doses.map(\.entry)
+        let ids = entries.map(\.id)
+        let colors = prepareBatch(doses, colors: colors, in: context)
+        do {
+            try beforeSave(entries)
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+        finishBatch(
+            doses, colors: colors, in: context,
+            activatesLiveSession: activatesLiveSession, schedulesCheckIns: schedulesCheckIns ?? activatesLiveSession,
+            deferredBookkeeping: deferredBookkeeping,
+        )
+        return ids
+    }
+
+    private func prepareBatch(
+        _ doses: [(entry: DoseEntry, substance: Substance?)],
+        colors: [SubstanceColor],
+        in context: ModelContext,
+    ) -> [SubstanceColor] {
+        var colors = colors
+        for (entry, _) in doses {
+            context.insert(entry)
+            SessionService.assignSession(for: entry, in: context)
+            // A brand-new substance gets its class-color row up front, tracked
+            // in the local snapshot so the live session picks it up without a
+            // store round-trip.
+            if let newColor = SubstanceColorStore.ensureRow(for: entry.substance, existing: colors, in: context) {
+                colors.append(newColor)
+            }
+        }
+        return colors
+    }
+
+    private func finishBatch(
+        _ doses: [(entry: DoseEntry, substance: Substance?)],
+        colors: [SubstanceColor],
+        in context: ModelContext,
+        activatesLiveSession: Bool,
+        schedulesCheckIns: Bool,
+        deferredBookkeeping: @escaping @MainActor () -> Void,
+    ) {
         // The live session and its Live Activity are the journal on screen; a
         // dose logged for someone else stays in their store.
-        if ProfileScope.isActive {
+        if activatesLiveSession, ProfileScope.isActive {
             ActiveSessionManager.shared.addDoses(entries: doses, allColors: colors)
         }
-        CheckInScheduler.dosesLogged(in: doses.compactMap(\.entry.session))
+        if schedulesCheckIns {
+            CheckInScheduler.dosesLogged(in: doses.compactMap(\.entry.session))
+        }
         changed()
         scheduleDeferredBookkeeping(
             forSubstances: Set(doses.map(\.entry.substance)),

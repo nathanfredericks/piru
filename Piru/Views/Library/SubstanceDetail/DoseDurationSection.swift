@@ -346,7 +346,7 @@ struct RouteChips: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, Spacing.md)
                             .background(
-                                skinChipShape().fill(isOn ? Theme.accent : Color.platformTertiarySystemFill),
+                                Capsule().fill(isOn ? Theme.accent : Color.platformTertiarySystemFill),
                             )
                     }
                     .buttonStyle(.plain)
@@ -372,7 +372,7 @@ private struct RecordEntryButton: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 3)
         }
-        .skinButtonStyle(.prominent)
+        .buttonStyle(.borderedProminent)
         .tint(Theme.accent)
     }
 }

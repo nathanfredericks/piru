@@ -48,7 +48,7 @@ struct ExperimentalTag: View {
             .foregroundStyle(Theme.secondaryLabel)
             .padding(.horizontal, 7)
             .padding(.vertical, Spacing.xxs)
-            .background(Color.platformSecondarySystemFill, in: skinChipShape())
+            .background(Color.platformSecondarySystemFill, in: Capsule())
     }
 }
 
@@ -133,7 +133,7 @@ struct EffectEstimatesView: View {
         .insetGroupedListStyle()
         .scrollContentBackground(.hidden)
         .compactListSectionSpacing()
-        .skinBackdrop()
+        .piruPageBackground()
         .navigationTitle("Effect Estimates")
         .largeNavigationTitle()
     }
@@ -171,7 +171,6 @@ struct EffectEstimatesView: View {
                 .buttonStyle(.plain)
             }
             .padding(.vertical, Spacing.xxs)
-            .listRowBackground(CardBackground())
         }
     }
 
@@ -199,7 +198,6 @@ struct EffectEstimatesView: View {
                 }
             }
             .padding(.vertical, Spacing.xxs)
-            .listRowBackground(CardBackground())
         }
     }
 
@@ -219,7 +217,6 @@ struct EffectEstimatesView: View {
             .frame(height: chartHeight)
             .listRowInsets(EdgeInsets(top: 4, leading: 0.5, bottom: 4, trailing: 0.5))
             .listRowSeparator(.hidden)
-            .listRowBackground(CardBackground())
 
         } header: {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
@@ -296,7 +293,6 @@ struct EffectEstimatesView: View {
                 .foregroundStyle(Theme.secondaryLabel)
             }
             .padding(.vertical, Spacing.xxs)
-            .listRowBackground(CardBackground())
         }
     }
 }
@@ -318,7 +314,7 @@ struct EffectModelExplainerView: View {
             }
         }
         .insetGroupedListStyle()
-        .skinBackdrop()
+        .piruPageBackground()
         .navigationTitle("How this works")
     }
 }

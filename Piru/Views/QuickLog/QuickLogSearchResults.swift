@@ -1,8 +1,6 @@
 import SwiftUI
 
-// MARK: - In-dock search results
-
-/// One in-dock search hit: a recent card, a library substance, a custom one,
+/// One search hit: a recent card, a library substance, a custom one,
 /// or a combination product.
 enum QuickLogSearchResult: Identifiable {
     case recent(SubstanceCard)
@@ -52,226 +50,63 @@ struct QuickLogStagePayload {
     var emoji: String?
 }
 
-/// The list of search hits beneath the dock's pinned field. Pure
-/// presentation: the parent computes the ranked `results` and supplies the
-/// staging/create actions; this view owns the row layout.
-///
-/// Every row is one big Add button: a tap stages the dose with its recent /
-/// reference defaults, then ends the search (the dock settles onto medium with
-/// the new row's editor open — see ``DockMiddleContent/onDidStage``). Doses
-/// that still need input (by-volume drinks, substances with no known dose)
-/// stage as a draft, which opens the full editor in the tray. There is no
-/// inline mini-editor: the staged card's editor is the one editing surface.
 struct QuickLogSearchResults: View {
     let results: [QuickLogSearchResult]
-    /// Stage a complete dose.
     let onAdd: (QuickLogStagePayload) -> Void
-    /// Stage a draft that opens the full editor in the tray.
-    let onAddDraft: (QuickLogStagePayload) -> Void
-    /// `nil` hides the trailing "Create custom substance" row — the
-    /// suggestions surfaces (recents, category browse) reuse these rows
-    /// without the create CTA.
-    let onCreateCustom: (() -> Void)?
-    /// Stage every component of a combination product. Only the search
-    /// surface lists combinations, so the suggestion surfaces leave it `nil`.
-    var onAddCombination: ((CustomSubstanceEntry) -> Void)?
-
-    @State private var customSubstanceStore = CustomSubstanceStore.shared
-
-    /// One fixed height for every result row — content varies (a substance may
-    /// lack a dose band), the rhythm must not. Scaled so two lines still fit
-    /// at accessibility text sizes.
-    @ScaledMetric(relativeTo: .body) private var resultRowHeight: CGFloat = 56
-    @ScaledMetric(relativeTo: .body) private var createRowHeight: CGFloat = 48
+    let onAddCombination: (CustomSubstanceEntry) -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(results.enumerated()), id: \.element.id) { index, result in
-                if index > 0 {
-                    Divider().padding(.leading, Spacing.xxl)
+        ForEach(results) { result in
+            Button {
+                if case let .combination(product) = result {
+                    onAddCombination(product)
+                } else if let payload = result.payload {
+                    onAdd(payload)
                 }
-                row(result)
-            }
-            if let onCreateCustom {
-                if !results.isEmpty {
-                    Divider().padding(.leading, Spacing.xxl)
-                }
-                createCustomRow(onCreateCustom)
-            }
-        }
-        .padding(.vertical, Spacing.xs)
-    }
-
-    // MARK: Rows
-
-    @ViewBuilder
-    private func row(_ result: QuickLogSearchResult) -> some View {
-        switch result {
-        case let .recent(card):
-            resultRow(
-                result: result,
-                name: card.title ?? customSubstanceStore.displayName(for: card.substanceName),
-                source: String(localized: "Recent"),
-                tint: card.tint?.color ?? .gray,
-                detail: card.routes.first?.librarySubstance.flatMap { substanceDetail($0) }
-                    ?? card.routes.first.map { String(localized: $0.route.localizedName) },
-            )
-        case let .library(match):
-            resultRow(
-                result: result,
-                name: match.displayName,
-                source: String(localized: "Library"),
-                tint: match.substance.category.color,
-                detail: substanceDetail(match.substance, matchedAlias: match.matchedAlias),
-            )
-        case let .custom(substance):
-            resultRow(
-                result: result,
-                name: substance.name,
-                source: String(localized: "Custom"),
-                tint: substance.category.color,
-                detail: substanceDetail(substance),
-            )
-        case let .combination(entry):
-            resultRow(
-                result: result,
-                name: entry.resolvedDisplayName,
-                source: String(localized: "Combination"),
-                tint: entry.category.color,
-                detail: entry.componentsListing,
-            )
-        }
-    }
-
-    /// "Psychedelic · Common 75–150 µg" — class plus the default route's
-    /// common-dose band.
-    ///
-    /// When the query named an alias, the identity displaces the dose band: a row
-    /// titled "Concerta" has to answer *what is that* before it answers *how much*,
-    /// and a successful brand match currently looks identical to a failed one.
-    private func substanceDetail(_ substance: Substance, matchedAlias: String? = nil) -> String? {
-        if let matchedAlias { return resolvedIdentity(substance, matchedAlias: matchedAlias) }
-        var parts = [String(localized: substance.category.displayName)]
-        if let routeInfo = substance.routes.first(where: { $0.route == substance.defaultRoute }),
-           let common = routeInfo.doses.common {
-            let low = common.lowerBound.doseFormatted
-            let high = common.upperBound.doseFormatted
-            parts.append(String(localized: "Common \(low)–\(high) \(routeInfo.unit)"))
-        }
-        return parts.joined(separator: " · ")
-    }
-
-    /// What the alias resolved to — "Methylphenidate XR" under a "Concerta" title,
-    /// "Lisdexamfetamine" under "Vyvanse".
-    ///
-    /// The composed form title is right only when the alias actually names a form.
-    /// For a plain brand the catalog's own title is better: `displayTitle` is
-    /// region-resolved, which `substance_forms` deliberately is not, so a UK user
-    /// searching a paracetamol brand should not be told it is "Acetaminophen".
-    private func resolvedIdentity(_ substance: Substance, matchedAlias: String) -> String {
-        // An ester alias already titles the row "Estradiol Valerate" (matchedAlias);
-        // the subtitle is the base molecule, so fall through to displayTitle for it.
-        let namesAForm = SubstanceLibrary.releaseForm(for: matchedAlias) != nil
-            || SubstanceLibrary.isomer(for: matchedAlias) != nil
-        if namesAForm, let composed = SubstanceLibrary.formTitle(for: matchedAlias) {
-            return composed
-        }
-        return substance.displayTitle
-    }
-
-    /// Leading ⊕ tinted with the substance/category color — the whole row is
-    /// the Add button.
-    private func resultRow(
-        result: QuickLogSearchResult,
-        name: String,
-        source: String,
-        tint: Color,
-        detail: String?,
-    ) -> some View {
-        Button {
-            add(result)
-        } label: {
-            HStack(spacing: Spacing.lg) {
-                // Decorative — the row itself is the Add button; without this
-                // VoiceOver announces the symbol before the substance name.
-                Image(systemName: "plus.circle.fill")
-                    .font(.body)
-                    .foregroundStyle(tint)
-                    .frame(width: 20)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    HStack(spacing: Spacing.md) {
-                        Text(name)
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                        Spacer(minLength: 0)
-                        Text(source)
-                            .captionSecondary()
+            } label: {
+                VStack(alignment: .leading) {
+                    Text(verbatim: result.title)
+                    if let detail = result.detail {
+                        Text(verbatim: detail)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
-                    // The detail line always renders (a space when absent),
-                    // so the title sits at the same height in every row.
-                    Text(verbatim: detail ?? " ")
-                        .captionSecondary()
-                        .lineLimit(1)
                 }
+                .foregroundStyle(.primary)
             }
-            .padding(.horizontal, Spacing.xxl)
-            .frame(height: resultRowHeight)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityHint("Adds this entry")
+    }
+}
+
+extension QuickLogSearchResult {
+    fileprivate var title: String {
+        switch self {
+        case let .recent(card): card.title ?? card.productName ?? card.substanceName
+        case let .library(match): match.matchedAlias ?? match.substance.displayTitle
+        case let .custom(substance): substance.displayTitle
+        case let .combination(product): product.displayName ?? product.name
+        }
     }
 
-    /// A complete dose stages straight into the tray; one that still needs
-    /// input (a by-volume drink with nothing recorded, or no known reference
-    /// dose) stages as a draft, opening its full editor in the staged card.
-    /// A recent with a recorded drink is already complete — it re-stages
-    /// exactly, matching the recent-card chip path.
-    private func add(_ result: QuickLogSearchResult) {
-        if case let .combination(entry) = result {
-            onAddCombination?(entry)
-            return
-        }
-        guard let payload = payload(for: result) else { return }
-        let hasRecordedDrink = payload.volumeML != nil && payload.abv != nil && payload.amount > 0
-        if (payload.librarySubstance?.byVolumeDosing != nil && !hasRecordedDrink) || payload.amount <= 0 {
-            onAddDraft(payload)
-        } else {
-            onAdd(payload)
+    fileprivate var detail: String? {
+        switch self {
+        case let .recent(card):
+            guard let route = card.routes.first, let dose = route.doses.first else { return nil }
+            return "\(dose.amount.doseFormatted) \(dose.unit.unitDisplay(for: dose.amount))"
+        case let .library(match):
+            return match.matchedAlias == nil ? nil : match.substance.displayTitle
+        case .custom, .combination:
+            return nil
         }
     }
 
     /// The stage payload for one hit. Recents prefill from their most recent
     /// chip; library hits from the reference dose for the default route.
-    private func payload(for result: QuickLogSearchResult) -> QuickLogStagePayload? {
-        switch result {
+    var payload: QuickLogStagePayload? {
+        switch self {
         case let .recent(card):
-            let group = card.routes.first
-            let chip = group?.doses.first
-            let productName = group?.stageProductName
-            // The card's ester rides on saltForm — an "Estradiol Enanthate" card
-            // re-stages Enanthate. A dose logged under a name that states the ester
-            // ("Estradiol Enanthate" as its product or its substance, as imported
-            // logs carry it) holds it only in the name, so read it off the name.
-            let saltForm = group?.saltForm ?? card.saltForm
-                ?? productName.flatMap { SubstanceLibrary.saltForm(for: $0) }
-                ?? SubstanceLibrary.saltForm(for: card.substanceName)
-            return QuickLogStagePayload(
-                substance: card.substanceName,
-                route: group?.route ?? .oral,
-                unit: chip?.unit ?? "mg",
-                amount: chip?.amount ?? 0,
-                tint: card.tint,
-                librarySubstance: group?.librarySubstance,
-                productName: productName,
-                saltForm: saltForm,
-                volumeML: chip?.volumeML,
-                abv: chip?.abv,
-                drinkName: chip?.drinkName,
-                emoji: chip?.emoji,
-            )
+            guard let group = card.routes.first, let chip = group.doses.first else { return nil }
+            return Self.recentPayload(card: card, group: group, chip: chip)
         case let .library(match):
             // An ester alias ("Estradiol Valerate") rides on saltForm, not
             // productName — it's a form facet, not a brand.
@@ -286,6 +121,31 @@ struct QuickLogSearchResults: View {
             // `onAddCombination`, which stages one row per component.
             return nil
         }
+    }
+
+    static func recentPayload(card: SubstanceCard, group: SubstanceGroup, chip: DoseChip) -> QuickLogStagePayload {
+        let productName = group.stageProductName
+        // The card's ester rides on saltForm — an "Estradiol Enanthate" card
+        // re-stages Enanthate. A dose logged under a name that states the ester
+        // ("Estradiol Enanthate" as its product or its substance, as imported
+        // logs carry it) holds it only in the name, so read it off the name.
+        let saltForm = group.saltForm ?? card.saltForm
+            ?? productName.flatMap { SubstanceLibrary.saltForm(for: $0) }
+            ?? SubstanceLibrary.saltForm(for: card.substanceName)
+        return QuickLogStagePayload(
+            substance: card.substanceName,
+            route: group.route,
+            unit: chip.unit,
+            amount: chip.amount,
+            tint: card.tint,
+            librarySubstance: group.librarySubstance,
+            productName: productName,
+            saltForm: saltForm,
+            volumeML: chip.volumeML,
+            abv: chip.abv,
+            drinkName: chip.drinkName,
+            emoji: chip.emoji,
+        )
     }
 
     private func payload(for substance: Substance, productName: String?, saltForm: String? = nil) -> QuickLogStagePayload {
@@ -308,25 +168,5 @@ struct QuickLogSearchResults: View {
             productName: productName,
             saltForm: saltForm,
         )
-    }
-
-    private func createCustomRow(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: Spacing.lg) {
-                Image(systemName: "plus")
-                    .sectionLabel()
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-                Text("Create custom substance")
-                    .font(.body.weight(.medium))
-                    .lineLimit(1)
-                Spacer()
-            }
-            .foregroundStyle(Theme.accent)
-            .padding(.horizontal, Spacing.xxl)
-            .frame(height: createRowHeight)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 }

@@ -13,9 +13,7 @@ struct AboutView: View {
                 AboutAIContentSection()
                 AboutPrivacySection()
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("About Piru")
         .inlineNavigationTitle()
     }

@@ -246,7 +246,7 @@ enum DataExportImport {
 
     /// Re-reads everything an import can change that a live singleton holds in
     /// memory, so the running app shows the imported profile, notification
-    /// choices, units, skin, dock, tab bar and search history without a relaunch, and
+    /// choices, units, and search history without a relaunch, and
     /// schedules the restored meds' reminders. Called by the import and
     /// restore screens after a successful import.
     @MainActor
@@ -254,9 +254,6 @@ enum DataExportImport {
         UserProfileStore.shared.configure(container: container)
         NotificationPreferencesStore.shared.configure(container: container)
         CustomUnitStore.shared.configure(container: container)
-        SkinStore.shared.reloadFromDefaults()
-        DockPreferences.shared.reloadFromDefaults()
-        TabLayoutStore.shared.reloadFromDefaults()
         SearchHistoryStore.shared.reloadFromDefaults()
         DoseNotificationManager.syncMedReminders(in: container.mainContext)
         Task(name: "Rewarm substance catalog") { await SubstanceStore.shared.ensureAllLoaded() }

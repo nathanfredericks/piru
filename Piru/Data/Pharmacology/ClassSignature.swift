@@ -328,7 +328,7 @@ nonisolated extension ClassSignature {
             focus: focusTick,
             ticks: spreadTicks(ticks.filter { !$0.isFocus }, keeping: 5),
             ratioText: ratioText(ratio),
-            valueText: "\(group.basis.symbol) \(shortNanomolar(oneValue)) · \(shortNanomolar(twoValue))",
+            valueText: "\(group.basis.symbol) \(shortNanomolar(oneValue)), \(shortNanomolar(twoValue))",
             provenance: provenance(group, fallback: two, basis: group.basis),
         ))
     }

@@ -13,7 +13,7 @@ import SwiftData
 ///
 /// Defaults mirror today's shipped behavior: the three types that fire with no
 /// switch (routine, inventory) default on; the flag-gated session
-/// types default off until onboarding or the management screen enables them.
+/// types default off until they are enabled in Notification Settings.
 @Model
 final class NotificationPreferences {
     /// Master posture — `false` pauses every notification type without

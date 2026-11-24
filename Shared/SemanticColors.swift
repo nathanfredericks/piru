@@ -30,46 +30,32 @@ import SwiftUI
 ///
 /// `fill` is not a token: it is `accent` at 0.10 alpha over the card. Derive it,
 /// never author it.
-///
-/// ## Isolation
-///
-/// `ShapeStyle` is `Sendable`, so these members are `nonisolated`, and so is
-/// `Skin.current` — keep it that way: a main-actor read here would fail to
-/// compile from this extension.
-///
-/// Rationale, measurements, and the migration plan: `design-system/`.
-///
-/// ## Skins
-///
-/// Each shorthand resolves through `Skin.current`, so a skin that re-seeds the
-/// status ladder (ely.pink) is honoured everywhere these are used, with the
-/// same `text` / `accent` split and the same gates.
 public extension ShapeStyle where Self == Color {
     /// Destructive or genuinely dangerous states. Small copy.
     static var dangerText: Color {
-        Skin.current.semantic(.danger, .text)
+        .Semantic.Danger.text
     }
     /// Destructive or genuinely dangerous states. Standalone marks.
     static var dangerAccent: Color {
-        Skin.current.semantic(.danger, .accent)
+        .Semantic.Danger.accent
     }
 
     /// Advisory states that are not dangerous. Small copy.
     static var cautionText: Color {
-        Skin.current.semantic(.caution, .text)
+        .Semantic.Caution.text
     }
     /// Advisory states that are not dangerous. Standalone marks.
     static var cautionAccent: Color {
-        Skin.current.semantic(.caution, .accent)
+        .Semantic.Caution.accent
     }
 
     /// Neutral information carrying no valence. Small copy.
     static var infoText: Color {
-        Skin.current.semantic(.info, .text)
+        .Semantic.Info.text
     }
     /// Neutral information carrying no valence. Standalone marks.
     static var infoAccent: Color {
-        Skin.current.semantic(.info, .accent)
+        .Semantic.Info.accent
     }
 
     /// A completed, confirmed, or on-track state. Small copy.

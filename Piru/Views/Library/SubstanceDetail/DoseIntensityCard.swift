@@ -50,11 +50,10 @@ struct DoseIntensityCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Group {
+            VStack(spacing: Spacing.xxs) {
+                Text("By dose", comment: "Intensity dial eyebrow")
                 if let routeName {
-                    Text("By dose · \(routeName)", comment: "Intensity dial eyebrow with route of administration")
-                } else {
-                    Text("By dose", comment: "Intensity dial eyebrow")
+                    Text(routeName)
                 }
             }
             .font(.caption2.weight(.bold))

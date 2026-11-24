@@ -238,7 +238,6 @@ struct LocationPickerView: View {
                     }
                     .disabled(model.isLocating)
                     .accessibilityValue(model.isLocating ? Text("Locating…") : Text(verbatim: ""))
-                    .listRowBackground(CardBackground())
                 } footer: {
                     if model.authDenied {
                         Text("Location access is off. Turn it on in Settings to use your current location.")
@@ -261,7 +260,6 @@ struct LocationPickerView: View {
                                         .accessibilityHidden(true)
                                 }
                             }
-                            .listRowBackground(CardBackground())
                         }
                     }
                 }
@@ -286,12 +284,10 @@ struct LocationPickerView: View {
                                     }
                                 }
                             }
-                            .listRowBackground(CardBackground())
                         }
                     }
                 }
             }
-            .themedPage()
             .searchable(text: $query, isPresented: $searchActive, prompt: "Search for a place or address")
             .onChange(of: query) { model.query = query }
             .navigationTitle("Location")

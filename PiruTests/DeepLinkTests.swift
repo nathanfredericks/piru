@@ -23,6 +23,7 @@ struct DeepLinkTests {
 
     @Test(arguments: [
         ("piru://journal", AppTab.journal),
+        ("piru://myMeds", .myMeds),
         ("piru://library", .library),
         ("piru://tools", .tools),
         ("piru://insights", .insights),
@@ -99,10 +100,10 @@ struct DeepLinkTests {
     }
 
     @Test
-    func `piru://skins opens the skins sheet`() {
+    func `Legacy skins URLs open Settings`() {
         let outcome = decode("piru://skins")
         #expect(outcome?.tab == nil)
-        #expect(outcome?.sheet == .skins)
+        #expect(outcome?.sheet == .settings)
     }
 
     @Test
@@ -166,7 +167,7 @@ struct DeepLinkTests {
     @Test
     func `piru://meds/<category> presents the medication log`() {
         let outcome = decode("piru://meds/Antidepressants")
-        #expect(outcome?.tab == .journal)
+        #expect(outcome?.tab == .myMeds)
         #expect(outcome?.sheet == .dailyDoseLog(category: "Antidepressants"))
     }
 
@@ -388,7 +389,7 @@ struct DeepLinkTests {
     }
 
     private func prefill(of outcome: DeepLinkOutcome?) -> DosePrefill? {
-        guard case let .quickLog(_, _, prefill, _)? = outcome?.sheet else { return nil }
+        guard case let .quickLog(_, _, prefill, _, _)? = outcome?.sheet else { return nil }
         return prefill
     }
 
@@ -518,18 +519,21 @@ struct DeepLinkTests {
         ("piru://substance/MDMA/data/pharmacology", "MDMA", .pharmacology),
         ("piru://substance/MDMA/data/sources", "MDMA", .sources),
     ])
-    func `piru://substance/<name>/data/<section> pushes the deep-data page`(
+    func `Legacy specialist URLs open substance detail`(
         url: String, name: String, section: DataSection,
     ) {
         let outcome = decode(url)
         #expect(outcome?.tab == .library)
-        #expect(outcome?.path == [.substanceData(name: name, section: section)])
+        let route: PushRoute = section == .sources
+            ? .substanceData(name: name, section: .sources)
+            : .substance(name: name)
+        #expect(outcome?.path == [route])
     }
 
     @Test
     func `A deep-data section resolves the name even when it is multi-word`() {
         let outcome = decode("piru://substance/Psilocybin%20mushrooms/data/chemistry")
-        #expect(outcome?.path == [.substanceData(name: "Psilocybin mushrooms", section: .chemistry)])
+        #expect(outcome?.path == [.substance(name: "Psilocybin mushrooms")])
     }
 
     @Test
@@ -541,25 +545,25 @@ struct DeepLinkTests {
     }
 
     @Test
-    func `A deep-data snapshot round-trips through encode → decode`() {
+    func `A sources snapshot round-trips through encode and decode`() {
         let snap = NavigatorSnapshot(
             selectedTab: .library,
-            paths: [.library: [.substanceData(name: "MDMA", section: .pharmacology)]],
+            paths: [.library: [.substanceData(name: "MDMA", section: .sources)]],
         )
         let url = DeepLink.encode(snap)
-        #expect(url?.absoluteString == "piru://substance/MDMA/data/pharmacology")
+        #expect(url?.absoluteString == "piru://substance/MDMA/data/sources")
         #expect(
-            url.flatMap(DeepLink.decode)?.path == [.substanceData(name: "MDMA", section: .pharmacology)],
+            url.flatMap(DeepLink.decode)?.path == [.substanceData(name: "MDMA", section: .sources)],
         )
     }
 
     @MainActor
     @Test
-    func `Applying a tool outcome replaces the Tools push stack`() {
-        let nav = AppNavigator(selectedTab: .journal, storage: makeIsolatedDefaults(), layout: TabLayoutStore(defaults: makeIsolatedDefaults()))
+    func `Applying a tool outcome opens it through the Library Tools hub`() {
+        let nav = AppNavigator(selectedTab: .journal, storage: makeIsolatedDefaults())
         nav.apply(DeepLinkOutcome(tab: .tools, path: [.tool(.ceiling)]))
-        #expect(nav.selectedTab == .tools)
-        #expect(nav.path(for: .tools) == [.tool(.ceiling)])
+        #expect(nav.selectedTab == .library)
+        #expect(nav.path(for: .library) == [.toolsHub, .tool(.ceiling)])
     }
 
     // MARK: - Unsupported URLs
@@ -584,7 +588,7 @@ struct DeepLinkTests {
     @MainActor
     @Test
     func `Applying a sheet-only outcome does not change the selected tab`() {
-        let nav = AppNavigator(selectedTab: .library, storage: makeIsolatedDefaults(), layout: TabLayoutStore(defaults: makeIsolatedDefaults()))
+        let nav = AppNavigator(selectedTab: .library, storage: makeIsolatedDefaults())
         nav.apply(DeepLinkOutcome(tab: nil, sheet: .quickLog(routine: nil)))
         #expect(nav.selectedTab == .library)
         #expect(nav.sheetStack == [.quickLog(routine: nil)])
@@ -593,7 +597,7 @@ struct DeepLinkTests {
     @MainActor
     @Test
     func `Applying a tab-only outcome does not present a sheet`() {
-        let nav = AppNavigator(selectedTab: .journal, storage: makeIsolatedDefaults(), layout: TabLayoutStore(defaults: makeIsolatedDefaults()))
+        let nav = AppNavigator(selectedTab: .journal, storage: makeIsolatedDefaults())
         nav.apply(DeepLinkOutcome(tab: .insights, sheet: nil))
         #expect(nav.selectedTab == .insights)
         #expect(nav.sheetStack.isEmpty)
@@ -602,7 +606,7 @@ struct DeepLinkTests {
     @MainActor
     @Test
     func `Applying a tab+sheet outcome sets both`() {
-        let nav = AppNavigator(selectedTab: .library, storage: makeIsolatedDefaults(), layout: TabLayoutStore(defaults: makeIsolatedDefaults()))
+        let nav = AppNavigator(selectedTab: .library, storage: makeIsolatedDefaults())
         nav.apply(DeepLinkOutcome(tab: .journal, sheet: .sessionDetail))
         #expect(nav.selectedTab == .journal)
         #expect(nav.sheetStack == [.sessionDetail])

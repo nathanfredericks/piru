@@ -31,10 +31,8 @@ struct FeltPatternsView: View {
                     caveatSection
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
-        .themedPage()
         .task(id: DoseLogService.shared.revision) {
             await SubstanceStore.shared.ensureAllLoaded()
             model.recompute(sessions: sessions, entries: entries)

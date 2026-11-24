@@ -19,7 +19,6 @@ struct DescriptorPickerView: View {
             if query.trimmingCharacters(in: .whitespaces).isEmpty {
                 ForEach(ontology.rollups) { rollup in
                     rollupSection(rollup)
-                        .listRowBackground(CardBackground())
                 }
             } else {
                 let groups = ontology.searchGrouped(query)
@@ -38,13 +37,11 @@ struct DescriptorPickerView: View {
                         } header: {
                             Text(verbatim: group.title.capitalizedFirst)
                         }
-                        .listRowBackground(CardBackground())
                     }
                 }
             }
         }
         .insetGroupedListStyle()
-        .themedPage()
         .searchable(text: $query, placement: .automatic, prompt: Text("Search effects"))
         .navigationTitle("Descriptors")
         .inlineNavigationTitle()
@@ -75,7 +72,7 @@ struct DescriptorPickerView: View {
                         Text(rollup.name.capitalizedFirst)
                             .font(.body.weight(.semibold))
                             .foregroundStyle(.primary)
-                        Text(verbatim: "\(rollup.domain) · \(atomics.count)")
+                        Text(verbatim: "\(rollup.domain), \(atomics.count)")
                             .captionSecondary()
                     }
                     Spacer()

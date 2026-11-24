@@ -31,9 +31,7 @@ extension View {
 /// Identifier-based routes (entries, substances) look up the underlying
 /// model on render — this is what makes routes a pure value type
 /// (Codable, Hashable) without holding a SwiftData object reference.
-///
-/// Also the root of a pinned tab (`PinnedTabRoot`), so a screen looks the same
-/// whether it was pushed or pinned.
+
 struct PushRouteView: View {
     let route: PushRoute
 
@@ -64,32 +62,14 @@ struct PushRouteView: View {
                 .navigationTitle("Timeline")
                 .inlineNavigationTitle()
 
+        case .journalDays:
+            EntryListView(searchText: .constant(""), showsDays: true)
+
+        case .toolsHub:
+            ToolsView()
+
         case let .substance(name, brand):
-            // Push a **lightweight shell** (the warm batch projection's hot
-            // fields) so the detail header + dose card render instantly off the
-            // push; `SubstanceDetailView` then resolves the heavy detail-only
-            // fields — mechanism, chemistry identifiers, molar mass, peptide
-            // profile, per-route protocol dosing — in a `.task` off the push.
-            //
-            // The shell is only available once the batch cache is warm (the
-            // common case after browsing); otherwise fall back to the full
-            // resolve, which also gates the not-found state. If a *stored* name
-            // does not resolve to a canonical substance (renamed, merged or
-            // split into specific salts since it was saved), show an explicit
-            // not-found state rather than a blank screen. Alias
-            // fallback is deliberately avoided: some aliases are polluted
-            // ("magnesium" → Salicylic acid), so it would mis-resolve.
-            if let shell = SubstanceLibrary.shell(name) {
-                SubstanceDetailView(substance: shell, brand: brand)
-            } else if let substance = SubstanceLibrary.resolveFull(name) {
-                SubstanceDetailView(substance: substance, brand: brand)
-            } else {
-                ContentUnavailableView(
-                    "Substance Not Found",
-                    systemImage: "questionmark.circle",
-                    description: Text("“\(name)” isn’t in the library anymore. It may have been renamed or merged."),
-                )
-            }
+            substanceView(name: name, brand: brand)
 
         case let .libraryCategory(category):
             SubstanceCategoryListView(title: category.browseTitle, category: category)
@@ -143,7 +123,7 @@ struct PushRouteView: View {
             }
 
         case let .substanceData(name, section):
-            SubstanceDataPageView(name: name, section: section)
+            substanceView(name: name, brand: nil, showsSources: section == .sources)
 
         case let .inventoryItem(id):
             // A deleted item renders nothing; the stack pops the dead route on
@@ -153,6 +133,19 @@ struct PushRouteView: View {
                 InventoryItemDetailView(item: item)
                     .environment(\.modelContext, item.modelContext ?? modelContext)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func substanceView(name: String, brand: String?, showsSources: Bool = false) -> some View {
+        if let substance = SubstanceLibrary.shell(name) ?? SubstanceLibrary.resolveFull(name) {
+            SubstanceDetailView(substance: substance, brand: brand, showsSources: showsSources)
+        } else {
+            ContentUnavailableView(
+                "Substance Not Found",
+                systemImage: "questionmark.circle",
+                description: Text("“\(name)” isn’t in the library anymore. It may have been renamed or merged."),
+            )
         }
     }
 

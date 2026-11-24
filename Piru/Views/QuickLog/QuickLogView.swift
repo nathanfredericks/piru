@@ -1,21 +1,8 @@
 import SwiftData
 import SwiftUI
-import UIKit
 import VisionKit
-import WidgetKit
 
-/// Thin wrapper that pins the recent-history window before building the screen.
-///
-/// ``QuickLogView`` holds a `@Query` over `DoseEntry` for its recency-derived
-/// surfaces (today's active-percent badges, recent tags/locations). That query
-/// must be **bounded**: the full dose table is years of rows the quick-log
-/// screen never needs, and loading it on every open would keep the whole
-/// history resident and make each consumer pay O(history). A `@Query` predicate can't
-/// call `Date.now`/`addingTimeInterval`, so the cutoff is computed here as plain
-/// `@State` and handed to the screen, which builds its `@Query` from it in
-/// `init`. (Re-initializing the screen with a new cutoff preserves its `@State`
-/// — view identity is stable — so even a refreshed cutoff never drops a staged
-/// tray; but a sheet is short-lived, so one capture at present is enough.)
+/// Gives the sheet a fixed, bounded history window for recents and warnings.
 struct QuickLogSheet: View {
     var prestagedRoutine: String?
     /// Canonical name of a substance to stage (with its editor open) on present.
@@ -24,18 +11,10 @@ struct QuickLogSheet: View {
     var prefillDose: DosePrefill?
     /// The route to stage `prefillSubstance` on, in place of its default.
     var prefillRoute: RouteOfAdministration?
+    var prefillDate: Date?
 
-    /// Days of dose history the quick-log surfaces treat as "recent". Must
-    /// exceed the longest plausible "still-active PK badge" horizon: a dose
-    /// older than this shows no active-percent badge, which is correct — its
-    /// body load has long since decayed below the badge's 5% floor. 120 days
-    /// clears even long-half-life substances (fluoxetine ≈ 70 days to a 5% load)
-    /// with margin, while keeping the resident array small.
     private static let recentWindowDays: TimeInterval = 120
 
-    /// Captured once when the sheet's state first initializes (a fresh sheet per
-    /// present), so the window doesn't drift mid-session. A few hours of drift
-    /// across a 120-day window is irrelevant, so it never needs refreshing.
     @State private var cutoff = Date.now.addingTimeInterval(-recentWindowDays * 86_400)
 
     var body: some View {
@@ -44,96 +23,74 @@ struct QuickLogSheet: View {
             prefillSubstance: prefillSubstance,
             prefillDose: prefillDose,
             prefillRoute: prefillRoute,
+            prefillDate: prefillDate,
             historyCutoff: cutoff,
         )
     }
 }
 
 struct QuickLogView: View {
-    /// Stage this routine's items into the tray on open — the landing state
-    /// for a routine-reminder notification tap (`piru://quicklog?routine=`).
-    var prestagedRoutine: String?
-
-    /// Stage this substance (canonical name) as a draft on open, with its dose
-    /// editor expanded on the library's reference dose — the landing state for
-    /// the "Log" button on a substance's detail screen
-    /// (`piru://quicklog?substance=`).
-    var prefillSubstance: String?
-    /// With `prefillSubstance`, stage it as this complete dose rather than an
-    /// empty draft.
-    var prefillDose: DosePrefill?
-    /// With `prefillSubstance`, stage it on this route rather than the
-    /// substance's default (`piru://quicklog?route=`, dose.wiki's route tab).
-    var prefillRoute: RouteOfAdministration?
+    let prestagedRoutine: String?
+    let prefillSubstance: String?
+    let prefillDose: DosePrefill?
+    let prefillRoute: RouteOfAdministration?
+    let prefillDate: Date?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appNavigator) private var navigator
+    @Environment(\.profileDirectory) private var directory
 
-    /// Recent dose history only (since ``historyCutoff``), newest-first — every
-    /// consumer (`rebuildEntryDerived`, the notification check) relies on the
-    /// reverse-chronological order and needs no more than this window. Built in
-    /// `init` because a `#Predicate` can't compute the cutoff itself.
     @Query private var allEntries: [DoseEntry]
-
     @Query private var substanceColors: [SubstanceColor]
     @Query(sort: \DailyDoseItem.sortOrder) private var dailyDoseItems: [DailyDoseItem]
-    @Query(sort: [SortDescriptor(\FavoriteSubstance.sortOrder), SortDescriptor(\FavoriteSubstance.createdAt, order: .reverse)]) private var favorites: [FavoriteSubstance]
+    @Query(sort: [SortDescriptor(\FavoriteSubstance.sortOrder), SortDescriptor(\FavoriteSubstance.createdAt, order: .reverse)])
+    private var favorites: [FavoriteSubstance]
     @Query private var quickLogDoses: [QuickLogDose]
 
-    @AppStorage(QuickLogManager.fixedOrderDefaultsKey) private var quickLogFixedOrder = false
-
-    @State private var searchText = ""
-    @State private var showCustomForm = false
-    @State private var showEditSheet = false
-    @State private var showScanner = false
-
-    /// Staged-but-uncommitted doses. Tapping a chip stages it here; the dock
-    /// (the screen's single bottom surface) is the commit surface for one dose
-    /// or a whole stack.
-    @State private var tray = DoseTrayModel()
-
-    /// The dock is in search mode: field focused, results render inside the
-    /// dock sheet. Entered by focusing the dock's pinned field or the tray's
-    /// "Add another…"; exits on cancel, on staging a result, or when the dock
-    /// is dragged below its tallest detent. Shared with ``QuickLogDock``,
-    /// which owns the keyboard focus that drives it.
-    @State private var searchActive = false
-
-    /// The dock sheet is mounted for the lifetime of the cover. Requested
-    /// from the first body evaluation so it presents *with* the cover's own
-    /// transition rather than popping in afterwards.
-    @State private var dockPresented = true
-
-    /// Set the instant the tray commits: the sheet is dismissing, so the
-    /// revision-keyed derived-cache rebuild — which the commit itself triggers —
-    /// would be pure wasted main-thread time during the slide-down.
-    @State private var isCommitted = false
-
-    /// Measured height of the cover — bounds the dock's compact detent.
-    @State private var containerHeight: CGFloat = 0
-    /// The dock's live height, which the cards scroll clear of.
-    @State private var dockGeometry = DockSheetGeometry()
-
-    /// Every derived dataset the screen renders lives on this `@Observable`
-    /// model, not inline on the view struct. Storing the (array-of-`Substance`)
-    /// caches on the value-type view made every `body` pass deep-copy the whole
-    /// dataset — `initializeWithCopy` dominated a 784 ms first-render trace; the
-    /// reference-typed model drops the view's stored surface to a few flags.
+    @AppStorage(QuickLogManager.fixedOrderDefaultsKey) private var fixedOrder = false
     @State private var content = QuickLogContentModel()
+    @State private var tray = DoseTrayModel()
+    @State private var customStore = CustomSubstanceStore.shared
+    @State private var path: [Page] = []
+    @State private var searchText = ""
+    @State private var searchPresented = false
+    @State private var searchedText = ""
+    @State private var showingDiscard = false
+    @State private var showingCustomForm = false
+    @State private var pendingCustom: CustomSubstanceEntry?
+    @State private var commitError: CommitError?
+    @State private var isCommitted = false
+    @State private var pendingScan: QuickLogStagePayload?
+    @State private var pendingScanQuery: String?
+
+    private enum Page: Hashable {
+        case dose(UUID)
+        case recentAmounts(String)
+        case browse
+        case combination(String)
+        case scanner
+        case location
+        case options
+    }
+
+    private enum CommitError {
+        case save
+        case profile
+    }
 
     init(
         prestagedRoutine: String? = nil,
         prefillSubstance: String? = nil,
         prefillDose: DosePrefill? = nil,
         prefillRoute: RouteOfAdministration? = nil,
+        prefillDate: Date?,
         historyCutoff: Date,
     ) {
         self.prestagedRoutine = prestagedRoutine
         self.prefillSubstance = prefillSubstance
         self.prefillDose = prefillDose
         self.prefillRoute = prefillRoute
-        // The windowed @Query closes over the init parameter — see QuickLogSheet
-        // for the cutoff's meaning.
+        self.prefillDate = prefillDate
         _allEntries = Query(
             FetchDescriptor(
                 predicate: #Predicate<DoseEntry> { $0.timestamp >= historyCutoff },
@@ -143,243 +100,480 @@ struct QuickLogView: View {
         )
     }
 
-    // MARK: - Favorites
-
-    /// Pre-`sortOrder` favorites are all 0 — stamp them with their current
-    /// display order (newest first) exactly once, so
-    /// reordering has distinct positions to work with.
-    private func seedFavoriteOrderIfNeeded() {
-        guard favorites.count > 1, favorites.allSatisfy({ $0.sortOrder == 0 }) else { return }
-        for (index, favorite) in favorites.sorted(by: { $0.createdAt > $1.createdAt }).enumerated() {
-            favorite.sortOrder = index
+    var body: some View {
+        NavigationStack(path: $path) {
+            List {
+                if !searchText.isEmpty {
+                    searchResults
+                } else if searchPresented {
+                    suggestions
+                } else {
+                    stagedSection
+                    if tray.isEmpty {
+                        suggestions
+                    } else {
+                        QuickLogDetails(tray: tray, content: content) { path.append(.location) }
+                        TrayWarningBanner(model: tray, content: content)
+                        if let commitError {
+                            Section {
+                                Label(
+                                    commitError == .profile ? "Choose a profile to record these entries." : "Couldn’t save entries. Try again.",
+                                    systemImage: "exclamationmark.circle",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Log")
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, isPresented: $searchPresented, prompt: "Search substances")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: close)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(recordLabel, action: commitTray)
+                        .disabled(!tray.isCommittable || isCommitted || searchPresented)
+                }
+            }
+            .navigationDestination(for: Page.self, destination: destination)
+        }
+        .onChange(of: path) { oldPath, newPath in
+            guard oldPath.last == .scanner, newPath.last != .scanner else { return }
+            if let pendingScan {
+                self.pendingScan = nil
+                stage(pendingScan)
+            } else if let pendingScanQuery {
+                self.pendingScanQuery = nil
+                searchText = pendingScanQuery
+                searchPresented = true
+            }
+        }
+        .interactiveDismissDisabled(!tray.isEmpty)
+        .confirmationDialog("Discard Entries?", isPresented: $showingDiscard, titleVisibility: .visible) {
+            Button("Discard Entries", role: .destructive) { navigator.dismiss() }
+            Button("Keep Editing", role: .cancel) {}
+        }
+        .sheet(isPresented: $showingCustomForm, onDismiss: stageSavedCustom) {
+            CustomSubstanceFormView(initialName: searchText.trimmingCharacters(in: .whitespaces)) {
+                pendingCustom = $0
+            }
+        }
+        .task { await load() }
+        .task(id: searchText) { await search() }
+        .onChange(of: favorites.map(\.persistentModelID)) { content.rebuildFavorites(favorites: favorites) }
+        .onChange(of: quickLogDoses.count) { content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites) }
+        .task(id: DoseLogService.shared.revision) {
+            guard content.hasLoaded, !isCommitted else { return }
+            content.rebuildEntryDerived(allEntries: allEntries, dailyDoseItems: dailyDoseItems)
         }
     }
 
-    // MARK: - Body
-
-    var body: some View {
-        NavigationStack {
-            page
-                .task {
-                    // Wait for the launch prewarm so the card lookups below land on
-                    // the warm batch cache instead of cold per-substance SQL (returns
-                    // immediately if already loaded; the rebuild is then cheap enough
-                    // not to block the present animation).
-                    await SubstanceStore.shared.ensureAllLoaded()
-                    QuickLogManager.seedIfNeeded(history: allEntries, context: modelContext)
-                    seedFavoriteOrderIfNeeded()
-                    content.rebuildColorLookup(substanceColors: substanceColors)
-                    // Cards first: `rebuildEntryDerived` scopes its per-substance PK
-                    // badge work to the *displayed* set (favorites + the 10 recents),
-                    // so the card caches must exist before it runs.
-                    content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites)
-                    content.rebuildEntryDerived(allEntries: allEntries, dailyDoseItems: dailyDoseItems)
-                    content.markLoaded()
-                    if let prestagedRoutine {
-                        stageRoutine(named: prestagedRoutine)
-                    }
-                    if prefillSubstance != nil || prefillDose != nil {
-                        await stagePrefill(named: prefillSubstance)
-                    }
-                    #if DEBUG
-                        if let query = ScreenshotTour.takeStagedDockSearch() {
-                            stageTopRecent(matching: query)
+    @ViewBuilder
+    private var suggestions: some View {
+        if !content.hasLoaded {
+            ProgressView()
+        } else {
+            if !content.cachedFavoriteCards.isEmpty || !content.cachedFavoriteLibrarySubstances.isEmpty {
+                Section("Favorites") {
+                    ForEach(content.cachedFavoriteCards) { recentRow($0, isFavorite: true) }
+                    resultRows(content.cachedFavoriteLibrarySubstances.map { .custom($0) })
+                }
+            }
+            if !content.cachedNonFavoriteCards.isEmpty {
+                Section("Recents") {
+                    ForEach(content.cachedNonFavoriteCards) { recentRow($0, isFavorite: false) }
+                }
+            }
+            if !dailyDoseItems.isEmpty {
+                Section("My Meds") {
+                    ForEach(dailyDoseItems.filter { !$0.isBackgroundMed }) { item in
+                        Button {
+                            stageDailyItem(item)
+                            if let name = item.productName, customStore.combination(named: name) != nil {
+                                path.append(.combination(name))
+                            } else if let dose = tray.staged.last(where: { $0.route == item.route && $0.isFromDailySet && $0.combinationName == nil &&
+                                    ($0.substanceName == item.substance || $0.productName == item.productName && item.productName != nil)
+                            }) {
+                                path.append(.dose(dose.id))
+                            }
+                        } label: {
+                            VStack(alignment: .leading) {
+                                Text(verbatim: item.productName ?? customStore.displayName(for: item.substance))
+                                Text(verbatim: "\(item.amount.doseFormatted) \(item.unit)")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
-                    #endif
-                }
-                .task(id: quickLogDoses.count) {
-                    try? await Task.sleep(for: .milliseconds(200))
-                    guard !Task.isCancelled else { return }
-                    content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites)
-                }
-                // A logged dose (here or elsewhere) changes the history-derived
-                // caches — refresh them off the body, keyed on the dose-log
-                // revision (one observed Int; hashing `allEntries` here would
-                // subscribe this body to every field of every entry). The initial
-                // `.task` above owns the first rebuild, so skip until it has run.
-                .task(id: DoseLogService.shared.revision) {
-                    guard content.hasLoaded, !isCommitted else { return }
-                    content.rebuildEntryDerived(allEntries: allEntries, dailyDoseItems: dailyDoseItems)
-                }
-                .onChange(of: substanceColors.count) {
-                    content.rebuildColorLookup(substanceColors: substanceColors)
-                    content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites)
-                }
-                // Keyed on names, not count — a reorder changes order only.
-                .onChange(of: favorites.map(\.substance)) { content.rebuildFavorites(favorites: favorites) }
-                // Routine pills depend on the routine rows + daily items; refresh
-                // the cache when either is edited (the Manage Routines sheet).
-                .onChange(of: routineSignature) { content.rebuildDailyGroups(dailyDoseItems: dailyDoseItems) }
-                .task(id: searchText) {
-                    guard !searchText.isEmpty else {
-                        content.setLibraryResults([])
-                        return
                     }
-                    try? await Task.sleep(for: .milliseconds(150))
-                    guard !Task.isCancelled else { return }
-                    // Ranked off-main: the sync form runs the whole ranking pass —
-                    // fuzzy tail included — on the main actor, per keystroke.
-                    let matches = await SubstanceLibrary.searchMatchesAsync(searchText)
-                    guard !Task.isCancelled else { return }
-                    content.setLibraryResults(
-                        matches.filter { match in
-                            // Keep an ester match ("Estradiol Valerate") even when its
-                            // base substance is in history — it stages a distinct form
-                            // (the ester pre-set), so it must survive the history filter
-                            // just as it survives the recents dedup below. Otherwise the
-                            // ester is unsearchable for exactly the people who log the
-                            // base, which is everyone injecting it.
-                            if let alias = match.matchedAlias, SubstanceLibrary.saltForm(for: alias) != nil { return true }
-                            return !content.cachedHistoryNames.contains(match.substance.name.lowercased())
-                        },
-                    )
                 }
+            }
+            Section {
+                NavigationLink(value: Page.browse) { Label("Browse", systemImage: "list.bullet") }
+                if DataScannerViewController.isSupported {
+                    NavigationLink(value: Page.scanner) { Label("Scan a label", systemImage: "camera") }
+                }
+                NavigationLink(value: Page.options) { Label("Edit", systemImage: "slider.horizontal.3") }
+            }
         }
-        // The staging dock: a native detented sheet over this cover, mounted
-        // for the cover's whole lifetime (never dismissible — it's the
-        // staging basket). Sheets launched from quick log (custom-substance
-        // form, favorites editor) stack *on the dock*, not on the cover: the
-        // dock permanently occupies the cover's presentation slot, so a
-        // sibling sheet here would never present.
-        .onGeometryChange(for: CGFloat.self, of: \.size.height) { newValue in
-            containerHeight = newValue
+    }
+
+    @ViewBuilder
+    private var searchResults: some View {
+        if CrisisKeywords.matches(searchText) {
+            QuickLogHelpBanner()
+        } else {
+            if !content.hasLoaded || searchedText != searchText {
+                ProgressView()
+            } else {
+                let matches = results
+                if matches.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                } else {
+                    resultRows(matches)
+                }
+                Button("Create Custom Substance", systemImage: "plus") { showingCustomForm = true }
+            }
         }
-        .sheet(isPresented: $dockPresented) {
-            DockSheetHost(
-                tray: tray,
-                content: content,
-                containerHeight: containerHeight,
-                geometry: dockGeometry,
-                searchText: $searchText,
-                searchActive: $searchActive,
-                showCustomForm: $showCustomForm,
-                showEditSheet: $showEditSheet,
-                showScanner: $showScanner,
-                onCommit: commitTray,
+    }
+
+    private func resultRows(_ results: [QuickLogSearchResult]) -> some View {
+        QuickLogSearchResults(results: results, onAdd: stage, onAddCombination: stageCombination)
+    }
+
+    private func recentRow(_ card: SubstanceCard, isFavorite: Bool) -> some View {
+        resultRows([.recent(card)])
+            .contextMenu {
+                Button("Recent Amounts", systemImage: "list.bullet") { path.append(.recentAmounts(card.id)) }
+                Button(isFavorite ? "Unfavorite" : "Favorite", systemImage: isFavorite ? "star.slash" : "star") {
+                    toggleFavorite(card)
+                }
+                Button("Remove from Recents", systemImage: "trash", role: .destructive) {
+                    QuickLogManager.removeFromRecents(identityKey: card.id, context: modelContext)
+                    content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites)
+                }
+            }
+    }
+
+    private func toggleFavorite(_ card: SubstanceCard) {
+        let isFavorite = FavoriteService.toggle(
+            substance: card.substanceName, substanceUID: card.substanceUID,
+            isomer: card.isomer, releaseForm: card.releaseForm, saltForm: card.saltForm,
+            productName: card.productName, in: modelContext,
+        )
+        content.setFavorite(identity: card.id, on: isFavorite)
+        content.rebuildFavorites(favorites: favorites)
+    }
+
+    @ViewBuilder
+    private var stagedSection: some View {
+        if !tray.isEmpty {
+            Section("Entries") {
+                ForEach(tray.staged) { item in
+                    if item.combinationName == nil {
+                        NavigationLink(value: Page.dose(item.id)) {
+                            doseSummary(item)
+                        }
+                        .swipeActions(allowsFullSwipe: false) {
+                            Button("Remove", role: .destructive) { tray.remove(item) }
+                        }
+                    } else if let name = item.combinationName, tray.leadRowID(ofCombination: name) == item.id {
+                        NavigationLink(value: Page.combination(name)) {
+                            VStack(alignment: .leading) {
+                                Text(verbatim: name)
+                                ForEach(tray.staged.filter { $0.combinationName == name }) { dose in
+                                    doseSummary(dose)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .swipeActions(allowsFullSwipe: false) {
+                            Button("Remove", role: .destructive) { tray.removeCombination(name) }
+                        }
+                    }
+                }
+                Button("Add Another", systemImage: "plus") { searchPresented = true }
+            }
+        }
+    }
+
+    private func doseSummary(_ item: StagedDose) -> some View {
+        VStack(alignment: .leading) {
+            Text(verbatim: item.displayTitle)
+            HStack {
+                if item.isUnknownAmount {
+                    Text("Unknown")
+                } else if item.totalAmount <= 0 {
+                    Text("Needs an amount")
+                } else {
+                    Text(verbatim: "\(item.totalAmount.doseFormatted) \(item.unit.unitDisplay(for: item.totalAmount))")
+                }
+                Text(item.route.localizedName)
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func destination(_ page: Page) -> some View {
+        switch page {
+        case let .dose(id):
+            if let dose = tray.staged.first(where: { $0.id == id }) {
+                StagedDoseEditor(
+                    item: doseBinding(dose), time: tray.time,
+                    lastDose: tray.recipientID == nil ? content.cachedMostRecent[dose.identityKey] : nil,
+                ) {
+                    guard path.last == page else { return }
+                    path.removeLast()
+                    tray.remove(dose)
+                }
+            }
+        case let .combination(name):
+            if let product = customStore.combination(named: name) {
+                StagedProductEditor(product: product, model: tray) {
+                    guard path.last == page else { return }
+                    path.removeLast()
+                    tray.removeCombination(name)
+                }
+            }
+        case let .recentAmounts(id):
+            if let card = content.cachedCards.first(where: { $0.id == id }) {
+                List {
+                    ForEach(card.routes) { group in
+                        Section {
+                            ForEach(group.doses) { chip in
+                                Button {
+                                    guard path.last == page else { return }
+                                    path.removeLast()
+                                    stage(QuickLogSearchResult.recentPayload(card: card, group: group, chip: chip))
+                                } label: {
+                                    VStack(alignment: .leading) {
+                                        if let name = chip.drinkName { Text(verbatim: name) }
+                                        Text(verbatim: chip.detailLine)
+                                    }
+                                }
+                            }
+                        } header: {
+                            Text(group.route.localizedName)
+                        }
+                    }
+                }
+                .navigationTitle(card.title ?? card.substanceName)
+            }
+        case .browse:
+            QuickLogBrowsePage { payload in
+                path = []
+                stage(payload)
+            }
+        case .scanner:
+            LabelScannerView(onResolved: { resolved in
+                pendingScan = QuickLogStagePayload(
+                    substance: resolved.canonicalName, route: resolved.stagingRoute, unit: resolved.stagingUnit,
+                    amount: resolved.stagingAmount, tint: nil, librarySubstance: resolved.substance,
+                    productName: resolved.brandName,
+                )
+            }, onSearch: { pendingScanQuery = $0 })
+                .toolbar(.hidden, for: .navigationBar)
+        case .location:
+            QuickLogLocationPage(recents: content.cachedRecentLocations) {
+                guard path.last == page else { return }
+                tray.location = $0
+                path.removeLast()
+            }
+        case .options:
+            QuickLogEditSheet()
+        }
+    }
+
+    private func doseBinding(_ dose: StagedDose) -> Binding<StagedDose> {
+        Binding(
+            get: { tray.staged.first(where: { $0.id == dose.id }) ?? dose },
+            set: { updated in
+                guard let index = tray.staged.firstIndex(where: { $0.id == dose.id }) else { return }
+                tray.staged[index] = updated
+            },
+        )
+    }
+
+    private func load() async {
+        guard !content.hasLoaded else { return }
+        await SubstanceStore.shared.ensureAllLoaded()
+        guard !Task.isCancelled else { return }
+        QuickLogManager.seedIfNeeded(history: allEntries, context: modelContext)
+        content.rebuildColorLookup(substanceColors: substanceColors)
+        content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites)
+        content.rebuildEntryDerived(allEntries: allEntries, dailyDoseItems: dailyDoseItems)
+        if let prestagedRoutine { stageRoutine(named: prestagedRoutine) }
+        if prefillDate != nil || prefillSubstance != nil || prefillDose != nil {
+            await stagePrefill(named: prefillSubstance)
+            if prefillSubstance != nil { openLastDose() }
+        }
+        #if DEBUG
+            if let query = ScreenshotTour.takeStagedQuickLogSearch(),
+               let card = content.cachedCards.first(where: {
+                   $0.substanceName.localizedCaseInsensitiveContains(query)
+                       || $0.productName?.localizedCaseInsensitiveContains(query) == true
+                       || $0.title?.localizedCaseInsensitiveContains(query) == true
+               }), let payload = QuickLogSearchResult.recent(card).payload {
+                stage(payload)
+            }
+        #endif
+        content.markLoaded()
+    }
+
+    private func search() async {
+        let query = searchText
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            content.setLibraryResults([])
+            searchedText = query
+            return
+        }
+        try? await Task.sleep(for: .milliseconds(150))
+        guard !Task.isCancelled else { return }
+        let matches = await SubstanceLibrary.searchMatchesAsync(query)
+        guard !Task.isCancelled else { return }
+        content.setLibraryResults(matches)
+        searchedText = query
+    }
+
+    private var results: [QuickLogSearchResult] {
+        let query = searchText.lowercased()
+        guard !query.isEmpty else { return [] }
+        let recentCards = content.cachedCards
+            // Match the card's names, not its id — the id is an opaque
+            // substance-identity key (a PSID uid), so filtering on it would miss
+            // a resolved card by its own name. Matching the product/form title
+            // too makes a Concerta recents chip findable by "concerta".
+            .filter { card in
+                card.substanceName.lowercased().contains(query)
+                    || card.title?.lowercased().contains(query) == true
+                    || card.productName?.lowercased().contains(query) == true
+            }
+            .prefix(2)
+
+        // The same catalog substance can be both a recent and a library hit —
+        // list it once. A library match is a duplicate when it shares a recent's
+        // PSID uid or, failing that, its canonical name; a genuinely custom
+        // substance (no uid, distinct name) collides with neither.
+        let recentUIDs = Set(recentCards.compactMap(\.substanceUID).filter { !$0.isEmpty })
+        let recentNames = Set(recentCards.map { $0.substanceName.lowercased() })
+
+        var results: [QuickLogSearchResult] = recentCards.map { .recent($0) }
+        results += matchingCustomEntries.filter(\.isCombination).map { .combination($0) }
+        results += content.cachedLibraryResults
+            .filter { match in
+                // An ester match ("Estradiol Valerate") is a distinct form from a
+                // plain-Estradiol recent — it stages a different dose (the ester
+                // pre-set), so keep it rather than dedup it against the base.
+                if let alias = match.matchedAlias, SubstanceLibrary.saltForm(for: alias) != nil { return true }
+                let uidDuplicate = match.substance.substanceUID.map { !$0.isEmpty && recentUIDs.contains($0) } ?? false
+                return !(uidDuplicate || recentNames.contains(match.substance.name.lowercased()))
+            }
+            .prefix(30)
+            .map { .library($0) }
+        results += matchingCustomEntries.filter { !$0.isCombination }
+            .map { .custom(SubstanceLibrary.lookup($0.name) ?? $0.asSubstance) }
+        return results
+    }
+
+    /// The custom entries whose canonical name OR personal display name holds
+    /// the query, so a relabeled substance is findable by the name the user
+    /// gave it. Entries already covered by a recent card or a library hit are
+    /// left out.
+    private var matchingCustomEntries: [CustomSubstanceEntry] {
+        guard !searchText.isEmpty else { return [] }
+        let query = searchText.lowercased()
+        let libraryNames = Set(content.cachedLibraryResults.map { $0.substance.name.lowercased() })
+        return customStore.all.filter { custom in
+            let nameLower = custom.name.lowercased()
+            let displayLower = custom.displayName?.lowercased() ?? ""
+            let matches = nameLower.contains(query) || (!displayLower.isEmpty && displayLower.contains(query))
+            return matches
+                && !content.cachedHistoryNames.contains(nameLower)
+                && !libraryNames.contains(nameLower)
+        }
+    }
+
+    private func stage(_ payload: QuickLogStagePayload) {
+        let tint = payload.tint ?? SubstancePalette.tint(for: payload.substance, tintMap: content.cachedColorLookup)
+        let volumeCapability = payload.librarySubstance?.byVolumeDosing
+        let needsVolume = volumeCapability?.offersVolumeInput(on: payload.route) == true && payload.volumeML == nil
+        if payload.amount <= 0 || needsVolume {
+            tray.stageDraft(
+                substance: payload.substance, route: payload.route, unit: payload.unit, tint: tint,
+                librarySubstance: payload.librarySubstance, productName: payload.productName, saltForm: payload.saltForm,
+            )
+        } else {
+            tray.stage(
+                substance: payload.substance, route: payload.route, amount: payload.amount, unit: payload.unit,
+                tint: tint, librarySubstance: payload.librarySubstance, productName: payload.productName,
+                saltForm: payload.saltForm, volumeML: payload.volumeML, abv: payload.abv,
+                drinkName: payload.drinkName, emoji: payload.emoji,
             )
         }
-    }
-
-    /// The card list behind the staging dock.
-    private var page: some View {
-        ScrollView {
-            // The scroll content is a closure-free child, so a search
-            // keystroke, which re-runs this body through
-            // `searchText`, doesn't cascade into every card.
-            // See ``QuickLogCardList``.
-            QuickLogCardList(content: content, tray: tray)
-                .padding(.horizontal)
-                .padding(.top, Spacing.xs)
-                // With a dose editor open in the dock, hide the cards behind it
-                // from assistive tech so VoiceOver/Voice Control focus the
-                // editor's controls instead of interleaving the dimmed list.
-                .accessibilityHidden(!tray.expandedItemIDs.isEmpty)
-        }
-        // Staging haptics live in a leaf, not this body: reading the tick
-        // counters here would re-run the whole `QuickLogView.body` on
-        // every stage/increment.
-        .modifier(DockClearance(geometry: dockGeometry))
-        .onScrollPhaseChange { _, phase in
-            if phase == .interacting { dockGeometry.requestMinimize() }
-        }
-        .background(StagingHaptics(tray: tray))
-        .background(CoverAccessibilityUnmasker())
-        // With the cover's modal flag cleared (see the unmasker), nothing
-        // at the window level masks this content while a sheet is stacked
-        // on the dock — VoiceOver could wander into elements the sheet
-        // blocks from touch. Hide the cover content whenever a nested
-        // sheet is up. (Sheets presented from deep inside the dock — the
-        // drink preset manager, find-a-place — are the dock's own overlay
-        // problem and don't expose this layer.)
-        .accessibilityHidden(showEditSheet || showCustomForm || showScanner || navigator.sheetStack.count > 1)
-        .scrollDismissesKeyboard(.interactively)
-        .skinBackdrop()
-        .navigationTitle("Log")
-        .inlineNavigationTitle()
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                // With staged doses, close is a Menu — it gets the glass
-                // morph out of the button, unlike a confirmationDialog,
-                // which anchors to the toolbar as a stray popover.
-                if tray.isEmpty {
-                    Button {
-                        navigator.dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(Text("Close"))
-                } else {
-                    Menu {
-                        Button(role: .destructive) {
-                            navigator.dismiss()
-                        } label: {
-                            Label("Discard Entries", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(Text("Close"))
-                }
-            }
-            // One standard Edit action, text-labeled per the HIG ("Edit"
-            // is the canonical hard-to-symbolize action) — one sheet for
-            // everything editable here: routines & prescriptions, the
-            // favorites order, and the "Keep Order" toggle.
-            ToolbarItem(placement: .platformTopBarTrailing) {
-                Button("Edit") {
-                    showEditSheet = true
-                }
-                .accessibilityLabel("Edit routines and favorites")
-            }
-            // The label scanner, split into its own glass group — point the
-            // camera at a medication box to stage its substance and strength.
-            if DataScannerViewController.isSupported {
-                ToolbarSpacer(.fixed, placement: .platformTopBarTrailing)
-                ToolbarItem(placement: .platformTopBarTrailing) {
-                    Button {
-                        showScanner = true
-                    } label: {
-                        Image(systemName: "camera")
-                    }
-                    .accessibilityLabel("Scan a label")
-                }
-            }
+        let identity = DoseTrayModel.stagedIdentity(
+            substance: payload.substance, productName: payload.productName,
+            librarySubstance: payload.librarySubstance, route: payload.route, saltForm: payload.saltForm,
+        )
+        endSearch()
+        let unit = payload.amount <= 0 || needsVolume ? (volumeCapability?.canonicalUnit ?? payload.unit) : payload.unit
+        if let row = tray.staged.last(where: {
+            $0.identityKey == identity && $0.route == payload.route && $0.unit == unit && $0.combinationName == nil
+        }) {
+            path.append(.dose(row.id))
         }
     }
 
-    // MARK: - Daily routine
+    private func stageCombination(_ product: CustomSubstanceEntry) {
+        tray.stage(product: product, amount: 1, colorLookup: content.cachedColorLookup)
+        if product.isLiquidCombination { tray.openVolume(ofCombination: product.name) }
+        endSearch()
+        path.append(.combination(product.name))
+    }
 
-    /// Cheap change-signature for the group pills' inputs (tiny N), used to
-    /// invalidate `cachedDailyGroups` on an in-place edit from the My Meds
-    /// hub. Every field the groups copy or group by keys it, since the pills
-    /// read value snapshots rather than the live models. The row identity
-    /// keys it too, so a med deleted and re-inserted with identical fields (a
-    /// restore, an import) still rebuilds the cache off the new rows.
-    private var routineSignature: [RoutineSignatureRow] {
-        dailyDoseItems.map { item in
-            let times = item.reminderTimesMinutes.map(String.init).joined(separator: ",")
-            let days = item.frequencyDays.map(String.init).joined(separator: ",")
-            let dose = "\(item.substance)|\(item.productName ?? "")|\(item.route.rawValue)|\(item.amount)|\(item.unit)|\(item.isBackgroundMed)"
-            let schedule = "\(times)|\(item.isQuiet)|\(item.isAsNeeded)|\(item.maxPerDay ?? -1)|\(item.frequencyRaw)|\(item.frequencyIntervalDays)|\(days)|\(item.startDate.timeIntervalSinceReferenceDate)"
-            return RoutineSignatureRow(id: item.persistentModelID, fields: "\(dose)|\(schedule)|\(item.sortOrder)")
+    private func stageSavedCustom() {
+        guard let saved = pendingCustom else { return }
+        pendingCustom = nil
+        if saved.isCombination {
+            stageCombination(saved)
+        } else {
+            stage(QuickLogStagePayload(
+                substance: saved.name, route: saved.defaultRoute, unit: saved.unit,
+                amount: 0, tint: nil, librarySubstance: SubstanceLibrary.lookup(saved.name) ?? saved.asSubstance,
+            ))
         }
     }
 
-    private struct RoutineSignatureRow: Equatable {
-        let id: PersistentIdentifier
-        let fields: String
+    private func openLastDose() {
+        guard let item = tray.staged.last else { return }
+        endSearch()
+        if let combination = item.combinationName {
+            path.append(.combination(combination))
+        } else {
+            path.append(.dose(item.id))
+        }
+    }
+
+    private func endSearch() {
+        searchPresented = false
+        searchText = ""
+    }
+
+    private func stageDailyItem(_ item: DailyDoseItem) {
+        tray.stage(dailyItem: item, colorLookup: content.cachedColorLookup)
     }
 
     private func stagedQuantity(_ item: DailyDoseItem) -> Int {
         tray.quantity(substance: item.substance, productName: item.productName, route: item.route, amount: item.amount, unit: item.unit)
     }
 
-    /// Stage every item of the named routine, exactly as if its pill were
-    /// tapped (idempotent) — the landing state for a reminder-notification tap.
+    /// Stage the items for a routine-reminder notification without duplicating them.
     private func stageRoutine(named name: String) {
-        // `name` is a MedTimeGroup slug ("morning") from a group pill or a
-        // reminder deep link; legacy routine-name links fall back to the
-        // dormant category field so old notifications still land somewhere.
+        // Current reminders carry a time-group slug. Older links identify the
+        // routine by its saved category.
         let items: [DailyDoseItem] = if let group = MedTimeGroup(slug: name) {
             dailyDoseItems.filter { MedTimeGroup.belongs($0, to: group) }
         } else {
@@ -403,7 +597,7 @@ struct QuickLogView: View {
     /// list. A brand typed as the name stays on the row as its product, the way
     /// the search row keeps it. No row for an unknown name.
     private func stagePrefill(named name: String?) async {
-        if let time = prefillDose?.time {
+        if let time = prefillDate ?? prefillDose?.time {
             tray.time = .custom(time)
         }
         if let meal = prefillDose?.meal {
@@ -471,133 +665,100 @@ struct QuickLogView: View {
         }
     }
 
-    #if DEBUG
-        /// The screenshot tour's dock search: stages the recent card `query`
-        /// finds the way tapping its search row does (its newest chip, its
-        /// product), opens the row's editor as finishing a search does, and
-        /// leaves the query in the field.
-        private func stageTopRecent(matching query: String) {
-            let needle = query.lowercased()
-            guard let card = content.cachedCards.first(where: { card in
-                card.substanceName.lowercased().contains(needle)
-                    || card.title?.lowercased().contains(needle) == true
-                    || card.productName?.lowercased().contains(needle) == true
-            }), let group = card.routes.first, let chip = group.doses.first else {
-                print("ScreenshotTour: no recent card matches '\(query)'")
-                return
-            }
-            withAnimation(.snappy) {
-                tray.stage(
-                    substance: card.substanceName,
-                    route: group.route,
-                    amount: chip.amount,
-                    unit: chip.unit,
-                    tint: card.tint,
-                    librarySubstance: group.librarySubstance,
-                    productName: group.stageProductName,
-                )
-                tray.expandedItemIDs = Set(tray.staged.map(\.id))
-            }
-            searchText = query
+    private var recordLabel: String {
+        let count = tray.staged.count
+        if let id = tray.recipientID, let recipient = directory.profile(id: id) {
+            return count == 1
+                ? String(localized: "Record for \(recipient.name)")
+                : String(localized: "Record \(count) Entries for \(recipient.name)")
         }
-    #endif
-
-    private func stageDailyItem(_ item: DailyDoseItem) {
-        tray.stage(dailyItem: item, colorLookup: content.cachedColorLookup)
+        return count <= 1 ? String(localized: "Record an entry") : String(localized: "Record \(count) Entries")
     }
 
-    // MARK: - Actions
+    private func close() {
+        if tray.isEmpty {
+            navigator.dismiss()
+        } else {
+            showingDiscard = true
+        }
+    }
 
-    /// Commit every staged dose at the tray's shared time, stamping the
-    /// tray-wide tags and location. One entry per staged item — a count of
-    /// 2 × 150 mg commits as a single 300 mg entry, which is PK-equivalent
-    /// under linear superposition.
     private func commitTray() {
-        guard tray.isCommittable else { return }
-        isCommitted = true
+        guard tray.isCommittable, !isCommitted else { return }
+        let recipient: DoseRecipient
+        if let id = tray.recipientID, id != directory.activeProfileID {
+            guard let other = DoseRecipient.other(id, directory: directory) else {
+                commitError = .profile
+                return
+            }
+            recipient = other
+        } else {
+            recipient = .active(context: modelContext, colors: substanceColors, recentEntries: allEntries)
+        }
 
-        // Snapshot everything the writes need *before* dismissing. The view's
-        // `@State` tray and `@Query` results start tearing down the instant we
-        // dismiss, so reading them inside the deferred block would be racy.
-        let stagedItems = tray.staged
-        let sharedTime = tray.time.resolved
-        let tags = Array(tray.tags)
-        let location = tray.location
-        let meal = tray.meal
-        let fixedOrder = quickLogFixedOrder
-        let context = modelContext
-        let recentEntries = Array(allEntries)
-        let colors = Array(substanceColors)
-        let recipientID = tray.takeRecipient()
-
-        // The success haptic + dismiss fire *first*, on this runloop, so the
-        // sheet starts sliding away immediately. (Haptic played directly
-        // because the sheet tears down before a `sensoryFeedback` trigger
-        // would fire.) Quick-log completes a flow, so clear the whole chain.
-        PlatformHaptics.success()
-        navigator.dismissAll()
-
-        // Tier 1 — next runloop tick: the work that makes the dose *appear*
-        // and persist (inserts, session assignment, color, active-session
-        // update, one save). Deferred a tick so it doesn't block the
-        // dismissal's first frame, but kept prompt so the journal behind the
-        // sheet shows the dose as the sheet slides away — no pop-in.
-        DispatchQueue.main.async {
-            // The For chip's choice, or the journal on screen. Someone else's
-            // doses join a session linked to the live one here.
-            let recipient = recipientID.flatMap { DoseRecipient.other($0) }
-                ?? .active(context: context, colors: colors, recentEntries: recentEntries)
-            let liveSession = recipient.isActive ? nil : ActiveSessionManager.shared.liveSession(in: context)
-            var batch: [(entry: DoseEntry, substance: Substance?)] = []
-            var curation: [QuickLogManager.LoggedDose] = []
-
-            for item in stagedItems {
-                let entry = item.makeEntry(timestamp: sharedTime, tags: tags, meal: meal, location: location)
-                batch.append((entry, item.librarySubstance))
-
-                // Record each component's chip amount (not the merged total) so
-                // the curated list floats the chips the user actually tapped,
-                // without minting a chip for every sum. Daily routine items keep
-                // their own surface and don't mint quick-log chips; an unknown
-                // amount tapped no chip and mints none. A combination product's
-                // components mint none either: the product has its own card.
-                if !item.isFromDailySet, !item.isUnknownAmount, item.combinationName == nil {
-                    for component in item.components {
-                        curation.append(QuickLogManager.LoggedDose(
-                            substance: item.substanceName, route: item.route, amount: component.amount, unit: item.unit,
-                            volumeML: item.volumeML,
-                            abv: item.abv,
-                            drinkName: item.drinkName, emoji: item.emoji,
-                            substanceUID: item.substanceUID, isomer: item.isomer,
-                            releaseForm: item.releaseForm, saltForm: item.saltForm, productName: item.productName,
-                        ))
-                    }
+        let time = tray.time.resolved
+        let calendar = Calendar.current
+        let isToday = calendar.isJournalDayToday(calendar.journalDay(for: time)) && time <= Date.now
+        let tags = tray.tags.sorted()
+        var batch: [(entry: DoseEntry, substance: Substance?)] = []
+        var curation: [QuickLogManager.LoggedDose] = []
+        for item in tray.staged {
+            let entry = item.makeEntry(timestamp: time, tags: tags, meal: tray.meal, location: tray.location)
+            batch.append((entry, item.librarySubstance))
+            if !item.isFromDailySet, !item.isUnknownAmount, item.combinationName == nil {
+                for component in item.components {
+                    curation.append(QuickLogManager.LoggedDose(
+                        substance: item.substanceName, route: item.route, amount: component.amount, unit: item.unit,
+                        volumeML: item.volumeML,
+                        abv: item.abv,
+                        drinkName: item.drinkName, emoji: item.emoji,
+                        substanceUID: item.substanceUID, isomer: item.isomer,
+                        releaseForm: item.releaseForm, saltForm: item.saltForm, productName: item.productName,
+                    ))
                 }
             }
-
-            let createdEntries = batch.map(\.entry)
-            recipient.log(
-                batch,
-                liveSession: liveSession,
-                beforeSave: {
-                    // Curated-list maintenance is a site-specific immediate bit
-                    // (it records the chips the user actually tapped), kept
-                    // prompt so a reopened tray reflects them right away.
-                    // Mutations only — the batch's single save commits doses
-                    // and chips together, so the per-save `@Query` invalidation
-                    // storm fires once, not twice.
-                    QuickLogManager.record(curation, fixedOrder: fixedOrder, context: recipient.context, save: false)
-                },
-                // Tier 2 — after the dismissal animation: the wellness
-                // notifications; running them now would drop frames during the
-                // slide-down, and none of it is visible until the next
-                // quick-log open or a widget refresh.
-                deferredBookkeeping: {
-                    for entry in createdEntries {
-                        DoseNotificationManager.doseLogged(entry: entry, recentEntries: recipient.recentEntries)
-                    }
-                },
-            )
         }
+
+        let entries = batch.map(\.entry)
+        let liveSession = !recipient.isActive && isToday ? ActiveSessionManager.shared.liveSession(in: modelContext) : nil
+        var experienceID = liveSession?.sharedExperienceID
+        do {
+            _ = try ProfileScope.$pinned.withValue(recipient.profileID) {
+                try DoseLogService.shared.checkedLogBatch(
+                    batch, colors: recipient.colors, in: recipient.context,
+                    activatesLiveSession: time <= Date.now, schedulesCheckIns: isToday,
+                    beforeSave: { entries in
+                        QuickLogManager.record(curation, fixedOrder: fixedOrder, context: recipient.context, save: false)
+                        if liveSession != nil {
+                            let sessions = entries.compactMap(\.session)
+                            let sharedID = experienceID ?? sessions.lazy.compactMap(\.sharedExperienceID).first ?? UUID()
+                            experienceID = sharedID
+                            for session in sessions where session.sharedExperienceID == nil {
+                                session.sharedExperienceID = sharedID
+                            }
+                        }
+                    },
+                    deferredBookkeeping: {
+                        guard isToday else { return }
+                        for entry in entries {
+                            DoseNotificationManager.doseLogged(entry: entry, recentEntries: recipient.recentEntries)
+                        }
+                    },
+                )
+            }
+        } catch {
+            commitError = .save
+            return
+        }
+
+        if let liveSession, let experienceID, liveSession.sharedExperienceID == nil {
+            liveSession.sharedExperienceID = experienceID
+            // The recipient's doses have already committed in their own store.
+            // The owner-side link can be saved independently by autosave.
+            try? liveSession.modelContext?.save()
+        }
+        isCommitted = true
+        PlatformHaptics.success()
+        navigator.dismiss()
     }
 }

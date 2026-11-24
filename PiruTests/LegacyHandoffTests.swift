@@ -152,11 +152,11 @@ struct LegacyHandoffTests {
         let fixture = try Fixture()
         try seedStore(at: fixture.legacyStore, entries: 5)
         try seedStore(at: fixture.successorStore, entries: 1)
-        fixture.legacyGroupDefaults.set("tsuki", forKey: "skin")
+        fixture.legacyGroupDefaults.set("linear", forKey: "timelineCurveScale")
 
         #expect(fixture.importer.run() == .successorHasData)
         #expect(StoreRecovery.userDataCount(at: fixture.successorStore) == 1)
-        #expect(fixture.successorGroupDefaults.object(forKey: "skin") == nil)
+        #expect(fixture.successorGroupDefaults.object(forKey: "timelineCurveScale") == nil)
         #expect(fixture.standardDefaults.integer(forKey: LegacyHandoff.importedJournalEntriesKey) == 0)
         // Marked done, so later launches skip the store probe.
         #expect(fixture.importer.run() == .alreadyDone)
@@ -175,10 +175,10 @@ struct LegacyHandoffTests {
     @Test
     func `No legacy store means no import and no marker`() throws {
         let fixture = try Fixture()
-        fixture.legacyGroupDefaults.set("tsuki", forKey: "skin")
+        fixture.legacyGroupDefaults.set("linear", forKey: "timelineCurveScale")
 
         #expect(fixture.importer.run() == .noLegacyStore)
-        #expect(fixture.successorGroupDefaults.object(forKey: "skin") == nil)
+        #expect(fixture.successorGroupDefaults.object(forKey: "timelineCurveScale") == nil)
         #expect(fixture.standardDefaults.object(forKey: LegacyHandoff.completedAtKey) == nil)
     }
 
@@ -198,14 +198,14 @@ struct LegacyHandoffTests {
     func `Group defaults come across without overwriting the successor's own`() throws {
         let fixture = try Fixture()
         try seedStore(at: fixture.legacyStore, entries: 1)
-        fixture.legacyGroupDefaults.set("tsuki", forKey: "skin")
+        fixture.legacyGroupDefaults.set("linear", forKey: "timelineCurveScale")
         fixture.legacyGroupDefaults.set(6, forKey: "dayBoundaryHour")
         fixture.legacyGroupDefaults.set(Date(), forKey: LegacyHandoff.successorImportedAtKey)
         fixture.successorGroupDefaults.set(3, forKey: "dayBoundaryHour")
 
         _ = fixture.importer.run()
 
-        #expect(fixture.successorGroupDefaults.string(forKey: "skin") == "tsuki")
+        #expect(fixture.successorGroupDefaults.string(forKey: "timelineCurveScale") == "linear")
         #expect(fixture.successorGroupDefaults.integer(forKey: "dayBoundaryHour") == 3)
         #expect(fixture.successorGroupDefaults.object(forKey: LegacyHandoff.successorImportedAtKey) == nil)
     }
@@ -220,19 +220,19 @@ struct LegacyHandoffTests {
         )
         fixture.legacyStandardDomain = [
             "quickLogFixedOrder": true,
-            "hasCompletedOnboarding": true,
+            "didOfferSessionVitals": true,
             "install.firstBuild": 40,
             "com.apple.something": "system",
             LegacyHandoff.completedAtKey: Date(),
         ]
-        fixture.standardDefaults.set(false, forKey: "hasCompletedOnboarding")
+        fixture.standardDefaults.set(false, forKey: "didOfferSessionVitals")
 
         try fixture.publisher.publish()
         _ = fixture.importer.run()
 
         #expect(fixture.standardDefaults.bool(forKey: "quickLogFixedOrder"))
         #expect(fixture.standardDefaults.integer(forKey: "install.firstBuild") == 40)
-        #expect(fixture.standardDefaults.bool(forKey: "hasCompletedOnboarding") == false)
+        #expect(fixture.standardDefaults.bool(forKey: "didOfferSessionVitals") == false)
         #expect(fixture.standardDefaults.object(forKey: "com.apple.something") == nil)
         let restored = fixture.documents.appendingPathComponent(LegacyHandoff.userPrefsFile)
         #expect(try sourceOrder(at: restored) == ["dosewiki", "psychonautwiki", "tripsit"])

@@ -5,10 +5,7 @@ import Observation
 /// (``ProfileRestoreConflict``) and hands the answer to the restore waiting on
 /// it. One question at a time, as there is one restore at a time.
 ///
-/// In the app the sheet goes on the sheet stack
-/// (``SheetRoute/profileRestoreChoices``). During onboarding, which covers the
-/// root that presents that stack, the onboarding view presents it from
-/// ``pending`` itself.
+/// The sheet goes on the app's sheet stack (``SheetRoute/profileRestoreChoices``).
 @Observable
 @MainActor
 final class ProfileRestoreRequest {
@@ -17,8 +14,6 @@ final class ProfileRestoreRequest {
     struct Pending: Identifiable {
         let id = UUID()
         let conflicts: [ProfileRestoreConflict]
-        /// Shown by the onboarding view rather than the sheet stack.
-        let presentsInOnboarding: Bool
     }
 
     private(set) var pending: Pending?
@@ -29,9 +24,8 @@ final class ProfileRestoreRequest {
         finish(nil)
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
-            let inOnboarding = !UserDefaults.standard.bool(forKey: OnboardingState.completedKey)
-            pending = Pending(conflicts: conflicts, presentsInOnboarding: inOnboarding)
-            if !inOnboarding { navigator.present(.profileRestoreChoices) }
+            pending = Pending(conflicts: conflicts)
+            navigator.present(.profileRestoreChoices)
         }
     }
 

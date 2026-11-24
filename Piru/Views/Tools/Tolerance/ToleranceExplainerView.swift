@@ -19,10 +19,8 @@ struct ToleranceExplainerView: View {
                 mechanismSection
                 sourcesSection
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
-        .themedPage()
         .appNavigationBar("How tolerance works")
     }
 

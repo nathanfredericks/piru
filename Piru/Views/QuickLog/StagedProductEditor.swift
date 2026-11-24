@@ -1,227 +1,72 @@
 import SwiftUI
 
-// MARK: - Product cell
-
-/// A staged combination product, drawn on its lead row
-/// (``DoseTrayModel/leadRowID(ofCombination:)``) in place of one row per
-/// component: collapsed, the product and how much of it; expanded, a single
-/// quantity control (units for a solid, mL for a liquid) with each
-/// component's mass beneath it, read-only. The components stay separate
-/// staged rows underneath, so each commits as its own entry.
-struct TrayProductCell: View {
+struct StagedProductEditor: View {
     let product: CustomSubstanceEntry
-    let leadID: UUID
-    /// Stable reference: the cell reads its own rows and writes the quantity
-    /// through the model, so the card passes no closures.
     let model: DoseTrayModel
-    let namespace: Namespace.ID
+    let onRemove: () -> Void
 
-    var body: some View {
-        let rows = model.staged.filter { $0.combinationName == product.name }
-        let quantity = model.stagedQuantity(of: product)
-        if model.expandedItemIDs.contains(leadID) {
-            StagedProductEditor(
-                product: product,
-                leadID: leadID,
-                rows: rows,
-                quantity: quantity,
-                model: model,
-                namespace: namespace,
-            )
-            .padding(.vertical, Spacing.md)
-        } else {
-            TrayProductRow(product: product, leadID: leadID, rows: rows, quantity: quantity, namespace: namespace) {
-                withAnimation(.snappy) { model.openForEditing(leadID, focusesAmount: product.isLiquidCombination) }
-            }
-            .contextMenuPreviewShape(Rectangle())
-            .contextMenu {
-                Button {
-                    withAnimation(.snappy) { _ = model.expandedItemIDs.insert(leadID) }
-                } label: {
-                    Label("Edit", systemImage: "slider.horizontal.3")
-                }
-                Button(role: .destructive) {
-                    withAnimation(.snappy) { model.removeCombination(product.name) }
-                } label: {
-                    Label("Remove", systemImage: "trash")
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Collapsed row
-
-/// The product as one compact row: its name over its components' masses,
-/// the quantity on the trailing edge, and the disclosure chevron.
-private struct TrayProductRow: View {
-    let product: CustomSubstanceEntry
-    let leadID: UUID
-    let rows: [StagedDose]
-    let quantity: Double?
-    let namespace: Namespace.ID
-    let onExpand: () -> Void
-
-    var body: some View {
-        HStack(spacing: Spacing.xl) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(product.resolvedDisplayName)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .trayMorph(id: "title-\(leadID)", in: namespace)
-                Text(verbatim: rows.map { "\($0.totalAmount.doseFormatted) \($0.unit) \($0.displayTitle)" }.joined(separator: " · "))
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryLabel)
-                    .lineLimit(2)
-            }
-            Spacer(minLength: 8)
-            if let quantity {
-                Text(verbatim: product.quantityLabel(quantity))
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .fixedSize()
-                    .trayMorph(id: "amount-\(leadID)", in: namespace)
-            }
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(Theme.tertiaryLabel)
-                .frame(width: 16)
-                .trayMorph(id: "chevron-\(leadID)", in: namespace)
-        }
-        .padding(.vertical, Spacing.xl)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onExpand)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Expands the editor")
-    }
-}
-
-// MARK: - Expanded editor
-
-/// The product's editor: one quantity control that drives every component,
-/// and the components' masses beneath it as read-only lines.
-private struct StagedProductEditor: View {
-    let product: CustomSubstanceEntry
-    let leadID: UUID
-    let rows: [StagedDose]
-    let quantity: Double?
-    let model: DoseTrayModel
-    let namespace: Namespace.ID
-
+    @Environment(\.dismiss) private var dismiss
     @State private var volume = StagedProductVolumeModel()
-    @FocusState private var volumeFocused: Bool
+
+    private var quantity: Double {
+        model.stagedQuantity(of: product) ?? 1
+    }
+
+    private var rows: [StagedDose] {
+        model.staged.filter { $0.combinationName == product.name }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xl) {
-            StagedDoseEditorHeader(
-                title: product.resolvedDisplayName,
-                subtitle: nil,
-                morphID: leadID,
-                namespace: namespace,
-                onCollapse: { withAnimation(.snappy) { _ = model.expandedItemIDs.remove(leadID) } },
-            )
-
-            if product.isLiquidCombination {
-                StagedDoseByDrinkRow(
-                    label: Text("Volume"),
-                    text: $volume.text,
-                    focus: $volumeFocused,
-                    trailing: Text(verbatim: CombinationComponent.volumeUnitWord)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Theme.secondaryLabel),
-                    onDec: { volume.adjust(-1) },
-                    onInc: { volume.adjust(1) },
-                    decLabel: "Lower volume",
-                    incLabel: "Raise volume",
-                )
-            } else {
-                unitStepper
-            }
-
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                ForEach(rows) { row in
-                    StagedProductComponentLine(row: row)
+        Form {
+            Section("Quantity") {
+                if product.isLiquidCombination {
+                    TextField("Volume (mL)", text: $volume.text)
+                        .decimalKeyboard()
+                    Stepper("Adjust Volume") {
+                        volume.adjust(1)
+                    } onDecrement: {
+                        volume.adjust(-1)
+                    }
+                    if volume.enteredML == nil {
+                        Text("Enter a volume above zero.").foregroundStyle(.secondary)
+                    }
+                } else {
+                    Stepper(value: Binding(
+                        get: { Int(quantity) },
+                        set: { model.setUnits($0, of: product) },
+                    ), in: 1 ... CombinationComponent.maximumUnits) {
+                        Text(verbatim: product.quantityLabel(quantity))
+                    }
                 }
             }
+            Section("Components") {
+                ForEach(rows) { row in
+                    LabeledContent {
+                        Text(verbatim: "\(row.totalAmount.doseFormatted) \(row.unit)")
+                    } label: {
+                        Text(verbatim: row.displayTitle)
+                    }
+                }
+            }
+            Section {
+                Button("Remove", role: .destructive, action: onRemove)
+            }
         }
-        .sensoryFeedback(.increase, trigger: volume.stepTick)
-        .onAppear(perform: seed)
+        .navigationTitle(product.displayName ?? product.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { dismiss() }
+                    .disabled(product.isLiquidCombination && volume.enteredML == nil)
+            }
+        }
+        .onAppear { if product.isLiquidCombination { volume.show(quantity) } }
         .onChange(of: volume.text) {
-            // Compared as shown, so seeding the field with a rounded volume
-            // (0.125 mL reads "0.13") never writes the rounding back.
-            guard let entered = volume.enteredML, entered.doseFormatted != quantity?.doseFormatted else { return }
+            guard let entered = volume.enteredML, entered.doseFormatted != quantity.doseFormatted else { return }
             model.setVolume(entered, ofCombination: product.name)
         }
-        .onChange(of: quantity) {
-            guard product.isLiquidCombination else { return }
-            volume.show(quantity)
-        }
-    }
-
-    /// −/+ around "2 pills": a solid product is counted, never typed.
-    private var unitStepper: some View {
-        let units = Int(quantity ?? 1)
-        return HStack(spacing: Spacing.md) {
-            StagedDoseStepButton(systemImage: "minus") {
-                model.setUnits(units - 1, of: product)
-            }
-            .disabled(units <= 1)
-            .accessibilityLabel("Fewer")
-            Text(verbatim: product.quantityLabel(Double(units)))
-                .screenTitle()
-                .contentTransition(.numericText())
-                .frame(minHeight: 42)
-                .frame(maxWidth: .infinity)
-                .background(Color.platformSecondarySystemFill, in: skinChipShape())
-            StagedDoseStepButton(systemImage: "plus") {
-                model.setUnits(units + 1, of: product)
-            }
-            .disabled(units >= CombinationComponent.maximumUnits)
-            .accessibilityLabel("More")
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private func seed() {
-        guard product.isLiquidCombination else { return }
-        volume.show(quantity)
-        // A liquid is picked at a placeholder 1 mL; the volume is what the
-        // row was opened to type.
-        if let index = model.staged.firstIndex(where: { $0.id == leadID }), model.staged[index].wantsAmountFocus {
-            model.staged[index].wantsAmountFocus = false
-            volumeFocused = true
-        }
     }
 }
-
-/// "Paracetamol   1,000 mg · common" — one component's share of the product,
-/// following from the quantity above it.
-private struct StagedProductComponentLine: View {
-    let row: StagedDose
-
-    var body: some View {
-        HStack(spacing: Spacing.sm) {
-            Text(row.displayTitle)
-                .foregroundStyle(Theme.secondaryLabel)
-            Spacer(minLength: 8)
-            Text(verbatim: "\(row.totalAmount.doseFormatted) \(row.unit)")
-                .fontWeight(.semibold)
-                .foregroundStyle(row.doseLevel?.labelColor ?? .primary)
-                .contentTransition(.numericText())
-            if let level = row.doseLevel {
-                Middot().foregroundStyle(.tertiary)
-                Text(level.displayName)
-                    .textCase(.lowercase)
-                    .foregroundStyle(level.labelColor)
-            }
-        }
-        .font(.subheadline.weight(.medium))
-        .accessibilityElement(children: .combine)
-    }
-}
-
-// MARK: - Volume field
 
 /// The text behind a liquid product's volume field. Always mL: the product's
 /// amounts are per mL, so the field takes no other unit.
@@ -229,8 +74,6 @@ private struct StagedProductComponentLine: View {
 @MainActor
 final class StagedProductVolumeModel {
     var text = ""
-    /// Bumped on each −/+ tap, for the step haptic.
-    private(set) var stepTick = 0
 
     /// The typed volume in mL, `nil` until the text is a positive number.
     var enteredML: Double? {
@@ -268,6 +111,5 @@ final class StagedProductVolumeModel {
         let snapped = ((current + direction * step) / step).rounded() * step
         let next = min(max(snapped, Self.step(at: 0)), CombinationComponent.maximumVolumeML)
         text = next.doseFormatted
-        stepTick += 1
     }
 }

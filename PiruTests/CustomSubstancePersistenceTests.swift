@@ -238,7 +238,7 @@ struct CustomSubstanceStoreTests {
                 CombinationComponent(substance: "ZZBeta", amountPerUnit: 0.5, unit: "mg", route: .oral),
             ],
         )
-        #expect(entry.componentsSummary == "500 mg ZZAlpha · 0.5 mg ZZBeta")
+        #expect(entry.componentsSummary == "500 mg ZZAlpha, 0.5 mg ZZBeta")
         #expect(CustomSubstanceEntry(name: "Plain").componentsSummary == nil)
     }
 }

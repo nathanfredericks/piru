@@ -203,7 +203,7 @@ struct RecentDoseView: View {
                     // Amount + unit are verbatim numerals — nothing to localize.
                     // The relative component self-updates as time passes.
                     HStack(spacing: 0) {
-                        Text(verbatim: "\(entry.amountDisplay) \(entry.unit) · ")
+                        Text(verbatim: "\(entry.amountDisplay) \(entry.unit), ")
                         if let doseTime = entry.doseTime {
                             Text(doseTime, style: .relative)
                         }

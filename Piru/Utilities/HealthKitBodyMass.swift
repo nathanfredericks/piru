@@ -12,8 +12,8 @@ import os
 ///
 /// So reads never trust a status: ``syncLatest()`` attempts the query. A sample means access is live;
 /// an empty result means no access or no data (we can't tell which), which the UI surfaces with an
-/// "open Settings" affordance. Body-weight authorization is requested only through the combined Health
-/// prompt in ``HealthKitVitals/requestFullAccess()``, so a user always sees one Health sheet.
+/// "open Settings" affordance. Weight authorization is requested when the user chooses
+/// to use a reading from Health.
 @MainActor
 @Observable
 final class HealthKitBodyMass {
@@ -53,9 +53,11 @@ final class HealthKitBodyMass {
             return .unavailable
         }
         let generation = JournalResetGeneration.current()
+        let profileID = ProfileScope.currentID
         let result: SyncResult
         if let kg = await latestBodyMassKg() {
-            guard generation == JournalResetGeneration.current() else { return .noData }
+            guard ProfileScope.currentID == profileID,
+                  generation == JournalResetGeneration.current() else { return .noData }
             UserProfileStore.shared.setHealthKitWeight(kg)
             result = .updated(kg: kg)
         } else {

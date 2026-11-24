@@ -52,7 +52,7 @@ struct LabCalibrationCard<Controls: View>: View {
         let count = labs.filter { !$0.excludedFromCalibration }.count
         let label = count == 0
             ? String(localized: "Uncalibrated")
-            : count == 1 ? String(localized: "1 result") : String(localized: "Calibrated · \(count) results")
+            : count == 1 ? String(localized: "1 result") : String(localized: "Calibrated, \(count) results")
         return Text(label)
             .font(.caption2.weight(.semibold))
             .padding(.horizontal, Spacing.md)
@@ -297,7 +297,7 @@ struct DepotProvenanceCard: View {
             .font(.caption2.weight(.semibold))
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, Spacing.xxs)
-            .background(Theme.accent.opacity(Theme.Opacity.tint), in: skinChipShape())
+            .background(Theme.accent.opacity(Theme.Opacity.tint), in: Capsule())
             .foregroundStyle(Theme.accent)
     }
 }

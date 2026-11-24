@@ -85,9 +85,7 @@ struct JournalSettingsView: View {
                     Text("Adherence")
                 }
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Journal")
         .inlineNavigationTitle()
     }

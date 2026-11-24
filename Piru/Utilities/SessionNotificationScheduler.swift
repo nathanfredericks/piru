@@ -20,7 +20,7 @@ import UserNotifications
 /// user during a multi-dose session.
 ///
 /// Scheduling never requests the OS grant (no ambient permission sites):
-/// permission is asked from the management screen or onboarding via
+/// permission is requested in Notification Settings via
 /// `DoseNotificationManager.requestAuthorization()`.
 /// Requests added before the grant simply deliver once the user allows.
 enum SessionNotificationScheduler {
@@ -372,7 +372,7 @@ enum SessionNotificationScheduler {
 
         scheduleSimpleNotification(
             id: NotificationType.phase.identifier(anchor: entryID.uuidString, ordinal: phase.rawValue),
-            title: "\(substance) · \(String(localized: phase.displayName))",
+            title: "\(substance), \(String(localized: phase.displayName))",
             body: body,
             timeInterval: absoluteInterval,
             category: phaseCategoryID,

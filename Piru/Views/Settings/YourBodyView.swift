@@ -1,22 +1,11 @@
 import SwiftUI
 
-/// Settings ▸ Your Body: what Piru knows about the person's body, and what it reads from Apple
-/// Health. Weight lives in a **single** editable row (nudge it inline, or pull it from Health);
-/// the metabolism flags say what each one changes; the Apple Health section owns the one combined
-/// connect action, and the heart-data toggle sits under it. Health hands Piru weight + HR + BP
-/// through a single system sheet, so there is exactly one authorization prompt here — never a
-/// separate weight-vs-vitals flow.
 struct YourBodyView: View {
     @State private var profile = UserProfileStore.shared
-    @State private var bodyMass = HealthKitBodyMass.shared
     @State private var vitals = HealthKitVitals.shared
     @AppStorage("showSessionVitals", store: UserDefaults(suiteName: AppIdentity.appGroup))
     private var showSessionVitals = false
 
-    @State private var weightKg: Double = UserProfileStore.shared.weightKg ?? UserProfileStore.defaultWeightKg
-    /// Suppresses the "user edited → save as manual" side effect when *we* set the
-    /// weight (a Health sync or a reset), so a pulled value keeps its provenance.
-    @State private var isProgrammaticWeightChange = false
     @State private var isConnecting = false
     /// Whether "Connect" would still surface a prompt. Once everything grantable is
     /// answered, the row is hidden — tapping it would only flash an empty sheet.
@@ -25,7 +14,7 @@ struct YourBodyView: View {
 
     var body: some View {
         Form {
-            weightSection
+            BodyWeightSection(profile: profile)
             metabolismSection
             if vitals.isAvailable {
                 if connectWouldPrompt == true { connectSection }
@@ -34,48 +23,9 @@ struct YourBodyView: View {
                 unavailableSection
             }
         }
-        .themedPage()
         .navigationTitle("Your Body")
         .inlineNavigationTitle()
-        .task { connectWouldPrompt = await vitals.connectWouldPrompt() }
-    }
-
-    // MARK: - Weight (one row: shows the value, edits it, no separate status/manual sections)
-
-    private var weightSection: some View {
-        Section {
-            InventoryStepperRow(value: $weightKg, unit: "kg", label: "Your body weight", stepBasis: 10)
-                .onChange(of: weightKg) { _, newValue in
-                    if isProgrammaticWeightChange {
-                        isProgrammaticWeightChange = false
-                        return
-                    }
-                    profile.setManualWeight(newValue)
-                }
-            if profile.weightKg != nil {
-                Button(action: useAverageWeight) {
-                    Text("Use the average (60 kg)")
-                        .foregroundStyle(Theme.secondaryLabel)
-                }
-            }
-        } header: {
-            Text("Your weight")
-        } footer: {
-            Text(weightFootnote)
-        }
-        .listRowBackground(CardBackground())
-    }
-
-    /// Source + why, in one line, so weight needs no second "why we ask" section.
-    private var weightFootnote: LocalizedStringResource {
-        switch profile.weightSource {
-        case .healthKit:
-            "Synced from Apple Health. Your weight sizes every dose estimate, since the same dose hits harder the less you weigh."
-        case .manual:
-            "Entered manually. Your weight sizes every dose estimate, since the same dose hits harder the less you weigh."
-        case .estimated:
-            "Using the average 60 kg. Set yours above so estimates fit your body, since the same dose hits harder the less you weigh."
-        }
+        .task { connectWouldPrompt = await vitals.connectWouldPrompt(for: .sessionVitals) }
     }
 
     // MARK: - Metabolism
@@ -93,7 +43,6 @@ struct YourBodyView: View {
         } header: {
             Text("Metabolism")
         }
-        .listRowBackground(CardBackground())
     }
 
     // MARK: - Apple Health (access) — only while there's still something to grant
@@ -114,9 +63,8 @@ struct YourBodyView: View {
         } header: {
             Text("Apple Health")
         } footer: {
-            Text("Shows your body weight, heart rate, blood pressure and workouts from Health alongside your journal. Change what Piru can see in the Health app's settings.")
+            Text("Show heart rate, blood pressure, and workouts from Apple Health alongside your journal.")
         }
-        .listRowBackground(CardBackground())
     }
 
     // MARK: - Heart data (the session overlay)
@@ -126,7 +74,6 @@ struct YourBodyView: View {
             Toggle(isOn: $showSessionVitals) {
                 Label("Show heart data on sessions", systemImage: "waveform.path.ecg")
             }
-            .tint(Theme.accent)
             .onChange(of: showSessionVitals) { _, isOn in
                 // Only prompt if there's actually something undetermined to grant;
                 // otherwise just flip the overlay on (no empty-sheet flash).
@@ -137,7 +84,6 @@ struct YourBodyView: View {
         } footer: {
             Text("Shows your heart rate and blood pressure on each session's timeline. If something didn't connect (blood pressure especially, which iOS doesn't always prompt for), open **Settings ▸ Privacy & Security ▸ Health ▸ Piru** and turn it on there.")
         }
-        .listRowBackground(CardBackground())
     }
 
     private var unavailableSection: some View {
@@ -146,37 +92,187 @@ struct YourBodyView: View {
                 .font(.footnote)
                 .foregroundStyle(Theme.secondaryLabel)
         }
-        .listRowBackground(CardBackground())
     }
 
     // MARK: - Actions
 
-    /// The one combined flow: a single Health sheet covering weight + heart rate +
-    /// blood pressure, the overlay switched on, then a silent weight read.
     private func connect() async {
         guard !isConnecting else { return }
         isConnecting = true
-        await HealthKitVitals.shared.requestFullAccess()
+        await vitals.requestAccess(.sessionVitals)
         showSessionVitals = true
-        let result = await bodyMass.syncLatest()
-        connectWouldPrompt = await vitals.connectWouldPrompt()
+        connectWouldPrompt = await vitals.connectWouldPrompt(for: .sessionVitals)
         isConnecting = false
-        if case let .updated(kg) = result { setWeightProgrammatically(kg) }
+    }
+}
+
+private struct BodyWeightSection: View {
+    @Environment(\.locale) private var locale
+    @AppStorage("bodyWeightDisplayUnit") private var preferredUnit = ""
+    @FocusState private var editingWeight: Bool
+
+    let profile: UserProfileStore
+    @State private var draft: String?
+    @State private var isReadingHealthWeight = false
+    @State private var healthWeightResult: HealthKitBodyMass.SyncResult?
+
+    private var unit: BodyWeightUnit {
+        BodyWeightUnit(rawValue: preferredUnit) ?? BodyWeightUnit.defaultUnit(in: locale)
     }
 
-    /// Revert to the population-average default (not a personal estimate — just the
-    /// fallback Piru uses when no weight is set).
-    private func useAverageWeight() {
-        profile.clearWeight()
-        setWeightProgrammatically(UserProfileStore.defaultWeightKg)
+    private var numberFormat: FloatingPointFormatStyle<Double> {
+        .number.grouping(.never).precision(.fractionLength(0 ... 2)).locale(locale)
     }
 
-    /// Set the stepper's value without it counting as a manual edit (so a Health
-    /// sync or reset doesn't flip the source to `.manual`).
-    private func setWeightProgrammatically(_ kg: Double) {
-        guard weightKg != kg else { return }
-        isProgrammaticWeightChange = true
-        weightKg = kg
+    private var weightText: Binding<String> {
+        Binding {
+            draft ?? numberFormat.format(unit.value(fromKilograms: profile.effectiveWeightKg))
+        } set: {
+            draft = $0
+        }
+    }
+
+    private var validDraftKg: Double? {
+        draft.flatMap { unit.parseKilograms($0, locale: locale, range: UserProfileStore.weightRangeKg) }
+    }
+
+    var body: some View {
+        Section {
+            Picker("Weight Unit", selection: Binding(get: { unit }, set: { newUnit in
+                let kilograms = validDraftKg
+                preferredUnit = newUnit.rawValue
+                draft = kilograms.map { numberFormat.format(newUnit.value(fromKilograms: $0)) }
+            })) {
+                ForEach(BodyWeightUnit.allCases, id: \.self) { choice in
+                    Text(choice.label).tag(choice)
+                }
+            }
+
+            LabeledContent {
+                HStack(spacing: 6) {
+                    TextField("Body Weight", text: weightText)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .focused($editingWeight)
+                        .onSubmit(save)
+                        .accessibilityHint(Text(unit.label))
+                    Text(unit.symbol)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+            } label: {
+                Text("Body Weight")
+            }
+
+            if HealthKitBodyMass.shared.isAvailable {
+                Button {
+                    Task { await readHealthWeight() }
+                } label: {
+                    HStack {
+                        Text("Use Weight from Apple Health")
+                        if isReadingHealthWeight { ProgressView() }
+                    }
+                }
+                .disabled(isReadingHealthWeight || draft != nil)
+            }
+
+            if draft != nil {
+                Button("Save Weight", action: save)
+                    .disabled(validDraftKg == nil)
+                Button("Cancel", role: .cancel, action: discardDraft)
+            } else if profile.weightKg != nil {
+                Button("Use Estimated Weight") {
+                    profile.clearWeight()
+                    healthWeightResult = nil
+                    discardDraft()
+                }
+            }
+        } header: {
+            Text("Your weight")
+        } footer: {
+            if draft != nil, validDraftKg == nil {
+                Text("Enter a weight between 20 and 300 kg or the equivalent in pounds.")
+            } else if healthWeightResult == .noData {
+                Text("No weight was available from Apple Health. Check your Health data and access settings.")
+            } else {
+                Text(weightSourceDescription)
+            }
+        }
+    }
+
+    private var weightSourceDescription: LocalizedStringResource {
+        switch profile.weightSource {
+        case .healthKit: "Weight from Apple Health. Piru uses it in modeled estimates."
+        case .manual: "Weight entered manually. Piru uses it in modeled estimates."
+        case .estimated: "Piru is using an estimated weight for its models."
+        }
+    }
+
+    private func save() {
+        guard let validDraftKg else { return }
+        profile.setManualWeight(validDraftKg)
+        healthWeightResult = nil
+        discardDraft()
+    }
+
+    private func readHealthWeight() async {
+        guard !isReadingHealthWeight else { return }
+        isReadingHealthWeight = true
+        defer { isReadingHealthWeight = false }
+        if await HealthKitVitals.shared.connectWouldPrompt(for: .bodyWeight) {
+            await HealthKitVitals.shared.requestAccess(.bodyWeight)
+        }
+        healthWeightResult = await HealthKitBodyMass.shared.syncLatest()
+    }
+
+    private func discardDraft() {
+        draft = nil
+        editingWeight = false
+    }
+}
+
+nonisolated enum BodyWeightUnit: String, CaseIterable {
+    case kilograms
+    case pounds
+
+    static func defaultUnit(in locale: Locale) -> Self {
+        locale.measurementSystem == .us ? .pounds : .kilograms
+    }
+
+    var label: LocalizedStringResource {
+        switch self {
+        case .kilograms: "Kilograms"
+        case .pounds: "Pounds"
+        }
+    }
+
+    var symbol: String {
+        unitMass.symbol
+    }
+
+    func value(fromKilograms kilograms: Double) -> Double {
+        Measurement(value: kilograms, unit: UnitMass.kilograms).converted(to: unitMass).value
+    }
+
+    func kilograms(from value: Double) -> Double {
+        Measurement(value: value, unit: unitMass).converted(to: .kilograms).value
+    }
+
+    func parseKilograms(_ text: String, locale: Locale, range: ClosedRange<Double>) -> Double? {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = text.components(separatedBy: locale.decimalSeparator ?? ".")
+        guard !text.isEmpty, parts.count <= 2, parts.allSatisfy({ $0.allSatisfy(\.isWholeNumber) }),
+              let value = try? FloatingPointFormatStyle<Double>.number.locale(locale).parseStrategy.parse(text),
+              value.isFinite else { return nil }
+        let kilograms = kilograms(from: value)
+        return range.contains(kilograms) ? kilograms : nil
+    }
+
+    private var unitMass: UnitMass {
+        switch self {
+        case .kilograms: .kilograms
+        case .pounds: .pounds
+        }
     }
 }
 
@@ -193,7 +289,6 @@ private struct GrapefruitRow: View {
                 caption: Text("Adds a per-dose grapefruit toggle for substances whose breakdown grapefruit slows (CYP3A4), so the entry records it."),
             )
         }
-        .tint(Theme.accent)
     }
 }
 
@@ -208,7 +303,6 @@ private struct AlcoholFlushRow: View {
                 caption: Text("Shows acetaldehyde buildup on alcohol entries. The ALDH2 variant slows its clearance, causing flushing."),
             )
         }
-        .tint(Theme.accent)
     }
 }
 

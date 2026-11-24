@@ -20,7 +20,6 @@ struct ShareInboxView: View {
                 ContentUnavailableView("Nothing Here", systemImage: "tray")
             }
         }
-        .themedPage()
         .inlineNavigationTitle()
     }
 }
@@ -73,7 +72,6 @@ private struct PairPrompt: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .navigationTitle("Pair")
     }
@@ -97,7 +95,6 @@ private struct PairedNotice: View {
                 Button("Show Your Code") { navigator.present(.pairing, replacingTop: true) }
                     .frame(maxWidth: .infinity)
             }
-            .listRowBackground(CardBackground())
         }
         .navigationTitle("Paired")
     }
@@ -130,7 +127,6 @@ private struct IncomingShare: View {
                     Text("Shows beside your session from the same time. Their doses stay out of your own curves and stats.")
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .navigationTitle("Shared Session")
     }
@@ -143,9 +139,9 @@ private struct IncomingShare: View {
         let when = side.startDate.formatted(.dateTime.weekday(.wide).hour().minute())
         let doses = String(localized: "\(side.doses.count) doses")
         if let title = side.title, !title.isEmpty {
-            return "\(title) · \(when) · \(doses)"
+            return "\(title), \(when), \(doses)"
         }
-        return "\(when) · \(doses)"
+        return "\(when), \(doses)"
     }
 }
 
@@ -171,7 +167,6 @@ private struct ReceivedNotice: View {
                     Button("Open Session") { open(sessionID) }
                         .frame(maxWidth: .infinity)
                 }
-                .listRowBackground(CardBackground())
             }
         }
         .navigationTitle("Shared Session")

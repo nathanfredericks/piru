@@ -4,11 +4,9 @@ import SwiftData
 /// The durable record of "was routine item X due on day Y, and what happened
 /// to it" — one row per (routine, item, day) where the item was due.
 ///
-/// Written only by `RoutineOccurrenceService`:
-/// `reconcile(in:)` re-derives the day's
-/// states, `skipToday(slotKeys:)` records the Skip Today action. Follow-up
-/// cancellation and the future "did I take it" surfaces read this record
-/// instead of re-inferring from raw `DoseEntry` scans.
+/// `RoutineOccurrenceService` reconciles today's states and applies explicit
+/// corrections to existing rows. Reminder cancellation and the Journal's
+/// medication history read this record.
 ///
 /// The occurrence keeps the item's substance, substance UID, and route as
 /// they were when the item was due, including after the item is edited or deleted.

@@ -19,7 +19,7 @@ struct SharedOwnerTag: View {
             ProfileAvatarView(owner, diameter: 18)
             Group {
                 if let detail {
-                    Text(verbatim: "\(Self.attribution(for: owner)) · \(detail)")
+                    Text(verbatim: "\(Self.attribution(for: owner)), \(detail)")
                 } else {
                     Text(verbatim: Self.attribution(for: owner))
                 }
@@ -69,7 +69,6 @@ struct InventorySharingSection: View {
         } footer: {
             Text("Their doses come off this stock too. Only you can change who shares it or delete it.")
         }
-        .listRowBackground(CardBackground())
     }
 }
 

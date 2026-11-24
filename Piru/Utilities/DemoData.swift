@@ -388,7 +388,7 @@ import SwiftData
             }
             // The live stores loaded at launch, before the wipe; reload them as
             // the Data & Backup import does, or the running app keeps the old
-            // tab bar, skin, dock and profile until a relaunch.
+            // tab bar, dock and profile until a relaunch.
             DataExportImport.refreshLiveStores(container: container)
             // The launch recovery pass ran against the pre-wipe store; re-run
             // it so an imported active dose opens the live session on this
@@ -986,7 +986,7 @@ import SwiftData
             // strength, the way a scanned box adds it.
             let fill = at(7, 9, 0)
             let stock: [(name: String, unit: String, strength: Double?, doseSize: Double, initial: Double, threshold: Double, note: String)] = [
-                (concertaSubstance, "tabs", 36, 1, 28, 7, "\(concerta) · 28 tablets"),
+                (concertaSubstance, "tabs", 36, 1, 28, 7, "\(concerta), 28 tablets"),
                 ("L-Theanine", "mg", nil, 200, 67 * 200, 10 * 200, "new bottle"),
                 ("Lorazepam", "mg", nil, 1, 9.5, 2, "pharmacy refill"),
                 ("Caffeine", "mg", nil, 90, 47 * 90 + 60, 5 * 90, "new bottle"),

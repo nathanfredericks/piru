@@ -35,7 +35,6 @@ struct SpreadsheetPreviewStep: View {
                             Image(systemName: "info.circle").foregroundStyle(Theme.accent).accessibilityHidden(true)
                         }
                         .font(.footnote)
-                        .listRowBackground(CardBackground())
                     }
                 }
             }
@@ -54,7 +53,6 @@ struct SpreadsheetPreviewStep: View {
                         Text(SpreadsheetImportCopy.skipped(row))
                             .font(.footnote)
                             .foregroundStyle(Theme.secondaryLabel)
-                            .listRowBackground(CardBackground())
                     }
                 } header: {
                     Text("Left Out")
@@ -76,7 +74,6 @@ private struct SummaryRow: View {
         LabeledContent(title) {
             Text("\(value)").foregroundStyle(Theme.secondaryLabel).monospacedDigit()
         }
-        .listRowBackground(CardBackground())
     }
 }
 
@@ -95,7 +92,6 @@ private struct DraftRow: View {
                 .captionSecondary()
                 .lineLimit(2)
         }
-        .listRowBackground(CardBackground())
         .accessibilityElement(children: .combine)
     }
 
@@ -114,6 +110,6 @@ private struct DraftRow: View {
         if let notes = draft.notes {
             parts.append(notes)
         }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 }

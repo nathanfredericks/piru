@@ -78,7 +78,7 @@ private struct SpreadsheetColumnRow: View {
                 .fixedSize()
             }
             if !column.samples.isEmpty {
-                Text(column.samples.joined(separator: " · "))
+                Text(column.samples.joined(separator: ", "))
                     .captionSecondary()
                     .lineLimit(2)
             }
@@ -92,7 +92,6 @@ private struct SpreadsheetColumnRow: View {
             }
         }
         .padding(.vertical, Spacing.xxs)
-        .listRowBackground(CardBackground())
         .accessibilityElement(children: .combine)
     }
 
@@ -119,7 +118,6 @@ private struct SpreadsheetDateOrderSection: View {
             } label: {
                 Text("Date Order")
             }
-            .listRowBackground(CardBackground())
         } footer: {
             if isAmbiguous {
                 Text("No date in this file settles which number is the day. Check a date you know.")
@@ -144,7 +142,6 @@ private struct SpreadsheetDecimalStyleSection: View {
             } label: {
                 Text("Decimal Mark")
             }
-            .listRowBackground(CardBackground())
         } footer: {
             Text("“\(sample)” could be a decimal or a number in thousands. Choose the decimal mark this file uses.")
         }
@@ -162,7 +159,6 @@ private struct SpreadsheetSwapSection: View {
                 Text("Swap Latitude and Longitude")
             }
             .tint(Theme.accent)
-            .listRowBackground(CardBackground())
         } footer: {
             Text(SpreadsheetImportCopy.swapFooter(evidence))
         }

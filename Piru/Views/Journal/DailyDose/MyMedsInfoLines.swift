@@ -13,7 +13,7 @@ struct RestockInfoLine: View {
     var body: some View {
         Button(action: onTap) {
             MedsInfoLineLayout(systemImage: "shippingbox", tint: .orange) {
-                Text("\(name) · \(daysLeft) days left")
+                Text("\(name), \(daysLeft) days left")
             } trailing: {
                 Image(systemName: "chevron.right")
                     .infoLineTrailingSlot()

@@ -18,12 +18,13 @@ struct SheetRouteView: View {
 
     var body: some View {
         switch route {
-        case let .quickLog(routine, prefillSubstance, prefillDose, prefillRoute):
+        case let .quickLog(routine, prefillSubstance, prefillDose, prefillRoute, prefillDate):
             QuickLogSheet(
                 prestagedRoutine: routine,
                 prefillSubstance: prefillSubstance,
                 prefillDose: prefillDose,
                 prefillRoute: prefillRoute,
+                prefillDate: prefillDate,
             )
 
         case .settings:
@@ -36,14 +37,8 @@ struct SheetRouteView: View {
                     .withCancellationCloseButton()
             }
 
-        case .skins:
-            SkinsSheet()
-
         case .help:
             HelpView()
-
-        case .onboarding:
-            OnboardingView()
 
         case .sessionDetail:
             NavigationStack(path: navigator.sheetPathBinding(atDepth: depth)) {

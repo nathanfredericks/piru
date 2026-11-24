@@ -95,7 +95,6 @@ struct LicenseTextView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
         }
-        .themedPage()
         .navigationTitle(Text(verbatim: title))
         .inlineNavigationTitle()
     }

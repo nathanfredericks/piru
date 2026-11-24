@@ -94,15 +94,15 @@ struct ByVolumeDosingTests {
 
     @Test
     func `breadcrumb formats canonical mL and ABV`() {
-        #expect(ByVolumeBreadcrumb.make(volumeML: 330, abv: 5) == "330 mL · 5% ABV")
-        #expect(ByVolumeBreadcrumb.make(volumeML: 568, abv: 5.2) == "568 mL · 5.2% ABV")
+        #expect(ByVolumeBreadcrumb.make(volumeML: 330, abv: 5) == "330 mL, 5% ABV")
+        #expect(ByVolumeBreadcrumb.make(volumeML: 568, abv: 5.2) == "568 mL, 5.2% ABV")
     }
 
     @Test
     func `breadcrumb with a name prefixes it`() {
-        #expect(ByVolumeBreadcrumb.make(name: "IPA", volumeML: 568, abv: 6) == "IPA · 568 mL · 6% ABV")
-        #expect(ByVolumeBreadcrumb.make(name: "  ", volumeML: 330, abv: 5) == "330 mL · 5% ABV")
-        #expect(ByVolumeBreadcrumb.make(name: nil, volumeML: 330, abv: 5) == "330 mL · 5% ABV")
+        #expect(ByVolumeBreadcrumb.make(name: "IPA", volumeML: 568, abv: 6) == "IPA, 568 mL, 6% ABV")
+        #expect(ByVolumeBreadcrumb.make(name: "  ", volumeML: 330, abv: 5) == "330 mL, 5% ABV")
+        #expect(ByVolumeBreadcrumb.make(name: nil, volumeML: 330, abv: 5) == "330 mL, 5% ABV")
     }
 
     @Test

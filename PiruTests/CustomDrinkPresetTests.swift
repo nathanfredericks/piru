@@ -78,7 +78,7 @@ struct CustomDrinkPresetTests {
     @Test
     func `fixed-volume preset labels volume and strength`() {
         let preset = CustomDrinkPreset(name: "Beer", strengthABV: 5, volumeML: 330)
-        #expect(preset.detailLabel == "330 mL · 5%")
+        #expect(preset.detailLabel == "330 mL and 5%")
     }
 }
 

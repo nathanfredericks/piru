@@ -157,13 +157,11 @@ private struct MoveDosesSheet: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .listRowBackground(CardBackground())
                     }
                 } footer: {
                     Text("Pick an entry to move to another session.")
                 }
             }
-            .themedPage()
             .navigationTitle("Move Entries")
             .inlineNavigationTitle()
             .toolbar {

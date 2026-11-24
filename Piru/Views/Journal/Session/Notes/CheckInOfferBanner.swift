@@ -54,7 +54,7 @@ struct CheckInOfferBanner: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
-                    .skinButtonStyle(.prominent)
+                    .buttonStyle(.glassProminent)
                     .tint(Theme.accent)
                     Button {
                         adjust()

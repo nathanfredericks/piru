@@ -63,8 +63,6 @@ struct PharmacologyGlossarySheet: View {
                     }
                 }
             }
-            .listRowBackground(CardBackground())
-            .themedPage()
             .navigationTitle(title)
             .inlineNavigationTitle()
             .toolbar {

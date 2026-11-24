@@ -51,7 +51,7 @@ struct LogMedicationsView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.productName ?? CustomSubstanceStore.shared.displayName(for: item.substance))
                                         .font(.body)
-                                    Text("\(item.amount.doseFormatted) \(item.unit) · \(String(localized: item.route.localizedName))")
+                                    Text("\(item.amount.doseFormatted) \(item.unit), \(String(localized: item.route.localizedName))")
                                         .font(.subheadline)
                                         .foregroundStyle(Theme.secondaryLabel)
                                 }
@@ -83,9 +83,7 @@ struct LogMedicationsView: View {
                         .disabled(selectedCount == 0)
                     }
                 }
-                .listRowBackground(CardBackground())
             }
-            .themedPage()
             .navigationTitle(category.isEmpty ? "Log Meds" : "Log \(category)")
             .inlineNavigationTitle()
             .toolbar {
@@ -206,9 +204,7 @@ struct InteractionWarningSheet: View {
                         }
                     }
                 }
-                .listRowBackground(CardBackground())
             }
-            .themedPage()
             .navigationTitle("Interaction Warning")
             .inlineNavigationTitle()
             .toolbar {

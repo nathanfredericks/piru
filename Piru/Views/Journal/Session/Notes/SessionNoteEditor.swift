@@ -66,9 +66,7 @@ struct SessionNoteEditor: View {
                         }
                     }
                 }
-                .listRowBackground(CardBackground())
             }
-            .themedPage()
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(title)
             .inlineNavigationTitle()
@@ -86,7 +84,7 @@ struct SessionNoteEditor: View {
                     } label: {
                         Image(systemName: "checkmark").font(.body.weight(.semibold))
                     }
-                    .skinButtonStyle(.prominent)
+                    .buttonStyle(.glassProminent)
                     .tint(Theme.accent)
                     .disabled(!draft.hasContent)
                     .accessibilityLabel(Text("Save"))
@@ -422,10 +420,10 @@ private struct DescriptorToggleChips: View {
                         .padding(.vertical, Spacing.sm)
                         .background(
                             Theme.accent.opacity(isOn ? Theme.Opacity.tint : 0),
-                            in: skinChipShape(),
+                            in: Capsule(),
                         )
                         .overlay {
-                            skinChipShape()
+                            Capsule()
                                 .stroke(
                                     isOn ? Theme.accent : Color.secondary.opacity(Theme.Opacity.muted),
                                     lineWidth: 1,
@@ -469,7 +467,7 @@ struct DescriptorChips: View {
                 }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.vertical, Spacing.sm)
-                .background(Theme.accent.opacity(Theme.Opacity.tint), in: skinChipShape())
+                .background(Theme.accent.opacity(Theme.Opacity.tint), in: Capsule())
                 .foregroundStyle(Theme.accent)
                 .contentShape(Capsule())
                 .onTapGesture { onRemove?(id) }

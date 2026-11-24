@@ -33,7 +33,7 @@ struct ElevenHydroxyTHCCard: View {
         } header: {
             Text("11-OH-THC (edibles)")
         } footer: {
-            Text("Based on first-pass metabolism of oral THC · educational. Onset and duration vary with dose, product, and tolerance.")
+            Text("Based on first-pass metabolism of oral THC, educational. Onset and duration vary with dose, product, and tolerance.")
         }
     }
 }

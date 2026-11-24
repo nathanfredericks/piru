@@ -87,7 +87,7 @@ struct TripReportMarkdownTests {
         let line = TripReport.structureLine(
             shulgin: 2, mood: 1, energy: nil, social: 3, worked: -1, heartRate: 84,
         )
-        #expect(line == "++ · less than usual · mood +1 · social +3 · ♥ 84")
+        #expect(line == "++, less than usual, mood +1, social +3, ♥ 84")
         #expect(TripReport.structureLine(shulgin: nil, mood: nil, energy: nil, heartRate: nil).isEmpty)
     }
 }

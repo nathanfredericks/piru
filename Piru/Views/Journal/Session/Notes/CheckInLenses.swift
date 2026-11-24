@@ -224,6 +224,6 @@ struct CheckInForm {
     /// one substance and there is nothing to disambiguate.
     func tag(_ names: [String]) -> String? {
         guard distinctSubstances > 1, !names.isEmpty else { return nil }
-        return names.joined(separator: " · ")
+        return names.joined(separator: ", ")
     }
 }

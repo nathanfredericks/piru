@@ -38,10 +38,8 @@ struct ComedownGuideView: View {
 
                 generalSection
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
-        .themedPage()
         .task(id: DoseLogService.shared.revision) {
             await SubstanceStore.shared.ensureAllLoaded()
             // The query already bounds entries to the 48 h window.
@@ -137,13 +135,9 @@ struct ComedownCategoryDisclosure: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.primary)
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                HStack(alignment: .top, spacing: Spacing.sm) {
-                    Text("\u{2022}")
-                        .foregroundStyle(Theme.secondaryLabel)
-                    Text(item)
-                        .foregroundStyle(Theme.secondaryLabel)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(item)
+                    .foregroundStyle(Theme.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

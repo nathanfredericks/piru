@@ -45,6 +45,29 @@ struct DoseTimeZoneTests {
     // MARK: - The dose's own clock
 
     @Test
+    func `Journal date prefill preserves the selected day before Day Starts At`() {
+        let paris = calendar(Self.paris)
+        let now = instant(day: 13, hour: 1, minute: 30, in: Self.paris)
+        let today = dayKey(12, in: Self.paris)
+        let yesterday = dayKey(11, in: Self.paris)
+
+        #expect(JournalDaySelection.prefill(on: today, now: now, calendar: paris, boundaryHour: 4) == now)
+        let historicalTime = JournalDaySelection.prefill(on: yesterday, now: now, calendar: paris, boundaryHour: 4)
+        #expect(historicalTime == instant(day: 12, hour: 1, minute: 30, in: Self.paris))
+        #expect(paris.journalDay(for: historicalTime, boundaryHour: 4) == yesterday)
+        #expect(JournalDaySelection.timeRange(on: today, now: now, calendar: paris, boundaryHour: 4).upperBound == now)
+    }
+
+    @Test
+    func `Journal scheduled groups sort by the journal clock and leave anytime last`() {
+        let day = dayKey(12, in: Self.paris)
+        let rows = [nil, 60, 22 * 60, 8 * 60].map { minutes in
+            RoutineOccurrence(substance: "Testine", route: .oral, dueDay: day, slotMinutes: minutes)
+        }
+        #expect(JournalMedicationGroup.groups(from: rows, boundaryHour: 4).map(\.minutes) == [480, 1_320, 60, nil])
+    }
+
+    @Test
     func `A Paris morning dose is a morning on its Paris day when read in Tokyo`() {
         let tokyo = calendar(Self.tokyo)
         let dose = instant(day: 12, hour: 8, in: Self.paris)

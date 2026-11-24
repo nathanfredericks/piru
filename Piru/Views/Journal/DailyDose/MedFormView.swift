@@ -158,14 +158,12 @@ struct MedFormView: View {
                     }
                     quietSection
                 }
-                .listRowBackground(CardBackground())
             }
             .productComponentPicker(
                 isPresented: $showsComponentPicker,
                 draft: draft.product,
                 allowsSeveral: draft.isCompounded,
             )
-            .themedPage()
             .navigationTitle(isEditing ? "Edit Med" : "Add a Med")
             .inlineNavigationTitle()
             .toolbar {
@@ -175,7 +173,7 @@ struct MedFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button { save() } label: { Image(systemName: "checkmark").fontWeight(.semibold) }
-                        .skinButtonStyle(.prominent)
+                        .buttonStyle(.glassProminent)
                         .disabled(!canSave)
                         .accessibilityLabel("Save")
                 }
@@ -557,6 +555,8 @@ struct MedFormView: View {
         }
 
         let sortedTimes = Array(Set(draft.times.map(\.minutes))).sorted()
+        let hadTimedReminder = item.map { $0.remind && !$0.isAsNeeded && !$0.reminderTimesMinutes.isEmpty } ?? false
+        let enablesTimedReminder = !hadTimedReminder && draft.remind && !draft.isAsNeeded && !sortedTimes.isEmpty
         let identity = saved.identity
         let target: DailyDoseItem
         if let item {
@@ -590,6 +590,18 @@ struct MedFormView: View {
         // Reschedule from the saved state — times, remind, quiet grouping,
         // and Ask Again cadence all feed the pending-notification set.
         DoseNotificationManager.syncMedReminders(in: modelContext)
+        if enablesTimedReminder { MedReminderPermission.request(in: modelContext) }
         dismiss()
+    }
+}
+
+enum MedReminderPermission {
+    static func request(in context: ModelContext) {
+        let profileID = ProfileScope.currentID
+        let container = context.container
+        Task {
+            guard await DoseNotificationManager.requestAuthorization(), ProfileScope.currentID == profileID else { return }
+            DoseNotificationManager.syncMedReminders(in: container.mainContext)
+        }
     }
 }

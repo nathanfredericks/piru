@@ -148,7 +148,7 @@ struct SessionNoteRow: View, Equatable {
                         .foregroundStyle(.primary)
                 }
                 if !display.descriptors.isEmpty {
-                    Text(verbatim: display.descriptors.joined(separator: " · "))
+                    Text(verbatim: display.descriptors.joined(separator: ", "))
                         .font(.caption)
                         .foregroundStyle(Theme.accent)
                         .lineLimit(2)

@@ -112,7 +112,7 @@ extension InventoryItem {
             )
         // DoseTitle folds an injectable ester into the name already.
         if let salt = saltForm, !salt.isEmpty, isPlain || !resolved.localizedCaseInsensitiveContains(salt) {
-            return "\(resolved) · \(salt)"
+            return "\(resolved), \(salt)"
         }
         return resolved
     }
@@ -131,7 +131,7 @@ func inventorySupplyLine(for item: InventoryItem, runOut: InventoryMath.RunOut?)
     if let runOut {
         let humanized = inventoryHumanizeDays(runOut.daysLeft)
         if let doses {
-            return String(localized: "~\(doses) doses · \(humanized) left")
+            return String(localized: "~\(doses) doses, \(humanized) left")
         }
         return String(localized: "\(humanized) left")
     }

@@ -47,7 +47,7 @@ struct SolutionMathView: View {
             .padding()
         }
         .scrollDismissesKeyboard(.interactively)
-        .skinBackdrop()
+        .piruPageBackground()
     }
 
     // MARK: - Header

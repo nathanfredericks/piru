@@ -844,6 +844,10 @@ struct SubstanceReadModel {
         ) else { return nil }
         let text: String = row["text"]
         guard !text.isEmpty else { return nil }
+        return try sourcedProse(db: db, row: row, text: text)
+    }
+
+    private func sourcedProse(db: Database, row: Row, text: String) throws -> SubstanceOverview {
         let citation = try (row["citation_id"] as Int64?).flatMap { id in
             try Row.fetchOne(db, sql: "SELECT doi, pmid, url, title FROM citations WHERE id = ?", arguments: [id])
         }.map { c in
@@ -859,7 +863,7 @@ struct SubstanceReadModel {
 
     private func resolvedMechanism(db: Database, substanceID: Int64) throws -> MechanismOfAction? {
         let row = try resolvedTextRow(
-            db: db, from: "mechanisms_summary", selecting: "t.summary, t.description",
+            db: db, from: "mechanisms_summary", selecting: "t.summary, t.description, t.citation_id",
             substanceID: substanceID,
         )
 
@@ -951,13 +955,23 @@ struct SubstanceReadModel {
         // neither a summary nor any binding.
         guard row != nil || !bindings.isEmpty else { return nil }
 
-        return MechanismOfAction(
-            summary: row?["summary"] ?? "",
-            description: row?["description"] ?? "",
+        let summary = (row?["summary"] as String?) ?? ""
+        let description = (row?["description"] as String?) ?? ""
+        var mechanism = MechanismOfAction(
+            summary: summary,
+            description: description,
             primaryTargets: bindings.map(\.target),
             bindings: bindings,
             summaryLanguage: row?["row_language"] as String?,
         )
+        if let row {
+            let prose = description.trimmingCharacters(in: .whitespacesAndNewlines)
+            let text = prose.isEmpty ? summary.trimmingCharacters(in: .whitespacesAndNewlines) : prose
+            if !text.isEmpty {
+                mechanism.referenceProse = try sourcedProse(db: db, row: row, text: text)
+            }
+        }
+        return mechanism
     }
 
     private func resolvedTolerance(db: Database, substanceID: Int64) throws -> ToleranceInfo? {

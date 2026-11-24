@@ -52,7 +52,6 @@ struct DataStorageView: View {
                 } label: {
                     Label("Journal Sync", systemImage: "arrow.triangle.2.circlepath")
                 }
-                .listRowBackground(CardBackground())
             }
             // ICloudBackupSection() — gated for App Store submission (Guideline 5.1.3(ii))
             ExportImportSection(
@@ -76,7 +75,6 @@ struct DataStorageView: View {
             DeleteEverythingSection(onDelete: { showingDeleteConfirmation = true })
                 .disabled(model.isDeleting || model.isGenerating)
         }
-        .themedPage()
         .navigationTitle("Data & Backup")
         .inlineNavigationTitle()
         .task { await model.loadRecoverable() }
@@ -279,7 +277,6 @@ private struct LocalStorageSection: View {
             } label: {
                 Label("Store Size", systemImage: "internaldrive")
             }
-            .listRowBackground(CardBackground())
         } header: {
             Text("On This Device")
         } footer: {
@@ -323,7 +320,6 @@ private struct CountRow: View {
         } label: {
             Label(title, systemImage: systemImage)
         }
-        .listRowBackground(CardBackground())
     }
 }
 
@@ -346,7 +342,6 @@ private struct ICloudBackupSection: View {
                 }
                 .tint(Theme.accent)
                 .disabled(!manager.iCloudAvailable)
-                .listRowBackground(CardBackground())
 
                 BackupStatusRow(manager: manager).listRowBackground(CardBackground())
             }
@@ -376,7 +371,7 @@ private struct ICloudBackupSection: View {
         .confirmationDialog("Merge Backup", isPresented: $showingMergeConfirmation, titleVisibility: .visible) {
             Button("Merge With Current Data") {
                 Task {
-                    try? await manager.restoreFromICloud(passphrase: nil, strategy: .merge, context: modelContext)
+                    _ = try? await manager.restoreFromICloud(passphrase: nil, strategy: .merge, context: modelContext)
                     manager.autoICloudEnabled = true
                     existingBackupFound = false
                 }
@@ -397,21 +392,18 @@ private struct ICloudBackupSection: View {
         }
         .font(.footnote)
         .foregroundStyle(Theme.secondaryLabel)
-        .listRowBackground(CardBackground())
 
         Button {
             showingMergeConfirmation = true
         } label: {
             Label("Merge With Current Data", systemImage: "arrow.triangle.merge")
         }
-        .listRowBackground(CardBackground())
 
         Button(role: .destructive) {
             showingRemoveConfirmation = true
         } label: {
             Label("Remove Existing Backup", systemImage: "trash")
         }
-        .listRowBackground(CardBackground())
     }
 
     private var autoBinding: Binding<Bool> {
@@ -626,7 +618,6 @@ private struct DataActionRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .listRowBackground(CardBackground())
     }
 }
 
@@ -647,7 +638,6 @@ private struct SubstanceDatabaseSection: View {
                     Label("Substance Database", systemImage: "books.vertical")
                 }
             }
-            .listRowBackground(CardBackground())
         } footer: {
             Text("Which source wins when they disagree.")
         }
@@ -696,7 +686,6 @@ private struct HowItWorksRow: View {
             }
         }
         .padding(.vertical, Spacing.xxs)
-        .listRowBackground(CardBackground())
     }
 }
 
@@ -711,11 +700,9 @@ private struct RecoverableCopiesSection: View {
         Section {
             if isLoading {
                 HStack { ProgressView(); Text("Checking for recoverable copies…").foregroundStyle(Theme.secondaryLabel) }
-                    .listRowBackground(CardBackground())
             } else if stores.isEmpty {
                 Label("No recoverable copies on this device.", systemImage: "checkmark.shield")
                     .foregroundStyle(Theme.secondaryLabel).font(.footnote)
-                    .listRowBackground(CardBackground())
             } else {
                 ForEach(stores) { store in
                     RecoverableRow(store: store) { onSelect(store) }
@@ -756,7 +743,6 @@ private struct RecoverableRow: View {
         }
         .buttonStyle(.plain)
         .disabled(store.rowCount <= 0)
-        .listRowBackground(CardBackground())
     }
 }
 
@@ -775,7 +761,6 @@ private struct DeleteEverythingSection: View {
                         .foregroundStyle(.red)
                 }
             }
-            .listRowBackground(CardBackground())
         } footer: {
             Text("Deletes this profile’s journal, schedules, inventory, presets, recovery copies, sync data, and archived profile photos from this device. Exported files, Apple Health records, and device backups are kept.")
         }
@@ -797,7 +782,7 @@ private enum DataStorageFormat {
         }
     }
 
-    static func subtitle(for store: RecoverableStore, separator: String = " · ") -> String {
+    static func subtitle(for store: RecoverableStore, separator: String = ", ") -> String {
         let rows = store.rowCount > 0 ? rowCountText(store.rowCount) : String(localized: "unreadable")
         let when = store.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? String(localized: "unknown date")
         return [rows, byteString(store.bytes), when].joined(separator: separator)
@@ -843,7 +828,6 @@ struct PassphraseSheet: View {
                 } footer: {
                     strengthFooter
                 }
-                .listRowBackground(CardBackground())
 
                 Section {
                     Label {
@@ -853,9 +837,7 @@ struct PassphraseSheet: View {
                     }
                     .font(.footnote)
                 }
-                .listRowBackground(CardBackground())
             }
-            .themedPage()
             .navigationTitle("Set a Passphrase")
             .inlineNavigationTitle()
             .toolbar {

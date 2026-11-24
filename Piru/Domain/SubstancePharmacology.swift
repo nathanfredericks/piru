@@ -119,6 +119,8 @@ struct MechanismOfAction: Codable {
     /// The language code of the DB row the summary came from (e.g. "en", "zh-Hans").
     /// `nil` when the text is from the category floor (already localized via xcstrings).
     var summaryLanguage: String?
+    /// Sourced prose carried by the resolved catalog row.
+    var referenceProse: SubstanceOverview?
 
     private enum CodingKeys: String, CodingKey {
         case summary

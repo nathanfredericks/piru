@@ -150,14 +150,12 @@ struct InventoryStockSection: View {
                 .foregroundStyle(Theme.accent)
                 .padding(.horizontal, 14)
                 .padding(.vertical, Spacing.md)
-                .background(Theme.accent.opacity(Theme.Opacity.tint), in: skinChipShape())
+                .background(Theme.accent.opacity(Theme.Opacity.tint), in: Capsule())
         }
         .buttonStyle(.plain)
     }
 
-    /// Subtitle under the amount: "Citrate · ~24 doses · ~3 weeks left" when
-    /// stocked (salt + the combined supply line), or "last dose <date>" when out
-    /// (so we don't echo "Out").
+    /// The salt and supply estimate, or the last dose date when out of stock.
     private func stockSubtitle(_ item: InventoryItem, doses: [DoseEntry]) -> String? {
         if item.stockStatus == .out {
             guard let last = doses.map(\.timestamp).max() else {
@@ -172,7 +170,7 @@ struct InventoryStockSection: View {
         if let supply = inventorySupplyLine(for: item, runOut: runOut) {
             parts.append(supply)
         }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        return parts.isEmpty ? nil : parts.joined(separator: "\n")
     }
 
     /// True when any matching dose can't be converted into the item's unit, so

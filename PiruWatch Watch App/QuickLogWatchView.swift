@@ -94,7 +94,7 @@ struct QuickLogTile: View {
 
     private var subtitle: String {
         if item.isByVolume { return String(localized: "Drink") }
-        return "\(WatchDoseFormat.amount(item.amount)) \(item.unit) · \(WatchDoseFormat.route(item.route))"
+        return "\(WatchDoseFormat.amount(item.amount)) \(item.unit), \(WatchDoseFormat.route(item.route))"
     }
 
     private var tileColor: Color {

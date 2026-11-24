@@ -143,4 +143,76 @@ struct DoseLogBatchTests {
         #expect(saved.map(\.combinationName) == ["Co-codamol", nil, "Co-codamol"])
         #expect(Set(saved.compactMap(\.session?.id)).count == 1)
     }
+
+    @Test
+    func `Checked batch commits assigned entry IDs and hook changes together`() throws {
+        let context = try makeContext()
+        let service = DoseLogService()
+        defer { service.cancelPendingBookkeeping() }
+        let one = entry(unknown)
+        let two = entry(unknown, hoursFromNow: 1)
+
+        let ids = try service.checkedLogBatch(
+            [(one, nil), (two, nil)], colors: [], in: context, activatesLiveSession: false,
+            beforeSave: { entries in
+                #expect(entries.map(\.id) == [one.id, two.id])
+                #expect(entries.allSatisfy { $0.session != nil })
+                context.insert(DailyDoseItem(substance: unknown, amount: 10))
+            },
+        )
+
+        #expect(ids == [one.id, two.id])
+        let reader = ModelContext(context.container)
+        #expect(try Set(reader.fetch(FetchDescriptor<DoseEntry>()).map(\.id)) == Set(ids))
+        #expect(try reader.fetchCount(FetchDescriptor<DailyDoseItem>()) == 1)
+        #expect(service.revision == 1)
+        #expect(!context.hasChanges)
+    }
+
+    @Test
+    func `Failed checked batch rolls back everything and can be retried once`() throws {
+        enum FixtureError: Error { case stop }
+        let context = try makeContext()
+        let service = DoseLogService()
+        defer { service.cancelPendingBookkeeping() }
+
+        #expect(throws: FixtureError.self) {
+            try service.checkedLogBatch(
+                [(entry(unknown), nil)], colors: [], in: context, activatesLiveSession: false,
+                beforeSave: { _ in
+                    context.insert(DailyDoseItem(substance: unknown, amount: 10))
+                    throw FixtureError.stop
+                },
+            )
+        }
+
+        #expect(try context.fetchCount(FetchDescriptor<DoseEntry>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<DailyDoseItem>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<SubstanceColor>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<Session>()) == 0)
+        #expect(service.revision == 0)
+        #expect(!context.hasChanges)
+
+        let retry = entry(unknown)
+        let ids = try service.checkedLogBatch([(retry, nil)], colors: [], in: context, activatesLiveSession: false)
+        #expect(ids == [retry.id])
+        #expect(try context.fetchCount(FetchDescriptor<DoseEntry>()) == 1)
+        #expect(service.revision == 1)
+    }
+
+    @Test
+    func `Checked batch leaves unrelated pending edits alone`() throws {
+        let context = try makeContext()
+        let service = DoseLogService()
+        context.insert(DailyDoseItem(substance: unknown, amount: 10))
+
+        #expect(throws: DoseLogService.CheckedCommitError.pendingChanges) {
+            try service.checkedLogBatch([(entry(unknown), nil)], colors: [], in: context, activatesLiveSession: false)
+        }
+
+        #expect(context.hasChanges)
+        #expect(try context.fetchCount(FetchDescriptor<DailyDoseItem>()) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<DoseEntry>()) == 0)
+        #expect(service.revision == 0)
+    }
 }

@@ -275,7 +275,6 @@ struct CustomSubstanceFormView: View {
                     Text("Optional notes about this substance for your reference.")
                 }
             }
-            .themedPage()
             .navigationTitle(navTitle)
             .inlineNavigationTitle()
             .toolbar {

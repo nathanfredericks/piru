@@ -46,24 +46,17 @@ nonisolated struct ExportedSetting: Sendable {
 ///   ``NotificationPreferences``, `quickLogManifest`, `watchDosePayload`);
 /// - migration and launch-pass bookkeeping (`psid.*`, `ester.*`,
 ///   `medsRoutineFoldDone`, `didResplitOverlongSessionsV1`,
-///   `piru.sourceOrderMigrationVersion`, `dockLabelsMigrated_v1`,
+///   `piru.sourceOrderMigrationVersion`,
 ///   `journalResetGeneration`, `journalResetDate`, launch-pass tokens);
-/// - onboarding, prompt and hint flags and counters (`hasCompletedOnboarding`,
-///   `discordPrompt*`, `didOfferSessionVitals`, `ternaryTapHintSeen`,
-///   `checkInOfferDeclines`, `appLaunchCount`, update-notice seen flags,
+/// - prompt and hint flags and counters (`didOfferSessionVitals`,
+///   `ternaryTapHintSeen`, `checkInOfferDeclines`, update-notice seen flags,
 ///   `myMedsMissedNoticeDismissedDays`);
-/// - `skinOwnedProducts`, which StoreKit re-establishes on the new install;
 /// - backup state (`backup.*`), which describes this device's backup;
 /// - navigation state (`AppNavigator.selectedTab`) and debug launch arguments.
 enum ExportedSettings {
     static let all: [ExportedSetting] = appGroup + standard
 
     static let appGroup: [ExportedSetting] = [
-        .init(key: SkinDefaults.skinKey, domain: .appGroup, kind: .string),
-        .init(key: SkinDefaults.colorSchemeKey, domain: .appGroup, kind: .string),
-        .init(key: SkinDefaults.decorationsKey, domain: .appGroup, kind: .bool),
-        .init(key: "dockShortcuts", domain: .appGroup, kind: .data),
-        .init(key: "dockLabels", domain: .appGroup, kind: .data),
         .init(key: "stackRedoses", domain: .appGroup, kind: .bool),
         .init(key: "showSessionVitals", domain: .appGroup, kind: .bool),
         .init(key: CheckInScheduler.everySessionKey, domain: .appGroup, kind: .bool),
@@ -90,10 +83,7 @@ enum ExportedSettings {
         .init(key: "injLevelsVolumeConcentration.estradiol", domain: .standard, kind: .double),
         .init(key: "injLevelsVolumeConcentration.testosterone", domain: .standard, kind: .double),
         .init(key: "quickLogFixedOrder", domain: .standard, kind: .bool),
-        .init(key: TabLayoutStore.layoutKey, domain: .standard, kind: .strings),
-        .init(key: TabLayoutStore.namesKey, domain: .standard, kind: .data),
         .init(key: "quickLogSuppressedRecents", domain: .standard, kind: .strings),
-        .init(key: "quickLogRoutinesCollapsed", domain: .standard, kind: .bool),
         .init(key: "alcoholEditorByDrink", domain: .standard, kind: .bool),
         .init(key: "esterEditorByVolume", domain: .standard, kind: .bool),
         .init(key: "byVolumePreferredVolumeUnit", domain: .standard, kind: .string),
@@ -108,7 +98,6 @@ enum ExportedSettings {
         .init(key: "usageSection.doseLevels", domain: .standard, kind: .bool),
         .init(key: "usageSection.regularity", domain: .standard, kind: .bool),
         .init(key: "usageSection.routes", domain: .standard, kind: .bool),
-        .init(key: ArcadeCabinet.bestKey, domain: .standard, kind: .int),
     ]
 }
 

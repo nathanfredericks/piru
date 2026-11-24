@@ -397,7 +397,7 @@ struct MetabolismRow: View {
             .foregroundStyle(Theme.secondaryLabel)
             .padding(.horizontal, 7)
             .padding(.vertical, Spacing.xxs)
-            .background(Theme.secondaryLabel.opacity(Theme.Opacity.tint), in: skinChipShape())
+            .background(Theme.secondaryLabel.opacity(Theme.Opacity.tint), in: Capsule())
     }
 
     // MARK: metabolite resolution
@@ -507,7 +507,7 @@ struct MetabolismRow: View {
                     .foregroundStyle(active ? accent : Theme.secondaryLabel)
                     .padding(.horizontal, Spacing.sm)
                     .padding(.vertical, 1)
-                    .background((active ? accent : Theme.secondaryLabel).opacity(Theme.Opacity.tint), in: skinChipShape())
+                    .background((active ? accent : Theme.secondaryLabel).opacity(Theme.Opacity.tint), in: Capsule())
             }
         }
         .contentShape(Rectangle())
@@ -558,7 +558,6 @@ func sourceLine(slug: String, detail: String?, citation: RowCitation?, accent: C
                 sourceNameLink(name, citation: citation, accent: accent)
             }
             if let detail {
-                if name != nil { Middot().font(.caption2) }
                 Text(detail).font(.caption2).italic().lineLimit(1)
             }
             Spacer()

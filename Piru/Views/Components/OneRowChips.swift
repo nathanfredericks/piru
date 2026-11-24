@@ -67,7 +67,7 @@ struct OneRowChips<Item: Identifiable, ChipView: View, TrailingView: View>: View
                         .padding(.vertical, OneRowChipMetrics.verticalPadding)
                         .background(Color.platformSecondarySystemFill)
                         .foregroundStyle(Theme.secondaryLabel)
-                        .clipShape(skinChipShape())
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .fixedSize(horizontal: true, vertical: false)

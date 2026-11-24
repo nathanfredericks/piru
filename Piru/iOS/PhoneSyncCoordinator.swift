@@ -67,7 +67,7 @@ final class PhoneSyncCoordinator: NSObject {
             tint: { SubstancePalette.tint(for: $0, tintMap: tintMap) },
             favoriteDefault: Self.favoriteDefault(for:),
             step: { substance, route, unit, amount in
-                // Same increment the quick-log dock uses: niceStep off the library
+                // Same increment the Quick Log sheet uses: niceStep off the library
                 // reference dose when known, else the magnitude fallback.
                 let reference = SubstanceLibrary.lookup(substance)?.referenceDose(route: route, unit: unit)
                 return DoseStepping.step(referenceDose: reference, amount: amount)

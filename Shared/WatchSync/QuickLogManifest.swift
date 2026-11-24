@@ -44,7 +44,7 @@ nonisolated struct QuickLogManifestItem: Codable, Hashable, Sendable, Identifiab
     var amount: Double
     var unit: String
     /// Digital-Crown increment, computed on the phone with the same `DoseStepping`
-    /// logic the quick-log dock uses, so the watch nudges in identical steps (no
+    /// logic the Quick Log sheet uses, so the watch nudges in identical steps (no
     /// off-ladder values like 124.5). Always > 0.
     var step: Double
     /// Tile color as a hex string (the substance's palette color), or nil for default.

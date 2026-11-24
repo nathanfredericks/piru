@@ -65,8 +65,8 @@ struct ScanResultCard: View {
 
     private func readingSummary(_ reading: BoxReading, barcodeKnown: Bool) -> String {
         let lines = String(localized: "\(reading.texts.count) lines read")
-        if barcodeKnown { return String(localized: "Barcode recognized · \(lines)") }
-        if !reading.barcodes.isEmpty { return String(localized: "Barcode read · \(lines)") }
+        if barcodeKnown { return String(localized: "Barcode recognized, \(lines)") }
+        if !reading.barcodes.isEmpty { return String(localized: "Barcode read, \(lines)") }
         return lines
     }
 
@@ -131,7 +131,7 @@ struct ScanResultCard: View {
         let route = String(localized: resolved.stagingRoute.localizedName)
         if resolved.strength != nil {
             let dose = "\(resolved.stagingAmount.doseFormatted) \(resolved.stagingUnit)"
-            return "\(dose) · \(route)"
+            return "\(dose), \(route)"
         }
         return route
     }

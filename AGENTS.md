@@ -67,24 +67,24 @@ pipeline/check-weak-imports.py --list Piru.app                  # every weak imp
 
 ## Screenshots
 
-`pipeline/screenshots.py` captures every screen worth showing — the vertical timeline, each tab, a quick log with the morning meds staged, stats, inventory, three substance pages, the interaction checker with a pair checked, the skins sheet — in English and Simplified Chinese, in the `piru` skin and then a subset in every other skin the picker offers. It runs unattended and prints each file as it lands.
+`pipeline/screenshots.py` captures every screen worth showing — the vertical timeline, each tab, a quick log with the morning meds staged, stats, inventory, three substance pages, and the interaction checker with a pair checked — in English and Simplified Chinese. It runs unattended and prints each file as it lands.
 
 ```bash
-pipeline/screenshots.py                          # build, then everything (~10 min)
-pipeline/screenshots.py --no-build --skins none  # the piru skin only, ~1 min per locale
-pipeline/screenshots.py --screens journal,quicklog --skins tsuki,yuki --locales en
+pipeline/screenshots.py                          # build, then capture all screens
+pipeline/screenshots.py --no-build              # use the existing build
+pipeline/screenshots.py --screens journal,quicklog --locales en
 pipeline/screenshots.py --appearance both        # light and dark
-pipeline/screenshots.py --list                   # screen and skin names
+pipeline/screenshots.py --list                   # screen names
 pipeline/screenshots.py --device "Piru Duo Screenshots" --device-type iPhone-Duo --pose open --orientation portrait
                                                  # an iPhone Duo, unfolded and turned to portrait
 ```
 
-- **Output is `Store/shots/` (gitignored):** `en/01-journal.png` for the piru skin, `en/skins/tsuki/01-journal-tsuki.png` per skin, `zh-Hans/…`, `en-dark/…`, plus `index.json`. Numbers are fixed by the catalog, so a re-run of one screen overwrites the same file.
-- **The app does the walking.** `ScreenshotTour` (`Piru/Utilities/ScreenshotTour.swift`, DEBUG) is enabled by `-piruScreenshots <dir>`, seeds the `week` persona, lands on each screen through `AppNavigator`, and asks the host for a capture through `<dir>/.tour/request.json`; the script answers with `simctl io screenshot` so the 9:41 status bar and real pixels are in the picture. **Add a screen by adding a `Screen` to `catalog`**; a new skin is in the pass the moment it is in `Skin.available`. A screen that only one persona's seed fills names it (`Screen(name:persona:)`) and is left out of every other pass: the shared-session screens need `--persona sharedNight`.
+- **Output is `Store/shots/` (gitignored):** `en/01-journal.png`, `zh-Hans/…`, `en-dark/…`, plus `index.json`. Numbers are fixed by the catalog, so a re-run of one screen overwrites the same file.
+- **The app does the walking.** `ScreenshotTour` (`Piru/Utilities/ScreenshotTour.swift`, DEBUG) is enabled by `-piruScreenshots <dir>`, seeds the `week` persona, lands on each screen through `AppNavigator`, and asks the host for a capture through `<dir>/.tour/request.json`; the script answers with `simctl io screenshot` so the 9:41 status bar and real pixels are in the picture. **Add a screen by adding a `Screen` to `catalog`**. A screen that only one persona's seed fills names it (`Screen(name:persona:)`) and is left out of every other pass: the shared-session screens need `--persona sharedNight`.
 - **It runs on its own simulator, "Piru Screenshots"** (an iPhone 18 Pro Max created on first use), so the persona reseed never wipes the journal on the simulator you develop on. `--udid booted` uses that one anyway.
 - **`--device-type`, `--pose` and `--orientation` cover the iPhone Duo and iPad.** `--device-type` creates the pass's simulator from another type (`iPhone-Duo`, `iPad-Pro-13-inch-M5-12GB`); give it its own `--device` name so it never reuses the iPhone. `--pose closed|partially-open|open` folds a Duo and captures the display that pose lights; `--orientation portrait|landscape` turns the device for the pass and back after, checking each turn against a probe capture. Both press Device Hub's buttons through `rocuronium`, since simctl has no verb for either.
 - **Every tour runs on its own store, `screenshots.store`** (`StoreRecovery.activeStoreName`): the persona reseed wipes the store it opens.
-- **`--clock` (default 9:41) sets both the status bar and the vertical timeline's Now** — the strip reads `DebugClock.now`, pinned by `-piruNow`, and the `week` persona seeds against it. Other surfaces (the Active Now card, the accessory's "Next:" countdown, In Your Body) still read the wall clock.
+- **`--clock` (default 9:41) sets both the status bar and the vertical timeline's Now** — the strip reads `DebugClock.now`, pinned by `-piruNow`, and the `week` persona seeds against it. Other surfaces (the Active Now card and In Your Body) still read the wall clock.
 
 ## Lint & format — pinned tool versions
 
@@ -182,7 +182,7 @@ pipeline/            # Python data pipeline that builds the bundled substance SQ
 | `Shared/Models/SubstanceColor.swift` | SwiftData `@Model` for a substance's color: resolved Display P3 components + `usesDefault`. Also `LegacyColorImport` (the only sRGB-hex reader), `CatalogTints`, and the `SubstancePalette` fallback (shared with widget) |
 | `Domain/SubstanceColorGenerator.swift` | A substance's default color: hue from its class seed (`SubstanceCategory+OklchSeed.swift`, generated by `design-system/color/build_l2_scales.py`), lightness/chroma/±10° hue drawn from its PSID family. A pinned-value test guards it — changing the band recolors every journal |
 | `Data/Services/SubstanceColorStore.swift` | The only writer of `SubstanceColor` rows: minting a default on first meeting, the picker's result, Reset All, the launch refresh/mint passes, and the legacy-row resolution behind the class-colors update notice |
-| `Views/Launch/LaunchSheetModifier.swift` | The one presenter for self-raised launch sheets (update notices, then the Discord invite) — at most one per launch. New "what's new"/migration pages are an `UpdateNotice` case, never another `.sheet` on the root |
+| `Views/Launch/LaunchSheetModifier.swift` | The one presenter for self-raised update notices — at most one per launch. New "what's new"/migration pages are an `UpdateNotice` case, never another `.sheet` on the root |
 | `Shared/RouteOfAdministration.swift` | 10 routes enum (shared with widget) |
 | `Shared/Formatting/DoseFormatting.swift` | `Double.doseFormatted` extension (shared with widget) |
 | `Shared/DosePhaseGlyph.swift` | **The** phase glyph table (come-up ↗, peak ☀, offset ↘, afterglow, ended, sleep) + the plain word for a phase. Never hardcode a phase symbol — the Live Activity countdown, the timeline milestones and the substance share card all read from here |
@@ -197,11 +197,10 @@ pipeline/            # Python data pipeline that builds the bundled substance SQ
 | `Utilities/SessionNotificationScheduler.swift` | Local session notifications with session-based grouping |
 | `Views/InteractionTimelineView.swift` | PK curve overlay with interaction danger window visualization |
 | `Views/QuickLog/EntryLevelEstimateCard.swift` | Model estimate for the latest recorded entry shown during quick-log |
-| `Views/ContentView.swift` | Main TabView, built from the user's `TabLayoutStore` layout (stock: Journal, Library, Tools, Insights + Search) |
+| `Views/ContentView.swift` | Main TabView with Journal, My Meds, Library, and Insights. Tools is a Library destination. |
 | `Views/QuickLogView.swift` | Modal for quick dose logging (plus per-type `QuickLog*.swift` files split out alongside it) |
 | `Navigation/AppNavigator.swift` | `@Observable @MainActor` singleton owning `selectedTab`, per-tab push paths, and the sheet stack |
-| `Navigation/Routes.swift` | `AppTab`, `PushRoute`, `SheetRoute` enums + `NavigatorSnapshot` (all Codable for deep links); `TabID` (a tab-bar slot: stock tab or `PinnedScreen`) |
-| `Navigation/TabLayoutStore.swift` | The user's tab bar (Settings ▸ Tabs): order, hidden stock tabs, pinned screens, Search on/off. Cap 4 + Search, at least one tab besides Search; backed up |
+| `Navigation/Routes.swift` | `AppTab`, `PushRoute`, `SheetRoute` enums + `NavigatorSnapshot` (all Codable for deep links); `TabID` (a current or legacy tab identity) |
 | `Navigation/DeepLink.swift` | `piru://` URL ↔ `NavigatorSnapshot` codec |
 | `Navigation/SheetRouteView.swift` | Dispatches a `SheetRoute` to its underlying view |
 | `Theme.swift` | Accent color + secondary label styling |
@@ -226,8 +225,8 @@ Navigation state is centralised in `AppNavigator` (`Piru/Navigation/`). Views re
 - **Present a sheet**: `navigator.present(.someRoute)`. To atomically swap the current sheet for another (e.g. Save → ColorPicker), use `replacingTop: true`.
 - **Dismiss a sheet**: `navigator.dismiss()`. Direct state mutation, not the env `dismiss()` round-trip — that's why Done/Cancel feel instant now.
 - **`@Environment(\.dismiss)` is fine** in views that can be either pushed or presented (e.g. `EntryDetailView`) — the system routes it correctly. For dedicated sheet roots, prefer `navigator.dismiss()` for explicitness.
-- **New screens**: add a case to `SheetRoute` (or `PushRoute`) and a dispatch arm in `SheetRouteView`. Update `DeepLink.encode/decode` if the route should be deep-linkable. A screen that can stand as a tab also goes in `PinnedScreen` (and `pickable`).
-- **Tabs are the user's.** Any stock tab can be hidden and any tool, insight or the Timeline pinned, so never assume Journal (or any tab) is in the bar. A "take me there" action goes through `navigator.open(_:home:)` (deep links through `apply`), which resolves by `TabRouting`: a pinned tab for that screen, else the home tab if shown, else the current tab. Plain `push` stays on the current tab.
+- **New screens**: add a case to `SheetRoute` (or `PushRoute`) and a dispatch arm in `SheetRouteView`. Update `DeepLink.encode/decode` if the route should be deep-linkable.
+- **Tab routing.** Use `navigator.open(_:home:)` to open a destination in its home tab. Deep links go through `apply`, and `TabRouting` maps legacy Tools, Search, and pinned tab identities into the current navigation. Plain `push` stays on the current tab.
 
 `piru://` URLs route through `DeepLink.decode` → `navigator.apply(_:)`. URL scheme is registered in `Piru/Info.plist`.
 
@@ -256,7 +255,7 @@ struct DoseEntryTests {
 - **Decompose views eagerly — never grow a "superview" holding piles of state.** A SwiftUI `View` is one *invalidation boundary*: any `@State` change re-evaluates the **entire** `body`, every section, every modifier. A view with 15–30 pieces of `@State` is both a performance problem (everything re-renders on any change) and a correctness hazard (tangled interdependencies, stale values, effects firing on the wrong change — the hard-to-trace bugs live here). Split a view **as soon as it grows past a few hundred lines or takes on more than one role** — don't defer it to a later refactor pass. The rules:
   1. **Each section → its own `View` `struct` with narrow inputs** — only the fields it reads (value types by `let`, shared mutable state by `@Binding`, its own `@Environment`, actions as closures). **Not** a `private var section: some View` and **not** a `@ViewBuilder` helper — those share the parent's invalidation boundary and buy nothing.
   2. **More than ~6 `@State` is a smell.** Async-loaded data belongs in an `@Observable @MainActor` model filled in `.task`; a multi-field edit draft belongs in **one** `@Observable` draft model. Keep only genuine UI toggles as `@State`.
-  3. Reference example: the giant-view decomposition of `SubstanceDetailView`/`SessionDetailView`/`EntryDetailView`/`QuickLogDock`/`ToleranceToolView` (each 1200–1600 lines → a thin coordinator + narrow-input subviews + an `@Observable` model). Follow the `swiftui-specialist` skill (`structure.md`, `dataflow.md`) when doing this.
+  3. Reference example: the giant-view decomposition of `SubstanceDetailView`/`SessionDetailView`/`EntryDetailView`/`ToleranceToolView` (each 1200–1600 lines → a thin coordinator + narrow-input subviews + an `@Observable` model). Follow the `swiftui-specialist` skill (`structure.md`, `dataflow.md`) when doing this.
 - **iOS and watchOS 26+** minimum deployment targets (Liquid Glass UI throughout)
 - **Swift 6** strict concurrency (`default-isolation=MainActor`)
 - **No `Text + Text` concatenation.** The SwiftUI `+` operator on `Text` is deprecated in iOS 26 and trips a build warning (`'+' was deprecated in iOS 26.0: Use string interpolation on Text`). Build the value in one shot instead: a single `Text("… \(value) …")`, or — when several **independently localized** pieces must join (e.g. an `accessibilityValue`) — compose a plain `String` from `String(localized:)` pieces and pass that (`"\(status), \(position)"` assigned to a `let`, so it resolves to the `StringProtocol` overload rather than minting a `"%@, %@"` catalog key). Keep the build warning-clean; don't leave these to accumulate.

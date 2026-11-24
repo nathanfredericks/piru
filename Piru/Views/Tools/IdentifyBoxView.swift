@@ -43,7 +43,7 @@ struct IdentifyBoxView: View {
             .padding(.top, Spacing.xs)
             .padding(.bottom, 80)
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .fullScreenCover(isPresented: $showScanner) {
             LabelScannerView { reading in
                 Task { result = await BoxIdentifier.identify(reading) }
@@ -155,7 +155,7 @@ private struct ReadChipView: View {
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, Spacing.sm)
-        .background(.fill.tertiary, in: skinChipShape())
+        .background(.fill.tertiary, in: Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }
@@ -278,7 +278,7 @@ extension BoxIdentification {
             count: packCount?.count,
             unit: packCount?.inventoryUnit,
             strengthMG: strengthMG,
-            note: noteParts.isEmpty ? nil : noteParts.joined(separator: " · "),
+            note: noteParts.isEmpty ? nil : noteParts.joined(separator: ", "),
         )
     }
 }

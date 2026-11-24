@@ -173,7 +173,7 @@ struct SubstanceEliminationCurve: View {
 
     private func projectionStats(_ proj: SteadyStateProjection, color: Color) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text("Projected · \(Self.cadenceText(proj.intervalHours))")
+            Text("Projected, \(Self.cadenceText(proj.intervalHours))")
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(color.legibleOpacity(Theme.Opacity.strong))
 

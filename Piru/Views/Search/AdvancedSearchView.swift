@@ -138,10 +138,8 @@ private struct BindingHitRow: View {
             HStack(spacing: Spacing.sm) {
                 Text(hit.target)
                     .font(.caption.monospaced())
-                Middot()
                 Text(hit.action)
                 if let species = hit.species, !species.isEmpty {
-                    Middot()
                     Text(species)
                         .italic()
                 }
@@ -154,9 +152,9 @@ private struct BindingHitRow: View {
                 Text(hit.sourceSlug)
                     .font(.caption2.monospaced())
                 if let pmid = hit.pmid {
-                    Text("· PMID \(pmid)").font(.caption2)
+                    Text("PMID \(pmid)").font(.caption2)
                 } else if let doi = hit.doi, !doi.isEmpty {
-                    Text("· DOI").font(.caption2)
+                    Text("DOI").font(.caption2)
                 }
             }
             .foregroundStyle(Theme.tertiaryLabel)

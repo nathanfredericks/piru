@@ -16,7 +16,7 @@ pipeline/
 └── audit/        After-the-fact inspection + comparison tools
 
 screenshots.py    Captures every app screen on the simulator, per language and
-                  skin, into Store/shots/ (see "Screenshots" in ../AGENTS.md)
+                  appearance, into Store/shots/ (see "Screenshots" in ../AGENTS.md)
 ```
 
 ## Curated data

@@ -331,9 +331,7 @@ private struct ProductComponentPicker: View {
                         dismiss()
                     }
                 }
-                .listRowBackground(CardBackground())
             }
-            .themedPage()
             .navigationTitle("Add Component")
             .inlineNavigationTitle()
             .toolbar {
@@ -374,10 +372,8 @@ struct MedProductEditSheet: View {
                         showsComponentPicker = true
                     }
                 }
-                .listRowBackground(CardBackground())
             }
             .productComponentPicker(isPresented: $showsComponentPicker, draft: draft, allowsSeveral: true)
-            .themedPage()
             .navigationTitle("Edit Product")
             .inlineNavigationTitle()
             .toolbar {
@@ -452,7 +448,6 @@ struct MedProductDetailSection: View {
         } footer: {
             Text("Checked off by logging this product.")
         }
-        .listRowBackground(CardBackground())
     }
 
     private var units: Binding<Int> {

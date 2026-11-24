@@ -54,9 +54,7 @@ struct HelpView: View {
                         copySection
                     }
                 }
-                .listRowBackground(CardBackground())
             }
-            .themedPage()
             .sheet(isPresented: $showShareSession) {
                 SessionShareSheet(
                     title: String(localized: "Current Session"),
@@ -168,13 +166,9 @@ struct HelpView: View {
 
                     let guide = ComedownGuide.guide(for: category)
                     ForEach(Array(guide.rightNow.enumerated()), id: \.offset) { _, tip in
-                        HStack(alignment: .top, spacing: Spacing.sm) {
-                            Text("\u{2022}")
-                                .foregroundStyle(Theme.secondaryLabel)
-                            Text(tip)
-                                .captionSecondary()
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        Text(tip)
+                            .captionSecondary()
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .padding(.vertical, Spacing.xs)
@@ -256,7 +250,7 @@ struct HelpView: View {
                         Text(substance.name)
                             .font(.subheadline.weight(.medium))
                         let remaining = Int((1 - substance.eliminatedFraction) * 100)
-                        Text("\(substance.totalDosed.doseFormatted) \(substance.unit) total \u{00B7} est. ~\(remaining)% remaining")
+                        Text("\(substance.totalDosed.doseFormatted) \(substance.unit) total, est. ~\(remaining)% remaining")
                             .captionSecondary()
                     }
                 }
@@ -290,7 +284,6 @@ struct HelpView: View {
 
                         HStack(spacing: Spacing.xs) {
                             Text("\(entry.amountDisplay) \(entry.unit)")
-                            Middot()
                                 .foregroundStyle(Theme.tertiaryLabel)
                             Text(entry.route.localizedName)
                         }

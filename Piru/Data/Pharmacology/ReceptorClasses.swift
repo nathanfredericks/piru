@@ -120,8 +120,7 @@ nonisolated enum ReceptorClasses {
             }
         }
 
-        /// Short user-facing name for the tolerance class — the Stage-2 Tool card headline, shown to
-        /// the **Curious** tier (the "(μ)"-style names with the mechanism in parens).
+        /// Class name with its receptor or mechanism for technical contexts.
         var displayName: LocalizedStringResource {
             switch self {
             case .psychedelic5HT2A: "Psychedelics (5-HT2A)"
@@ -140,7 +139,7 @@ nonisolated enum ReceptorClasses {
             }
         }
 
-        /// Plain, jargon-free class name for the **Casual** tier — no receptor parentheticals.
+        /// Plain class name for the tolerance views.
         var casualName: LocalizedStringResource {
             switch self {
             case .psychedelic5HT2A: "Psychedelics"

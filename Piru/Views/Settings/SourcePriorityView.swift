@@ -22,9 +22,7 @@ struct SourcePriorityView: View {
             } footer: {
                 Text("When several sources report the same fact, such as a dose or a duration, Piru shows the one nearest the top. Drag to set which you trust most.")
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         // Permanent edit mode: the reorder grips are always visible, and with no
         // delete/toggle the row is unmistakably about order.
         .permanentEditMode()

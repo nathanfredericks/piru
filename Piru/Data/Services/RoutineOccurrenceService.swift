@@ -19,6 +19,140 @@ import SwiftData
 /// app foreground) therefore keep the record current for free.
 @MainActor
 enum RoutineOccurrenceService {
+    /// The row as shown when a user opened a correction. Re-read it before
+    /// applying the action, since another device can settle the same slot.
+    struct Correction: Hashable {
+        let id: PersistentIdentifier
+        let day: Date
+        let routineName: String
+        let slotKey: String
+        let state: RoutineOccurrence.State
+        let entryID: UUID?
+
+        init(_ occurrence: RoutineOccurrence) {
+            id = occurrence.persistentModelID
+            day = occurrence.dueDay
+            routineName = occurrence.routineName
+            slotKey = RoutineOccurrenceService.slotKey(for: occurrence)
+            state = occurrence.state
+            entryID = occurrence.satisfyingEntryID
+        }
+    }
+
+    enum CorrectionError: Error {
+        case occurrenceChanged
+        case invalidDose
+        case pendingChanges
+    }
+
+    /// Check off an existing occurrence in the same save as its new dose.
+    /// The caller has inserted the entry through the checked logging path.
+    static func stageTaken(
+        _ correction: Correction, by entry: DoseEntry, in context: ModelContext, now: Date = .now,
+    ) throws {
+        let occurrence = try currentOccurrence(for: correction, in: context, now: now)
+        guard occurrence.state != .logged, occurrence.satisfyingEntryID == nil else {
+            throw CorrectionError.occurrenceChanged
+        }
+        guard entry.modelContext === context, !entry.isDeleted,
+              entry.timestamp <= now, entry.journalDay() == occurrence.dueDay,
+              entry.medSlotMinutes == occurrence.slotMinutes,
+              entry.route == occurrence.route,
+              MedSchedule.identityMatches(
+                  keyA: entry.substanceUID, nameA: entry.substance,
+                  keyB: occurrence.substanceUID, nameB: occurrence.substance,
+              )
+        else { throw CorrectionError.invalidDose }
+        let entryID = entry.id
+        let claimed = try context.fetchCount(FetchDescriptor<RoutineOccurrence>(predicate: #Predicate { $0.satisfyingEntryID == entryID }))
+        guard claimed == 0 else { throw CorrectionError.invalidDose }
+
+        occurrence.state = .logged
+        occurrence.satisfyingEntryID = entry.id
+    }
+
+    /// A skip is recorded directly on the occurrence. It never creates or
+    /// removes a journal entry.
+    static func setSkipped(
+        _ skipped: Bool, for correction: Correction, in context: ModelContext, now: Date = .now,
+    ) throws {
+        let occurrence = try currentOccurrence(for: correction, in: context, now: now)
+        guard occurrence.state != .logged, occurrence.satisfyingEntryID == nil else {
+            throw CorrectionError.occurrenceChanged
+        }
+        let state: RoutineOccurrence.State = skipped ? .skipped : unloggedState(on: occurrence.dueDay, now: now)
+        guard occurrence.state != state else { return }
+        try requireCleanContext(context)
+        occurrence.state = state
+        try saveCorrection(in: context)
+        if occurrence.dueDay == Calendar.current.journalDay(for: now) {
+            DoseNotificationManager.syncMedReminders(in: context)
+        }
+    }
+
+    /// Find the one entry the occurrence actually points to. A stale link
+    /// cannot fall back to another dose of the same substance.
+    static func linkedEntry(
+        for correction: Correction, in context: ModelContext, now: Date = .now,
+    ) throws -> DoseEntry {
+        let occurrence = try currentOccurrence(for: correction, in: context, now: now)
+        guard occurrence.state == .logged, let id = occurrence.satisfyingEntryID else {
+            throw CorrectionError.occurrenceChanged
+        }
+        let entries = try context.fetch(FetchDescriptor<DoseEntry>(predicate: #Predicate { $0.id == id }))
+        guard entries.count == 1, let entry = entries.first, !entry.isDeleted else {
+            throw CorrectionError.occurrenceChanged
+        }
+        return entry
+    }
+
+    /// Clear occurrence links when a dose is removed or its identity or day
+    /// changes in the entry editor. Historical corrections never reassign an
+    /// older slot to a different dose.
+    static func stageInvalidatedLinks(
+        for entry: DoseEntry, deleting: Bool, movedBetweenDays: Bool = false,
+        in context: ModelContext, now: Date = .now,
+    ) throws {
+        let id = entry.id
+        let rows = try context.fetch(FetchDescriptor<RoutineOccurrence>(predicate: #Predicate { $0.satisfyingEntryID == id }))
+        let products = CustomSubstanceStore.shared.productMeds
+        for row in rows where row.state == .logged {
+            if !deleting, !movedBetweenDays,
+               matches(entry: snapshot(entry), occurrence: snapshot(row), products: products) {
+                continue
+            }
+            row.state = unloggedState(on: row.dueDay, now: now)
+            row.satisfyingEntryID = nil
+        }
+    }
+
+    static func saveCorrection(in context: ModelContext) throws {
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+    }
+
+    static func requireCleanContext(_ context: ModelContext) throws {
+        guard !context.hasChanges else { throw CorrectionError.pendingChanges }
+    }
+
+    private static func currentOccurrence(for correction: Correction, in context: ModelContext, now: Date) throws -> RoutineOccurrence {
+        let day = correction.day
+        guard day <= Calendar.current.journalDay(for: now) else { throw CorrectionError.occurrenceChanged }
+        let rows = try context.fetch(FetchDescriptor<RoutineOccurrence>(predicate: #Predicate { $0.dueDay == day }))
+        guard let row = rows.first(where: { $0.persistentModelID == correction.id && !$0.isDeleted }),
+              Correction(row) == correction
+        else { throw CorrectionError.occurrenceChanged }
+        return row
+    }
+
+    private nonisolated static func unloggedState(on day: Date, now: Date) -> RoutineOccurrence.State {
+        day < Calendar.current.journalDay(for: now) ? .missed : .pending
+    }
+
     /// Re-derive today's occurrence truth: expire past-day pendings to
     /// `missed`, materialize today's occurrences for due meds' slots, and
     /// re-run dose matching. `skipped` is a sticky user choice and survives;
@@ -118,12 +252,7 @@ enum RoutineOccurrenceService {
                 return ItemSnapshot(substance: item.substance, substanceUID: item.substanceUID, route: item.route, slots: times.isEmpty ? [nil] : times)
             }
         let occurrencePredicate = #Predicate<RoutineOccurrence> { $0.dueDay == today }
-        let occurrences = ((try? context.fetch(FetchDescriptor(predicate: occurrencePredicate))) ?? []).map {
-            OccurrenceSnapshot(
-                id: $0.persistentModelID, substance: $0.substance, substanceUID: $0.substanceUID, route: $0.route,
-                slotMinutes: $0.slotMinutes, state: $0.state, satisfyingEntryID: $0.satisfyingEntryID,
-            )
-        }
+        let occurrences = ((try? context.fetch(FetchDescriptor(predicate: occurrencePredicate))) ?? []).map(snapshot)
         // A window wide enough for a dose logged in any zone, narrowed to the
         // doses whose own journal day is today.
         let calendar = Calendar.current
@@ -133,17 +262,26 @@ enum RoutineOccurrenceService {
         let entryPredicate = #Predicate<DoseEntry> { $0.timestamp >= windowStart && $0.timestamp < windowEnd }
         let entries = ((try? context.fetch(FetchDescriptor(predicate: entryPredicate))) ?? [])
             .filter { $0.journalDay(in: calendar, boundaryHour: boundaryHour) == today }
-            .map {
-                EntrySnapshot(
-                    id: $0.id, substance: $0.substance, substanceUID: $0.substanceUID, route: $0.route,
-                    timestamp: $0.timestamp, combinationName: $0.combinationName,
-                    timeZoneIdentifier: $0.timeZoneIdentifier, medSlotMinutes: $0.medSlotMinutes,
-                )
-            }
+            .map(snapshot)
 
         return plan(
             dueItems: items, occurrences: occurrences, expired: expired, entries: entries,
             products: products,
+        )
+    }
+
+    private nonisolated static func snapshot(_ row: RoutineOccurrence) -> OccurrenceSnapshot {
+        OccurrenceSnapshot(
+            id: row.persistentModelID, substance: row.substance, substanceUID: row.substanceUID, route: row.route,
+            slotMinutes: row.slotMinutes, state: row.state, satisfyingEntryID: row.satisfyingEntryID,
+        )
+    }
+
+    private nonisolated static func snapshot(_ entry: DoseEntry) -> EntrySnapshot {
+        EntrySnapshot(
+            id: entry.id, substance: entry.substance, substanceUID: entry.substanceUID, route: entry.route,
+            timestamp: entry.timestamp, combinationName: entry.combinationName,
+            timeZoneIdentifier: entry.timeZoneIdentifier, medSlotMinutes: entry.medSlotMinutes,
         )
     }
 
@@ -203,14 +341,26 @@ enum RoutineOccurrenceService {
         }
 
         var claimed = Set<Int>()
+        var usedEntries = Set<UUID>()
         var assignment: [Int: UUID] = [:]
         func open(_ index: Int, for entry: EntrySnapshot) -> Bool {
             live[index].state != .skipped && !claimed.contains(index)
                 && matches(entry: entry, occurrence: live[index], products: products)
         }
         let byTime = entries.sorted { $0.timestamp < $1.timestamp }
+        // Keep a checked dose on its recorded slot when another dose could
+        // match the same slot. Untagged doses still compete by time below.
+        let entriesByID = Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for index in live.indices {
+            guard let id = live[index].existing?.satisfyingEntryID, let entry = entriesByID[id],
+                  entry.medSlotMinutes == live[index].slotMinutes, open(index, for: entry),
+                  usedEntries.insert(id).inserted
+            else { continue }
+            claimed.insert(index)
+            assignment[index] = id
+        }
         var unplaced: [EntrySnapshot] = []
-        for entry in byTime {
+        for entry in byTime where !usedEntries.contains(entry.id) {
             guard let slot = entry.medSlotMinutes,
                   let named = live.indices.first(where: { live[$0].slotMinutes == slot && open($0, for: entry) })
             else {

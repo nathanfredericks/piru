@@ -71,6 +71,220 @@ struct RoutineOccurrenceTests {
         )
     }
 
+    // MARK: - Historical corrections
+
+    @Test
+    func `A past correction links a real dose after the schedule is deleted`() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let calendar = Calendar.current
+        let today = calendar.journalDay(for: suiteNow)
+        let day = try #require(calendar.date(byAdding: .day, value: -2, to: today))
+        let med = addItem("Testine", times: [540, 780], in: context)
+        let occurrence = RoutineOccurrence(substance: "Testine", route: .oral, dueDay: day, slotMinutes: 540)
+        occurrence.state = .missed
+        context.insert(occurrence)
+        context.delete(med)
+        try context.save()
+
+        let target = RoutineOccurrenceService.Correction(occurrence)
+        let time = AdherenceCalculator.slotDate(minutes: 720, on: day)
+        let entry = DoseEntry(substance: "Testine", amount: 7, timestamp: time, medSlotMinutes: 540)
+        context.insert(entry)
+        try RoutineOccurrenceService.stageTaken(target, by: entry, in: context, now: suiteNow)
+        try context.save()
+
+        let persisted = try #require(try occurrences(in: ModelContext(container)).first)
+        #expect(persisted.state == .logged)
+        #expect(persisted.satisfyingEntryID == entry.id)
+        #expect(try occurrences(in: context).count == 1)
+        #expect(RoutineOccurrenceService.satisfiedSlotKeys(in: context, now: suiteNow).isEmpty)
+        #expect(throws: RoutineOccurrenceService.CorrectionError.occurrenceChanged) {
+            try RoutineOccurrenceService.stageTaken(target, by: entry, in: context, now: suiteNow)
+        }
+    }
+
+    @Test
+    func `A past skip edits only the existing occurrence and clears back to missed`() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let calendar = Calendar.current
+        let today = calendar.journalDay(for: suiteNow)
+        let day = try #require(calendar.date(byAdding: .day, value: -1, to: today))
+        let row = RoutineOccurrence(substance: "Testine", route: .oral, dueDay: day)
+        row.state = .missed
+        context.insert(row)
+        try context.save()
+        let original = RoutineOccurrenceService.Correction(row)
+
+        try RoutineOccurrenceService.setSkipped(true, for: original, in: context, now: suiteNow)
+        #expect(row.state == .skipped)
+        #expect(throws: RoutineOccurrenceService.CorrectionError.occurrenceChanged) {
+            try RoutineOccurrenceService.setSkipped(true, for: original, in: context, now: suiteNow)
+        }
+        try RoutineOccurrenceService.setSkipped(false, for: .init(row), in: context, now: suiteNow)
+        #expect(row.state == .missed)
+        #expect(try context.fetchCount(FetchDescriptor<DoseEntry>()) == 0)
+        #expect(try occurrences(in: context).count == 1)
+    }
+
+    @Test
+    func `A missing linked dose cannot resolve to a similar entry or another store`() throws {
+        let container = try makeContainer()
+        let otherContainer = try makeContainer()
+        let context = container.mainContext
+        let daily = Calendar.current.journalDay(for: suiteNow)
+        let row = RoutineOccurrence(substance: "Testine", route: .oral, dueDay: daily)
+        row.state = .logged
+        row.satisfyingEntryID = UUID()
+        context.insert(row)
+        let similar = addEntry("Testine", in: context)
+        try context.save()
+        let correction = RoutineOccurrenceService.Correction(row)
+
+        #expect(throws: RoutineOccurrenceService.CorrectionError.occurrenceChanged) {
+            _ = try RoutineOccurrenceService.linkedEntry(for: correction, in: context, now: suiteNow)
+        }
+        row.satisfyingEntryID = similar.id
+        try context.save()
+        #expect(try RoutineOccurrenceService.linkedEntry(for: .init(row), in: context, now: suiteNow).id == similar.id)
+        #expect(throws: RoutineOccurrenceService.CorrectionError.occurrenceChanged) {
+            _ = try RoutineOccurrenceService.linkedEntry(for: .init(row), in: otherContainer.mainContext, now: suiteNow)
+        }
+    }
+
+    @Test
+    func `A stale slot rolls back the entire checked dose batch`() async throws {
+        await SubstanceStore.shared.ensureAllLoaded()
+        let container = try makeContainer()
+        let context = container.mainContext
+        let calendar = Calendar.current
+        let day = try #require(calendar.date(byAdding: .day, value: -1, to: calendar.journalDay(for: suiteNow)))
+        let time = AdherenceCalculator.slotDate(minutes: 720, on: day)
+        let first = RoutineOccurrence(substance: "First test med", route: .oral, dueDay: day)
+        let second = RoutineOccurrence(substance: "Second test med", route: .oral, dueDay: day)
+        first.state = .missed
+        second.state = .missed
+        context.insert(first)
+        context.insert(second)
+        try context.save()
+        let corrections = [first, second].map(RoutineOccurrenceService.Correction.init)
+        try RoutineOccurrenceService.setSkipped(true, for: corrections[1], in: context, now: suiteNow)
+
+        let entries = [first.substance, second.substance].map { name in
+            (entry: DoseEntry(substance: name, amount: 1, timestamp: time), substance: nil as Substance?)
+        }
+        #expect(throws: RoutineOccurrenceService.CorrectionError.occurrenceChanged) {
+            _ = try DoseLogService.shared.checkedLogBatch(entries, colors: [], in: context, activatesLiveSession: false, beforeSave: { inserted in
+                for (correction, entry) in zip(corrections, inserted) {
+                    try RoutineOccurrenceService.stageTaken(correction, by: entry, in: context, now: suiteNow)
+                }
+            })
+        }
+        let savedContext = ModelContext(container)
+        #expect(try savedContext.fetchCount(FetchDescriptor<DoseEntry>()) == 0)
+        let saved = try occurrences(in: savedContext)
+        #expect(saved.first(where: { $0.substance == first.substance })?.state == .missed)
+        #expect(saved.first(where: { $0.substance == second.substance })?.state == .skipped)
+        #expect(!context.hasChanges)
+    }
+
+    @Test
+    func `Clearing a historical link leaves a similar dose and the next day alone`() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let calendar = Calendar.current
+        let today = calendar.journalDay(for: suiteNow)
+        let day = try #require(calendar.date(byAdding: .day, value: -1, to: today))
+        let time = AdherenceCalculator.slotDate(minutes: 720, on: day)
+        let entry = addEntry("Testine", at: time, in: context)
+        let similar = addEntry("Testine", at: time.addingTimeInterval(60), in: context)
+        let row = RoutineOccurrence(substance: "Testine", route: .oral, dueDay: day)
+        row.state = .logged
+        row.satisfyingEntryID = entry.id
+        context.insert(row)
+        let next = RoutineOccurrence(substance: "Testine", route: .oral, dueDay: today)
+        context.insert(next)
+        try context.save()
+
+        entry.timestamp = suiteNow
+        try RoutineOccurrenceService.stageInvalidatedLinks(
+            for: entry, deleting: false, movedBetweenDays: true, in: context, now: suiteNow,
+        )
+        try context.save()
+        #expect(row.state == .missed)
+        #expect(row.satisfyingEntryID == nil)
+        #expect(next.state == .pending)
+        #expect(!similar.isDeleted)
+    }
+
+    @Test
+    func `An exact historical link survives a different journal day boundary`() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let calendar = Calendar.current
+        let time = suiteNow.addingTimeInterval(-3 * 86_400)
+        let entry = addEntry("Testine", at: time, in: context)
+        let recordedDay = try #require(calendar.date(byAdding: .day, value: -1, to: entry.journalDay()))
+        let occurrence = RoutineOccurrence(substance: "Testine", route: .oral, dueDay: recordedDay)
+        occurrence.state = .logged
+        occurrence.satisfyingEntryID = entry.id
+        context.insert(occurrence)
+        try context.save()
+
+        let linked = try RoutineOccurrenceService.linkedEntry(for: .init(occurrence), in: context, now: suiteNow)
+        #expect(linked.id == entry.id)
+    }
+
+    @Test
+    func `Removal requires confirmation of the exact linked dose`() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let calendar = Calendar.current
+        let day = try #require(calendar.date(byAdding: .day, value: -1, to: calendar.journalDay(for: suiteNow)))
+        let time = AdherenceCalculator.slotDate(minutes: 720, on: day)
+        let entry = addEntry("Testine", at: time, in: context)
+        let other = addEntry("Testine", at: time, in: context)
+        let row = RoutineOccurrence(substance: "Testine", route: .oral, dueDay: day)
+        row.state = .logged
+        row.satisfyingEntryID = entry.id
+        context.insert(row)
+        try context.save()
+
+        #expect(throws: RoutineOccurrenceService.CorrectionError.occurrenceChanged) {
+            try SessionEditingService.shared.deleteOccurrenceDose(.init(row), in: context) { $0.id == other.id }
+        }
+        #expect(try context.fetchCount(FetchDescriptor<DoseEntry>()) == 2)
+        #expect(row.satisfyingEntryID == entry.id)
+
+        let confirmedID = entry.id
+        try SessionEditingService.shared.deleteOccurrenceDose(.init(row), in: context) { $0.id == confirmedID }
+        #expect(try context.fetch(FetchDescriptor<DoseEntry>()).map(\.id) == [other.id])
+        #expect(row.state == .missed)
+        #expect(row.satisfyingEntryID == nil)
+    }
+
+    @Test
+    func `Today reconciliation keeps the checked dose when there is a competing dose`() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let slot = 9 * 60
+        addItem("Testine", times: [slot], in: context)
+        RoutineOccurrenceService.reconcile(in: context, now: suiteNow)
+        let row = try #require(try occurrences(in: context).first)
+        let time = AdherenceCalculator.slotDate(minutes: slot, on: row.dueDay)
+        let earlier = addEntry("Testine", at: time.addingTimeInterval(-60), in: context)
+        earlier.medSlotMinutes = slot
+        let checked = addEntry("Testine", at: time, in: context)
+        checked.medSlotMinutes = slot
+
+        let now = max(suiteNow, time)
+        try RoutineOccurrenceService.stageTaken(.init(row), by: checked, in: context, now: now)
+        try context.save()
+        RoutineOccurrenceService.reconcile(in: context, now: now)
+        #expect(row.satisfyingEntryID == checked.id)
+    }
+
     // MARK: - Materialization
 
     @Test

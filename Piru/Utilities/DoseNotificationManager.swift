@@ -16,7 +16,7 @@ enum DoseNotificationManager {
     // MARK: - Authorization + category registry
 
     /// The single OS-permission entry point (spec §B): invoked from the
-    /// management screen's header and onboarding's reminders step — never
+    /// management screen — never
     /// lazily from a scheduling path.
     static func requestAuthorization() async -> Bool {
         await SessionNotificationScheduler.requestPermissionIfNeeded()

@@ -27,7 +27,6 @@ nonisolated extension Logger {
         case routeTour = "RouteTour"
         case sessionNotes = "SessionNotes"
         case sessionNotifications = "SessionNotifications"
-        case skinShop = "SkinShop"
         case storeHealth = "StoreHealth"
         case storeRecovery = "StoreRecovery"
         case subjectiveEffects = "SubjectiveEffects"
@@ -62,7 +61,6 @@ nonisolated extension Logger {
     static let routeTour = Logger(.routeTour)
     static let sessionNotes = Logger(.sessionNotes)
     static let sessionNotifications = Logger(.sessionNotifications)
-    static let skinShop = Logger(.skinShop)
     static let storeHealth = Logger(.storeHealth)
     static let storeRecovery = Logger(.storeRecovery)
     static let subjectiveEffects = Logger(.subjectiveEffects)

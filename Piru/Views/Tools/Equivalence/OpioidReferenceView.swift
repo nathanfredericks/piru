@@ -32,7 +32,7 @@ struct OpioidReferenceView: View {
             }
         }
         .insetGroupedListStyle()
-        .skinBackdrop()
+        .piruPageBackground()
         .appNavigationBar("Opioid MME")
         .task {
             await SubstanceStore.shared.ensureAllLoaded()

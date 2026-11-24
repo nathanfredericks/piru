@@ -19,7 +19,7 @@ struct DrinkLogView: View {
                         Text(preset.emoji)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(preset.name).font(.headline)
-                            Text("\(WatchDoseFormat.amount(preset.volumeML)) mL · \(WatchDoseFormat.amount(preset.defaultABV))%")
+                            Text("\(WatchDoseFormat.amount(preset.volumeML)) mL, \(WatchDoseFormat.amount(preset.defaultABV))%")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -87,7 +87,7 @@ struct DrinkVolumeView: View {
 
             abvStepper
 
-            Text("≈ \(WatchDoseFormat.amount(grams)) g · ≈ \(WatchDoseFormat.amount(drinks)) drinks")
+            Text("≈ \(WatchDoseFormat.amount(grams)) g, ≈ \(WatchDoseFormat.amount(drinks)) drinks")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

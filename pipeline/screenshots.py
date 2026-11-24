@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture every app screen on the simulator, in every language and every skin.
+"""Capture every app screen on the simulator, in each selected language and appearance.
 
 The app does the walking (``ScreenshotTour``, DEBUG builds, enabled by
 ``-piruScreenshots <dir>``): it seeds a persona, lands on each screen through
@@ -16,21 +16,18 @@ anyway.
 
 Output, under ``Store/shots/`` (gitignored with the rest of ``Store/``)::
 
-    en/01-journal.png                      the piru skin
-    en/skins/tsuki/01-journal-tsuki.png    every other skin the picker offers
+    en/01-journal.png                      English, light appearance
     zh-Hans/…                              the same in Simplified Chinese
     en-dark/…                              with --appearance dark|both
-    index.json                             every file with its locale, skin, screen
+    index.json                             every file with its locale, appearance, and screen
 
 Usage::
 
     pipeline/screenshots.py                          # build, then everything
-    pipeline/screenshots.py --no-build --skins none  # just the piru skin, quick
-    pipeline/screenshots.py --screens journal,quicklog --skins tsuki,yuki
+    pipeline/screenshots.py --no-build
+    pipeline/screenshots.py --screens journal,quicklog
     pipeline/screenshots.py --locales en --appearance both
-    pipeline/screenshots.py --list                   # the screen and skin names
-    pipeline/screenshots.py --wallpapers --appearance both
-                                                     # every skin's backdrop alone
+    pipeline/screenshots.py --list
 
 ``--device-type`` creates the pass's simulator from another device type, and
 ``--pose`` / ``--orientation`` set it up first through Device Hub (Xcode 27.1+,
@@ -40,11 +37,6 @@ turns the device for the pass and back afterwards::
 
     pipeline/screenshots.py --device "Piru Duo" --device-type iPhone-Duo --pose open
     pipeline/screenshots.py --device "Piru iPad" --device-type iPad-Pro-13-inch-M5-12GB --orientation landscape
-
-``--wallpapers`` shows the skin backdrop and nothing else (no chrome, no
-status bar) and captures one frame per skin, ``<skin>.png`` under
-``Store/wallpapers/`` — the scenes as phone wallpapers. Language is
-irrelevant there, so it runs one locale.
 """
 
 from __future__ import annotations
@@ -77,8 +69,6 @@ POSES = {
     "open": ("Open", "primary-1"),
 }
 
-SKIN_SOURCE = REPO / "Shared/Skin/Skin.swift"
-
 
 def run(*args: str, check: bool = True, capture: bool = True) -> str:
     result = subprocess.run(args, check=False, text=True, capture_output=capture, encoding="utf-8")
@@ -96,17 +86,7 @@ def simctl(*args: str, check: bool = True) -> str:
 
 
 def catalog_screens() -> list[str]:
-    return re.findall(r'Screen\(name: "([^"]+)"\)', TOUR_SOURCE.read_text())
-
-
-def catalog_skins() -> list[str]:
-    source = SKIN_SOURCE.read_text()
-    body = source[source.index("enum Skin:") : source.index("var id: String")]
-    cases = re.findall(r"^\s*case (\w+)$", body, re.MULTILINE)
-    shelved = set(
-        re.findall(r"\.(\w+)", re.search(r"shelved: Set<Skin> = \[([^\]]*)\]", source)[1])
-    )
-    return [case for case in cases if case not in shelved and case != "piru"]
+    return re.findall(r'(?m)^\s*Screen\(name: "([^"]+)"', TOUR_SOURCE.read_text())
 
 
 # MARK: - Simulator
@@ -366,12 +346,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--appearance", choices=["light", "dark", "both"], default="light")
     parser.add_argument("--screens", default="all", help="comma list of screen names, or all")
-    parser.add_argument("--skins", default="all", help="all, none, or a comma list of skin ids")
-    parser.add_argument(
-        "--skin-screens",
-        default=None,
-        help="screens captured per skin (default: the tour's subset)",
-    )
     parser.add_argument("--persona", default="week", help="-piruPersona fixture to seed")
     parser.add_argument("--out", default=str(REPO / "Store/shots"), help="output directory")
     parser.add_argument(
@@ -408,25 +382,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--no-fake-vitals", action="store_true", help="leave the synthetic heart-rate series out"
     )
-    parser.add_argument(
-        "--list", action="store_true", help="print the screen and skin names and exit"
-    )
-    parser.add_argument(
-        "--wallpapers",
-        action="store_true",
-        help="capture each skin's backdrop alone, as <skin>.png (default out: Store/wallpapers)",
-    )
-    args = parser.parse_args()
-    if args.wallpapers:
-        if args.out == str(REPO / "Store/shots"):
-            args.out = str(REPO / "Store/wallpapers")
-        if args.locales == "en,zh-Hans":
-            args.locales = "en"
-        # A capture taken too soon after the root is re-created for a skin
-        # change lands with the simulator's Dynamic Island painted black.
-        if args.settle == 1.2:
-            args.settle = 3.0
-    return args
+    parser.add_argument("--list", action="store_true", help="print the screen names and exit")
+    return parser.parse_args()
 
 
 def status_bar_time(clock: str) -> str:
@@ -437,17 +394,13 @@ def status_bar_time(clock: str) -> str:
 
 def main() -> None:
     args = parse_args()
-    screens, skins = catalog_screens(), catalog_skins()
+    screens = catalog_screens()
     if args.list:
         print("screens:", ", ".join(screens))
-        print("skins:  ", ", ".join(skins))
         return
     for name in [] if args.screens == "all" else args.screens.split(","):
         if name not in screens:
             sys.exit(f"✗ unknown screen {name!r} — see --list")
-    for name in [] if args.skins in ("all", "none") else args.skins.split(","):
-        if name not in skins:
-            sys.exit(f"✗ unknown skin {name!r} — see --list")
     locales = [locale.strip() for locale in args.locales.split(",") if locale.strip()]
     for locale in locales:
         if locale not in LOCALES:
@@ -484,25 +437,18 @@ def main() -> None:
             label = locale if appearance == "light" else f"{locale}-dark"
             leaf = out / label
             leaf.mkdir(parents=True, exist_ok=True)
-            print(f"▸ {label}: {args.persona} persona, skins={args.skins}")
+            print(f"▸ {label}: {args.persona} persona")
             launch_args = [
                 "-piruScreenshots", str(leaf),
                 "-piruScreenshotScreens", args.screens,
-                "-piruScreenshotSkins", args.skins,
                 "-piruScreenshotSettle", str(args.settle),
                 "-piruPersona", args.persona,
                 "-piruNow", args.clock,
-                "-piruOwnEverything",
-                "-hasCompletedOnboarding", "YES",
                 "-install.firstBuild", "999999",
                 "-AppNavigator.selectedTab", "journal",
                 "-AppleLanguages", f"({locale})",
                 "-AppleLocale", LOCALES[locale],
             ]  # fmt: skip
-            if args.skin_screens:
-                launch_args += ["-piruScreenshotSkinScreens", args.skin_screens]
-            if args.wallpapers:
-                launch_args.append("-piruWallpapers")
             if not args.no_fake_vitals:
                 launch_args.append("-piruFakeVitals")
             result = capture_pass(udid, leaf, launch_args, args.timeout, label, display)
@@ -518,10 +464,6 @@ def main() -> None:
     (out / "index.json").write_text(json.dumps(index, indent=2, sort_keys=True) + "\n")
     elapsed = time.monotonic() - started
     print(f"\n{len(index)} screenshots in {out} ({elapsed / 60:.1f} min)")
-    by_skin: dict[str, int] = {}
-    for entry in index:
-        by_skin[entry["skin"]] = by_skin.get(entry["skin"], 0) + 1
-    print("  " + ", ".join(f"{skin} {count}" for skin, count in by_skin.items()))
     if failed:
         print(f"✗ {len(failed)} not captured:\n  " + "\n  ".join(failed))
         sys.exit(1)

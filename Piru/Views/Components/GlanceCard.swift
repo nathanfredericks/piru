@@ -116,7 +116,6 @@ struct GlanceCard<Content: View>: View {
             .padding(Spacing.xxl)
             .frame(maxWidth: .infinity, alignment: .leading)
             .themeCard()
-            .skinFrameCorners()
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -131,7 +130,7 @@ struct EstimationTag: View {
             .foregroundStyle(Theme.secondaryLabel)
             .padding(.horizontal, 7)
             .padding(.vertical, Spacing.xxs)
-            .background(Color.platformSecondarySystemFill, in: skinChipShape())
+            .background(Color.platformSecondarySystemFill, in: Capsule())
             .fixedSize()
     }
 }

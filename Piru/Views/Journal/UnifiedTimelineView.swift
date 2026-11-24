@@ -58,7 +58,7 @@ struct UnifiedTimelineView: View {
                 .padding(.bottom, 40)
                 .scaleEffect(x: 1, y: pinchScale, anchor: .top)
             }
-            .skinBackdrop()
+            .piruPageBackground()
             .simultaneousGesture(magnification)
             .toolbar {
                 ToolbarItem(placement: .platformTopBarTrailing) {

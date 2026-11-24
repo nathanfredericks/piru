@@ -24,7 +24,6 @@ struct EffectGlossaryView: View {
                     } header: {
                         Text(verbatim: rollup.name.capitalizedFirst)
                     }
-                    .listRowBackground(CardBackground())
                 }
             } else {
                 let groups = ontology.searchGrouped(query, limit: Self.searchLimit)
@@ -39,13 +38,11 @@ struct EffectGlossaryView: View {
                         } header: {
                             Text(verbatim: group.title.capitalizedFirst)
                         }
-                        .listRowBackground(CardBackground())
                     }
                 }
             }
         }
         .insetGroupedListStyle()
-        .themedPage()
         .searchable(text: $query, placement: .automatic, prompt: Text("Search effects"))
         .task { ontology.load() }
     }

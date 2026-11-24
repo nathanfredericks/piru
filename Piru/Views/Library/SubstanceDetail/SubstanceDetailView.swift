@@ -13,17 +13,11 @@ struct SubstanceDetailView: View {
     @State private var baseSubstance: Substance
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appNavigator) private var navigator
-    @Environment(\.colorScheme) private var colorScheme
     @Query private var historyEntries: [DoseEntry]
     @Query private var favorites: [FavoriteSubstance]
     @Query private var inventoryItems: [InventoryItem]
 
     @State private var customStore = CustomSubstanceStore.shared
-
-    /// Holding the @Observable profile store as @State (rather than reading
-    /// `UserProfileStore.shared.disclosureTier` via a plain computed) is what makes
-    /// SwiftUI re-render this view when the user changes the tier in Settings.
-    @State private var profileStore = UserProfileStore.shared
 
     /// Async-loaded, store-backed detail data (provenance, receptor bindings, PK,
     /// metabolism, history aggregates). Filled in the `.task` blocks below so each
@@ -46,27 +40,20 @@ struct SubstanceDetailView: View {
     /// Drives the push to the grouped "All effects" screen from the Effects
     /// header's "Show All" (a header NavigationLink isn't reliably hittable).
     @State private var showAllEffects = false
-    /// Presents the "Share Substance" sheet (colorful specimen card + detail picker).
+    /// Presents the "Share Substance" sheet.
     @State private var showShareSheet = false
-    /// Whether the header's 40pt display title is still on screen. The bar title
-    /// cross-fades in as it leaves, so the name is never printed twice at rest —
-    /// `.inline` alone draws the bar title at every offset, including zero.
-    @State private var headerTitleVisible = true
-
-    /// Scroll distance at which the bar takes over the title: the header's 4pt
-    /// top inset plus the 40pt display line. A name that wraps to two lines
-    /// hands over while its second line is still passing under the bar, which
-    /// reads as slightly eager rather than wrong.
-    private static let titleHandoffOffset: CGFloat = 44
-
+    @State private var loadedSubstanceName: String?
+    @State private var didScrollToSources = false
     /// The product the page opened on (a search for "Concerta"), preselected in
     /// the Branded formulations picker. Ignored when the substance has no such
     /// branded duration.
     private let initialBrand: String?
+    private let showsSources: Bool
 
-    init(substance: Substance, brand: String? = nil) {
+    init(substance: Substance, brand: String? = nil, showsSources: Bool = false) {
         _baseSubstance = State(initialValue: substance)
         initialBrand = brand
+        self.showsSources = showsSources
         let name = substance.name
         _historyEntries = Query(
             filter: #Predicate<DoseEntry> { entry in
@@ -87,14 +74,6 @@ struct SubstanceDetailView: View {
     /// reflects the user's customizations and updates live when they change.
     private var substance: Substance {
         personalOverride.map { baseSubstance.applyingOverride(from: $0) } ?? baseSubstance
-    }
-
-    private var profile: UserProfile {
-        profileStore.disclosureTier
-    }
-
-    private var policy: DisclosurePolicy {
-        .init(profile: profile)
     }
 
     /// First-hand Erowid reports show on the pushed "All effects" screen, gated
@@ -189,65 +168,45 @@ struct SubstanceDetailView: View {
     }
 
     var body: some View {
-        List {
-            SubstanceDetailLayout(
-                substance: substance,
-                overview: substance.overview,
-                model: model,
-                policy: policy,
-                profile: profile,
-                routes: routes,
-                routeSelection: routeSelection,
-                saltSelection: saltSelection,
-                isomerSelection: isomerSelection,
-                initialBrand: initialBrand,
-                historyEntries: historyEntries,
-                inventoryItems: inventoryItems,
-                selectedSaltForm: selectedSaltForm,
-                personalNotes: personalOverride?.notes,
-                showAllEffects: $showAllEffects,
-                onGlossary: { glossaryTopic = $0 },
-            )
-            .listRowBackground(CardBackground())
-        }
-        // The list's default top inset sits the title ~55pt under the bar. A
-        // system large title sits right beneath it, and this screen's first row
-        // *is* that title, so the inset only reads as a gap.
-        .contentMargins(.top, 0, for: .scrollContent)
-        // Deriving a `Bool` (not the raw offset) means the action fires only on
-        // the handoff itself, not on every scroll frame.
-        //
-        // Tracks the scroll offset rather than the title row's own visibility:
-        // the List builds rows lazily, so once the header is recycled it stops
-        // reporting anything at all and an `onScrollVisibilityChange` on it
-        // never delivers the `false` that would reveal the bar title.
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top > Self.titleHandoffOffset
-        } action: { _, scrolledPastTitle in
-            headerTitleVisible = !scrolledPastTitle
-        }
-        .scrollContentBackground(.hidden)
-        // The skeleton belongs to the *screen*, not to the header row. Drawn
-        // inside the row it was clipped by the row's bounds — a molecule sliced
-        // off mid-bond reads as a rendering bug rather than a watermark. Here it
-        // sits behind the whole list and simply runs off the trailing edge.
-        .background(alignment: .topTrailing) {
-            ZStack(alignment: .topTrailing) {
-                SkinBackdrop()
-                if let structure = model.moleculeStructure {
-                    MoleculeWatermark(structure: structure)
-                        .frame(width: 260, height: 260)
-                        .opacity(colorScheme == .dark ? 0.12 : 0.07)
-                        .offset(x: 78, y: 4)
-                }
+        let sourceLinks = model.sourceLinks(for: substance)
+        let shouldScrollToSources = showsSources && loadedSubstanceName == baseSubstance.name && !sourceLinks.isEmpty
+
+        ScrollViewReader { proxy in
+            List {
+                SubstanceDetailLayout(
+                    substance: substance,
+                    overview: substance.overview,
+                    howItWorks: substance.mechanismOfAction?.referenceProse,
+                    model: model,
+                    sourceLinks: sourceLinks,
+                    showsSources: showsSources,
+                    routes: routes,
+                    routeSelection: routeSelection,
+                    saltSelection: saltSelection,
+                    isomerSelection: isomerSelection,
+                    initialBrand: initialBrand,
+                    historyEntries: historyEntries,
+                    inventoryItems: inventoryItems,
+                    selectedSaltForm: selectedSaltForm,
+                    personalNotes: personalOverride?.notes,
+                    showAllEffects: $showAllEffects,
+                    onGlossary: { glossaryTopic = $0 },
+                )
             }
-            .ignoresSafeArea()
+            .task(id: shouldScrollToSources) {
+                guard shouldScrollToSources else {
+                    didScrollToSources = false
+                    return
+                }
+                guard !didScrollToSources else { return }
+                await Task.yield()
+                guard !Task.isCancelled else { return }
+                proxy.scrollTo(SubstanceDetailScrollTarget.sources, anchor: .top)
+                didScrollToSources = true
+            }
         }
-        // Still set, so a screen pushed from here gets the right back-button
-        // label; the bar's *rendered* title is the principal item below, which
-        // is the only way to gate it on scroll position.
         .navigationTitle(substance.displayTitle)
-        .inlineNavigationTitle()
+        .navigationBarTitleDisplayMode(.large)
         .navigationDestination(isPresented: $showAllEffects) {
             EffectsAndIntensityView(substanceName: substance.name, showsExperienceReports: showsErowidReports)
         }
@@ -258,12 +217,12 @@ struct SubstanceDetailView: View {
             SubstanceShareSheet(substance: substance, route: routes.activeSubstanceRoute)
         }
         .toolbar { toolbarContent }
-        .task(id: TaskKey(substanceName: substance.name, profile: profile)) {
-            model.load(substanceName: substance.name, category: substance.category, policy: policy)
-        }
         .task(id: baseSubstance.name) {
-            // Upgrade the pushed shell to the full resolved record off the push.
+            await SubstanceStore.shared.ensureAllLoaded()
+            guard !Task.isCancelled else { return }
             upgradeToFullRecord()
+            model.load(substanceName: substance.name, category: substance.category)
+            loadedSubstanceName = substance.name
         }
         .task(id: historySignature) {
             model.rebuildHistoryStats(from: historyEntries)
@@ -271,32 +230,14 @@ struct SubstanceDetailView: View {
     }
 
     @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
-        // Hidden while the header's display title is on screen, so the name
-        // isn't printed twice; fades in once that title scrolls away. Kept in
-        // the accessibility tree throughout — VoiceOver users navigate by the
-        // bar title and shouldn't lose it to a scroll position.
-        ToolbarItem(placement: .principal) {
-            Text(substance.displayTitle)
-                .cardTitle()
-                .lineLimit(1)
-                .opacity(headerTitleVisible ? 0 : 1)
-                .animation(.easeInOut(duration: 0.18), value: headerTitleVisible)
-                .accessibilityHidden(false)
-        }
         ToolbarItem(placement: .platformTopBarTrailing) {
             Button {
                 showShareSheet = true
             } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .foregroundStyle(Theme.accent)
+                Label("Share drug info", systemImage: "square.and.arrow.up")
             }
-            .accessibilityLabel("Share drug info")
         }
-        // Share and the overflow menu share one glass platter (no separator).
         ToolbarItem(placement: .platformTopBarTrailing) {
-            // Everything that isn't Share lives in one overflow menu (Apple's Files-app pattern) —
-            // four bar buttons was a button too many. Favorite, Personalize, and the detail-level
-            // (tier) switcher all fold in here; the tier choices render as an inline checkmark list.
             Menu {
                 // Logging is also a button under the dose card — this is the
                 // "I already know what I want" path, reachable without scrolling
@@ -334,28 +275,9 @@ struct SubstanceDetailView: View {
                         }
                     }
                 }
-
-                Section("Detail level") {
-                    Picker("Detail level", selection: Binding(
-                        get: { profile },
-                        set: { profileStore.setDisclosureTier($0) },
-                    )) {
-                        ForEach(UserProfile.allCases) { tier in
-                            Label(tier.displayName, systemImage: tier.icon).tag(tier)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                }
             } label: {
-                Image(systemName: "ellipsis")
-                    .foregroundStyle(Theme.accent)
+                Label("More", systemImage: "ellipsis")
             }
-            .accessibilityLabel("More")
         }
-    }
-
-    private struct TaskKey: Hashable {
-        let substanceName: String
-        let profile: UserProfile
     }
 }

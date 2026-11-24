@@ -238,7 +238,7 @@ extension SubstanceReadModel {
                     if let existing = byFinding[key] {
                         byFinding[key] = PharmacogeneticHit(
                             id: existing.id,
-                            gene: "\(existing.gene) · \(gene)",
+                            gene: "\(existing.gene), \(gene)",
                             phenotypeEffects: existing.phenotypeEffects,
                             sourceSlug: existing.sourceSlug,
                             doi: existing.doi,

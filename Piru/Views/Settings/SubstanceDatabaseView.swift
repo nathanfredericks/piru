@@ -24,9 +24,7 @@ struct SubstanceDatabaseView: View {
                     Text("Data from published literature, product labels, and community databases, provided as is and without warranty. Not medical advice.")
                 }
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Substance Database")
         .inlineNavigationTitle()
     }

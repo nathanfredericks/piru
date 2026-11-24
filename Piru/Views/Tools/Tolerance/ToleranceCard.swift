@@ -1,23 +1,16 @@
 import Charts
 import SwiftUI
 
-/// One mechanism class's card: a family-color dot + tier-aware name + "Modeled" capsule, an optional
-/// contributor row, the segmented tolerance bar, the recovery chart, and trimmed safety notes.
-/// Density scales with `tier`. The level has no word: the bar is the whole readout.
+/// A mechanism class's modeled tolerance, recovery chart, and safety notes.
 struct ToleranceCard: View {
     let row: ToleranceRow
-    let tier: UserProfile
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
             ToleranceCardHeader(
                 color: row.familyColor,
-                name: toleranceClassName(row.snapshot.receptorClass, tier: tier),
+                name: row.snapshot.receptorClass.casualName,
             )
-
-            if tier != .casual, !row.snapshot.contributors.isEmpty {
-                ToleranceContributorChips(contributors: row.snapshot.contributors, color: row.familyColor)
-            }
 
             // Effect-selective classes (GABA, α2δ) split into the effect ladder instead of one gauge:
             // sedation fades while memory and coordination do not, which one bar cannot say.
@@ -25,7 +18,6 @@ struct ToleranceCard: View {
                 ToleranceBar(
                     bands: row.bands,
                     level: row.snapshot.severity,
-                    showsLegend: tier != .casual,
                 )
             } else {
                 EffectLadderView(snapshot: row.snapshot)
@@ -56,64 +48,27 @@ struct ToleranceCardHeader: View {
     }
 }
 
-struct ToleranceContributorChips: View {
-    let contributors: [String]
-    let color: Color
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Spacing.sm) {
-                ForEach(contributors, id: \.self) { name in
-                    Text(CustomSubstanceStore.shared.displayName(for: name))
-                        .capsuleChip(text: color, fill: color)
-                }
-            }
-        }
-    }
-}
-
 /// The segmented, part-to-whole tolerance bar: how toleranced you are, split by which recovery layer.
 struct ToleranceBar: View {
     let bands: [ToleranceBand]
     /// Overall fill, 0–1 — spoken to VoiceOver as a share of the bar.
     let level: Double
-    let showsLegend: Bool
-
-    private var multiBand: Bool {
-        bands.count > 1
-    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.secondary.opacity(Theme.Opacity.tintActive))
-                    HStack(spacing: multiBand ? 1.5 : 0) {
-                        ForEach(bands) { band in
-                            Rectangle()
-                                .fill(band.color)
-                                .frame(width: max(0, geo.size.width * band.widthFraction))
-                        }
-                    }
-                    .clipShape(skinChipShape())
-                }
-            }
-            .frame(height: 10)
-
-            if showsLegend, multiBand {
-                HStack(spacing: Spacing.lg) {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.secondary.opacity(Theme.Opacity.tintActive))
+                HStack(spacing: bands.count > 1 ? 1.5 : 0) {
                     ForEach(bands) { band in
-                        HStack(spacing: Spacing.xs) {
-                            LegendDot(color: band.color, size: .compact)
-                            Text(band.label)
-                        }
+                        Rectangle()
+                            .fill(band.color)
+                            .frame(width: max(0, geometry.size.width * band.widthFraction))
                     }
-                    Spacer(minLength: 0)
                 }
-                .font(.caption2)
-                .foregroundStyle(Theme.secondaryLabel)
+                .clipShape(Capsule())
             }
         }
+        .frame(height: 10)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Modeled tolerance"))
         .accessibilityValue(Text(min(1, max(0, level)), format: .percent.precision(.fractionLength(0))))

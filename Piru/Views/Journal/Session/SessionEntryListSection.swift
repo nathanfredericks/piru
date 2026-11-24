@@ -72,12 +72,12 @@ struct SessionEntryListSection: View {
         let countText = entries.count == 1
             ? String(localized: "1 entry")
             : String(localized: "\(entries.count) doses")
-        let noteText = noteDisplays.isEmpty ? "" : " · " + (noteDisplays.count == 1
+        let noteText = noteDisplays.isEmpty ? "" : ", " + (noteDisplays.count == 1
             ? String(localized: "1 note")
             : String(localized: "\(noteDisplays.count) notes"))
         guard let first = entries.first?.timestamp,
               let last = entries.last?.timestamp,
               last > first else { return countText + noteText }
-        return "\(countText) · \(last.timeIntervalSince(first).durationHM)" + noteText
+        return "\(countText), \(last.timeIntervalSince(first).durationHM)" + noteText
     }
 }

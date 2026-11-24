@@ -682,7 +682,6 @@ private struct SlotRowView: View {
             Text(subtitle)
                 .font(.footnote.monospacedDigit())
             if let timeText {
-                Text("·")
                 Text(timeText)
                     .font(.footnote.monospacedDigit())
             }

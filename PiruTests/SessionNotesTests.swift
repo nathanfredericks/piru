@@ -97,7 +97,7 @@ struct TripReportFormattingTests {
     func `Structure line omits what was not captured`() {
         #expect(TripReport.structureLine(shulgin: nil, mood: nil, energy: nil, heartRate: nil) == "")
         #expect(TripReport.structureLine(shulgin: 2, mood: nil, energy: nil, heartRate: nil) == "++")
-        #expect(TripReport.structureLine(shulgin: 0, mood: 2, energy: -1, heartRate: 84) == "± · mood +2 · energy −1 · ♥ 84")
+        #expect(TripReport.structureLine(shulgin: 0, mood: 2, energy: -1, heartRate: 84) == "±, mood +2, energy −1, ♥ 84")
         #expect(TripReport.structureLine(shulgin: 9, mood: 0, energy: nil, heartRate: nil) == "mood 0")
     }
 
@@ -106,7 +106,7 @@ struct TripReportFormattingTests {
         #expect(TripReport.moodEnergyCell(mood: nil, energy: nil) == "")
         #expect(TripReport.moodEnergyCell(mood: 2, energy: 0) == "+2 / 0")
         #expect(TripReport.moodEnergyCell(mood: nil, energy: -1) == "– / −1")
-        #expect(TripReport.moodEnergyCell(mood: 1, energy: nil, heartRate: 84) == "+1 / – · ♥ 84")
+        #expect(TripReport.moodEnergyCell(mood: 1, energy: nil, heartRate: 84) == "+1 / –, ♥ 84")
         #expect(TripReport.moodEnergyCell(mood: nil, energy: nil, heartRate: 84) == "♥ 84")
     }
 
@@ -159,9 +159,9 @@ struct TripReportBuildTests {
         #expect(nauseaFirst.at == start.addingTimeInterval(40 * 60))
 
         let md = report.markdown(locale: Locale(identifier: "en_US"), calendar: Self.utc)
-        #expect(md.hasPrefix("# LSD · November 14, 2023\n"))
+        #expect(md.hasPrefix("# LSD, November 14, 2023\n"))
         #expect(md.contains("Started 10:13"))
-        #expect(md.contains("1 entry · 2 notes · last note at T+2:05"))
+        #expect(md.contains("1 entry, 2 notes, last note at T+2:05"))
         #expect(md.contains("| T+ | Time | Substance | Dose | Route |"))
         #expect(md.contains("| T+0:00 | "))
         #expect(md.contains(" | LSD | 100 µg | sublingual |"))
@@ -169,7 +169,7 @@ struct TripReportBuildTests {
         #expect(md.contains("| T+0:40 | "))
         #expect(md.contains(" | ± |  | queasy; _\(nausea.name)_ |"))
         #expect(md.contains("| T+2:05 | "))
-        #expect(md.contains(" | +++ | +2 / – | **Check-in**; patterns; _\(geometry.name) · \(nausea.name)_ |"))
+        #expect(md.contains(" | +++ | +2 / – | **Check-in**; patterns; _\(geometry.name), \(nausea.name)_ |"))
         #expect(md.contains("## Descriptors by domain"))
         #expect(md.contains("| Domain | Descriptor | First noted |"))
         #expect(md.contains("| \(nausea.domain.capitalized) | \(nausea.name) | T+0:40 |"))
@@ -197,8 +197,8 @@ struct TripReportBuildTests {
         let report = TripReport.build(session: session)
         #expect(report.substances == ["LSD", "Cannabis"])
         let md = report.markdown(locale: Locale(identifier: "en_US"), calendar: Self.utc)
-        #expect(md.hasPrefix("# Quiet Saturday · November 14, 2023\n\n**LSD + Cannabis**\n"))
-        #expect(md.contains("3 entries · 1 note"))
+        #expect(md.hasPrefix("# Quiet Saturday, November 14, 2023\n\n**LSD + Cannabis**\n"))
+        #expect(md.contains("3 entries, 1 note"))
     }
 }
 

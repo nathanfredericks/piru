@@ -39,7 +39,6 @@ struct JournalSyncList<Rows: View>: View {
                     Section { Label(error, systemImage: "exclamationmark.circle") }
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .disabled(action?.busy == true)
         .toolbar {
@@ -47,7 +46,6 @@ struct JournalSyncList<Rows: View>: View {
                 ToolbarItem(placement: .topBarTrailing) { ProgressView() }
             }
         }
-        .themedPage()
         .inlineNavigationTitle()
         .navigationTitle(title)
     }

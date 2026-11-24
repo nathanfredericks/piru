@@ -14,7 +14,7 @@ struct AppNavigatorTests {
         let suite = "AppNavigatorTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defaults.removePersistentDomain(forName: suite)
-        return AppNavigator(selectedTab: selectedTab, storage: defaults, layout: TabLayoutStore(defaults: defaults))
+        return AppNavigator(selectedTab: selectedTab, storage: defaults)
     }
 
     // MARK: - Tabs
@@ -31,10 +31,10 @@ struct AppNavigatorTests {
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
 
-        let nav = AppNavigator(storage: defaults, layout: TabLayoutStore(defaults: defaults))
+        let nav = AppNavigator(storage: defaults)
         nav.select(.library)
 
-        let nav2 = AppNavigator(storage: defaults, layout: TabLayoutStore(defaults: defaults))
+        let nav2 = AppNavigator(storage: defaults)
         #expect(nav2.selectedTab == .library)
     }
 
@@ -45,7 +45,7 @@ struct AppNavigatorTests {
         defer { defaults.removePersistentDomain(forName: suite) }
 
         defaults.set(AppTab.tools.rawValue, forKey: "AppNavigator.selectedTab")
-        let nav = AppNavigator(selectedTab: .insights, storage: defaults, layout: TabLayoutStore(defaults: defaults))
+        let nav = AppNavigator(selectedTab: .insights, storage: defaults)
         #expect(nav.selectedTab == .insights)
     }
 
@@ -315,7 +315,7 @@ struct AppNavigatorTests {
 
     @Test
     func `revealOrPresent switches to the tab already showing the session, without a sheet`() {
-        let nav = makeNavigator(selectedTab: .tools)
+        let nav = makeNavigator(selectedTab: .insights)
         let id = UUID()
         nav.push(.session(id: id), in: .journal)
         nav.revealOrPresentSessionDetail(currentSessionID: id)
@@ -325,7 +325,7 @@ struct AppNavigatorTests {
 
     @Test
     func `revealOrPresent trims routes stacked above the revealed session`() {
-        let nav = makeNavigator(selectedTab: .tools)
+        let nav = makeNavigator(selectedTab: .insights)
         let id = UUID()
         nav.push(.session(id: id), in: .journal)
         nav.push(.entry(timestamp: .now, id: UUID()), in: .journal)
@@ -335,12 +335,12 @@ struct AppNavigatorTests {
 
     @Test
     func `revealOrPresent prefers the selected tab when several show the session`() {
-        let nav = makeNavigator(selectedTab: .search)
+        let nav = makeNavigator(selectedTab: .library)
         let id = UUID()
         nav.push(.session(id: id), in: .journal)
-        nav.push(.session(id: id), in: .search)
+        nav.push(.session(id: id), in: .library)
         nav.revealOrPresentSessionDetail(currentSessionID: id)
-        #expect(nav.selectedTab == .search)
+        #expect(nav.selectedTab == .library)
     }
 
     @Test
@@ -363,7 +363,7 @@ struct AppNavigatorTests {
 
     @Test
     func `apply reveals an open session for a day link instead of presenting`() {
-        let nav = makeNavigator(selectedTab: .tools)
+        let nav = makeNavigator(selectedTab: .insights)
         let id = UUID()
         nav.push(.session(id: id), in: .journal)
         nav.apply(DeepLinkOutcome(tab: .journal, sheet: .sessionDetail), currentSessionID: id)
@@ -373,7 +373,7 @@ struct AppNavigatorTests {
 
     @Test
     func `apply presents the day sheet when the session is not open`() {
-        let nav = makeNavigator(selectedTab: .tools)
+        let nav = makeNavigator(selectedTab: .insights)
         nav.apply(DeepLinkOutcome(tab: .journal, sheet: .sessionDetail), currentSessionID: UUID())
         #expect(nav.selectedTab == .journal)
         #expect(nav.sheetStack == [.sessionDetail])
@@ -423,7 +423,8 @@ struct AppNavigatorTests {
         snap.paths[.journal] = try [.session(id: #require(UUID(uuidString: "00000000-0000-0000-0000-000000000030")))]
         snap.sheetStack = [.help, .settings]
         nav.snapshot = snap
-        #expect(nav.selectedTab == .tools)
+        #expect(nav.selectedTab == .library)
+        #expect(nav.path(for: .library) == [.toolsHub])
         #expect(nav.path(for: .journal).count == 1)
         #expect(nav.sheetStack == [.help, .settings])
     }
@@ -490,7 +491,6 @@ struct RoutesCodableTests {
         SheetRoute.quickLog(routine: nil),
         .settings,
         .help,
-        .onboarding,
         .sessionDetail,
         .entryDetail(timestamp: Date(timeIntervalSince1970: 100), id: nil),
         .entryDetail(

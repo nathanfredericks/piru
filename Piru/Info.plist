@@ -40,17 +40,6 @@
 	<string>$(PIRU_BUNDLE_ID)</string>
 	<key>PiruLegacyAppGroup</key>
 	<string>$(PIRU_LEGACY_APP_GROUP)</string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Fredoka-Variable.ttf</string>
-		<string>DotGothic16-Regular.ttf</string>
-		<string>Fraunces-Variable.ttf</string>
-		<string>PressStart2P-Regular.ttf</string>
-		<string>Saira-Variable.ttf</string>
-		<string>Limelight-Regular.ttf</string>
-		<string>JosefinSans-Variable.ttf</string>
-		<string>Shrikhand-Regular.ttf</string>
-	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

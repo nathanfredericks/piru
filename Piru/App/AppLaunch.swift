@@ -23,10 +23,6 @@ enum AppLaunch {
         // substances and units, or the notification choices the schedulers
         // gate on. Each binding's one-time migrations run here too.
         StoreBinding.bindAll(to: container)
-        // Point `Skin.current` at the observable store so the semantic-color
-        // shorthands in Shared/ follow a skin change, not a UserDefaults snapshot.
-        SkinStore.activate()
-
         // Automatic lightweight migration fills the SAME UUID into every
         // pre-existing DoseEntry when it adds `id` (the default expression is
         // evaluated once) — uniquify before any UI reads. Idempotent; gated so
@@ -61,7 +57,7 @@ enum AppLaunch {
 
     // MARK: - After the first frame
 
-    /// The launch passes: warm the substance catalog, count the launch, run the
+    /// The launch passes: warm the substance catalog, run the
     /// store's migrations and backfills, restore the active session, and roll
     /// the reminder horizon forward. Call once from the root view's `.task`.
     static func finishLaunching(container: ModelContainer) async {
@@ -88,17 +84,10 @@ enum AppLaunch {
                 )
             }
         }
-        // First-run nudge sequencing: bump the launch counter and record whether a dose
-        // has ever been logged, so the tips ladder (log a dose → where settings live) and
-        // the Discord invite only surface once the user is genuinely engaged.
-        let launches = UserDefaults.standard.integer(forKey: "appLaunchCount") + 1
-        UserDefaults.standard.set(launches, forKey: "appLaunchCount")
-        let hasDose = ((try? container.mainContext.fetchCount(FetchDescriptor<DoseEntry>())) ?? 0) > 0
-        OnboardingTips.configure()
-        OnboardingTips.updateEngagement(hasLoggedDose: hasDose)
+        ContextualTips.configure()
 
         // Warm the search-history store (opens its App Group suite + decodes the
-        // recent list) at launch so the first Search-tab open doesn't pay the
+        // recent list) at launch so the first search doesn't pay the
         // cold first-touch on its hot path.
         _ = SearchHistoryStore.shared.recent
 

@@ -15,7 +15,7 @@ struct TagChipsView: View {
                 Image(systemName: "tag")
                     .font(compact ? .caption2 : .caption)
                     .foregroundStyle(Theme.tertiaryLabel)
-                Text(tags.joined(separator: " · "))
+                Text(tags.joined(separator: ", "))
                     .font(compact ? .caption2 : .caption)
                     .foregroundStyle(Theme.secondaryLabel)
                     .lineLimit(1)
@@ -56,7 +56,7 @@ struct TagEditorView: View {
                         .padding(.vertical, Spacing.xs)
                         .background(Theme.accent.opacity(Theme.Opacity.tint))
                         .foregroundStyle(Theme.accent)
-                        .clipShape(skinChipShape())
+                        .clipShape(Capsule())
                     }
                 }
             }
@@ -89,7 +89,7 @@ struct TagEditorView: View {
                                 .padding(.vertical, Spacing.xs)
                                 .background(Color.platformSecondarySystemFill)
                                 .foregroundStyle(Theme.secondaryLabel)
-                                .clipShape(skinChipShape())
+                                .clipShape(Capsule())
                         }
                     }
                 }

@@ -25,10 +25,8 @@ struct DrugClassGroupView: View {
                     }
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
-        .themedPage()
         .navigationTitle(Text(category.browseTitle))
         .inlineNavigationTitle()
         .task {
@@ -93,7 +91,6 @@ struct DrugClassDetailView: View {
             }
         }
         .insetGroupedListStyle()
-        .themedPage()
         .navigationTitle(Text(verbatim: context?.title ?? ""))
         .inlineNavigationTitle()
         .task {
@@ -125,7 +122,6 @@ struct DrugClassDetailView: View {
             .padding(.vertical, Spacing.xs)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .listRowBackground(CardBackground())
     }
 
     @ViewBuilder
@@ -143,7 +139,6 @@ struct DrugClassDetailView: View {
             } header: {
                 Text(title)
             }
-            .listRowBackground(CardBackground())
         }
     }
 
@@ -159,7 +154,6 @@ struct DrugClassDetailView: View {
             } header: {
                 Text("^[\(names.count) substance](inflect: true)")
             }
-            .listRowBackground(CardBackground())
         }
     }
 
@@ -179,7 +173,6 @@ struct DrugClassDetailView: View {
             } header: {
                 Text("References")
             }
-            .listRowBackground(CardBackground())
         }
     }
 }
@@ -205,11 +198,9 @@ struct DrugClassListView: View {
                 } header: {
                     Text(group.category.browseTitle)
                 }
-                .listRowBackground(CardBackground())
             }
         }
         .insetGroupedListStyle()
-        .themedPage()
         .task {
             guard groups.isEmpty else { return }
             // Families ordered by how many classes they hold, so the ones with

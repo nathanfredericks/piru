@@ -250,7 +250,15 @@ extension DataExportImport {
         if let profile = file.profile {
             let existing = try context.fetch(FetchDescriptor<UserProfileRecord>()).first
             if let existing {
-                if PiruProfileData(existing) == PiruProfileData(UserProfileRecord()) { profile.apply(to: existing) }
+                let defaults = PiruProfileData(UserProfileRecord())
+                var local = PiruProfileData(existing)
+                let localTier = local.disclosureTier
+                local.disclosureTier = defaults.disclosureTier
+                if local == defaults {
+                    var restored = profile
+                    if localTier != defaults.disclosureTier { restored.disclosureTier = localTier }
+                    restored.apply(to: existing)
+                }
             } else {
                 let record = UserProfileRecord()
                 profile.apply(to: record)

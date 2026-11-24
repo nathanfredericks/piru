@@ -267,116 +267,15 @@ struct ColorContrastTests {
         }
     }
 
-    // MARK: - Skins
-
-    /// Every skin's tokens clear the same floors as the default's, on that
-    /// skin's own card. The default skin's light card is the measured material
-    /// color; an edged skin's card is solid, so it resolves from the token.
-    private static func card(for skin: Skin, style: UIUserInterfaceStyle) -> RGB {
-        switch skin {
-        case .piru: style == .light ? cardLight : cardDark
-        default: RGB(skin.cardBackground, style: style)
-        }
-    }
+    // MARK: - Accent contrast
 
     @Test
-    func `Every skin's text tokens are legible on its card`() {
-        for skin in Skin.allCases {
-            for style in [UIUserInterfaceStyle.light, .dark] {
-                let surface = Self.card(for: skin, style: style)
-                let mode = style == .light ? "light" : "dark"
-                // The default skin's accent is pinned below, not gated here.
-                var texts: [(String, Color)] = [
-                    ("secondaryLabel", skin.secondaryLabel),
-                    ("eyebrow", skin.eyebrow),
-                ] + SemanticRole.allCases.map { ("\($0) text", skin.semantic($0, .text)) }
-                if skin != .piru { texts.append(("accent", skin.accent)) }
-                for (name, color) in texts {
-                    let resolved = RGB(color, style: style)
-                    let ratio = resolved.contrastRatio(against: surface)
-                    #expect(ratio >= Self.textGate, "\(skin.rawValue) \(name) \(resolved.hex) is \(ratio.to2dp):1 on its \(mode) card")
-                }
-            }
-        }
+    func `Default light accent clears the text contrast gate`() {
+        let accent = RGB(Theme.accent, style: .light)
+        #expect(accent.contrastRatio(against: Self.cardLight) >= Self.textGate)
+        #expect(accent.contrastRatio(against: RGB(hex: "FFFFFF")) >= Self.textGate)
     }
 
-    /// Timeline hour labels, gutter marks and section eyebrows sit on the page
-    /// background, not on a card — so text tokens are gated there as well.
-    @Test
-    func `Every skin's text tokens are legible on its page background`() {
-        for skin in Skin.allCases where skin != .piru {
-            for style in [UIUserInterfaceStyle.light, .dark] {
-                let surface = RGB(skin.background, style: style)
-                let mode = style == .light ? "light" : "dark"
-                let texts: [(String, Color)] = [
-                    ("secondaryLabel", skin.secondaryLabel), ("eyebrow", skin.eyebrow), ("accent", skin.accent),
-                ] + SemanticRole.allCases.map { ("\($0) text", skin.semantic($0, .text)) }
-                for (name, color) in texts {
-                    let resolved = RGB(color, style: style)
-                    let ratio = resolved.contrastRatio(against: surface)
-                    #expect(ratio >= Self.textGate, "\(skin.rawValue) \(name) \(resolved.hex) is \(ratio.to2dp):1 on its \(mode) background")
-                }
-            }
-        }
-    }
-
-    @Test
-    func `Every skin's marks clear the non-text floor on its card`() {
-        for skin in Skin.allCases {
-            for style in [UIUserInterfaceStyle.light, .dark] {
-                let surface = Self.card(for: skin, style: style)
-                let mode = style == .light ? "light" : "dark"
-                var marks: [(String, Color)] = SemanticRole.allCases.map { ("\($0) accent", skin.semantic($0, .accent)) }
-                if skin != .piru { marks.append(("accentMark", skin.accentMark)) }
-                for (name, color) in marks {
-                    let resolved = RGB(color, style: style)
-                    let ratio = resolved.contrastRatio(against: surface)
-                    #expect(ratio >= 3.0, "\(skin.rawValue) \(name) \(resolved.hex) is \(ratio.to2dp):1 on its \(mode) card")
-                }
-            }
-        }
-    }
-
-    /// A gilded button's label sits on the foil, which runs from `mid` to
-    /// `shine` across its face and dips to `deep` only near the foot. The ink
-    /// is gated as text on `mid`, and as a mark even on `deep`.
-    @Test
-    func `A gilded button's ink is legible on its foil`() {
-        for skin in Skin.allCases {
-            guard let gilding = skin.gilding else { continue }
-            for style in [UIUserInterfaceStyle.light, .dark] {
-                let ink = RGB(gilding.ink, style: style)
-                for (stop, color, floor) in [("mid", gilding.mid, Self.textGate), ("deep", gilding.deep, 3.0)] {
-                    let ratio = ink.contrastRatio(against: RGB(color, style: style))
-                    #expect(ratio >= floor, "\(skin.rawValue) gilt ink \(ink.hex) is \(ratio.to2dp):1 on \(stop)")
-                }
-            }
-        }
-    }
-
-    // MARK: - Known gaps, pinned so they can only improve
-
-    /// The default skin's `AccentColor` — soft pink `#F57896` in light — is
-    /// **2.41:1** on the light card: below the 4.5 text gate *and* the 3.0
-    /// non-text floor, while `Theme.accent` is used as small copy at ~250 call
-    /// sites. It is the one hand-authored, designer-owned colorset
-    /// (`generate_colorsets.py` refuses to touch it), so it is not retuned by
-    /// the skin system; it is pinned here so it can only improve. ely.pink and
-    /// every later skin are gated for real by the tests above.
-    @Test
-    func `Default skin accent on the light card is a known gap, pinned at 2.41`() {
-        let resolved = RGB(Skin.piru.accent, style: .light)
-        let ratio = resolved.contrastRatio(against: Self.cardLight)
-        #expect(ratio >= 2.35, "Default accent \(resolved.hex) regressed to \(ratio.to2dp):1 on the light card")
-        #expect(
-            ratio < Self.textGate,
-            "Default accent now clears \(Self.textGate):1 (\(ratio.to2dp)) — remove this pin and gate it with the other skins",
-        )
-    }
-
-    /// Increase Contrast is where the default accent meets the text gate: its
-    /// Any+HC and Dark+HC slots, not a retuned brand pink.
-    ///
     /// Light clears 4.5:1 both as copy on the card and under a white label.
     /// Dark cannot do both with one color (copy on `#111` needs luminance ≥ 0.20,
     /// a white label on it ≤ 0.18), so it favors copy and holds the 3:1
@@ -384,13 +283,13 @@ struct ColorContrastTests {
     @Test
     func `Default accent under Increase Contrast clears the text gate`() {
         let white = RGB(hex: "FFFFFF")
-        let light = RGB(Skin.piru.accent, style: .light, contrast: .high)
-        #expect(light.hex != RGB(Skin.piru.accent, style: .light).hex, "AccentColor has no Any+HC slot")
+        let light = RGB(Theme.accent, style: .light, contrast: .high)
+        #expect(light.hex != RGB(Theme.accent, style: .light).hex, "AccentColor has no Any+HC slot")
         #expect(light.contrastRatio(against: Self.cardLight) >= Self.textGate, "HC accent \(light.hex) on the light card")
         #expect(light.contrastRatio(against: white) >= Self.textGate, "white label on HC accent \(light.hex)")
 
-        let dark = RGB(Skin.piru.accent, style: .dark, contrast: .high)
-        #expect(dark.hex != RGB(Skin.piru.accent, style: .dark).hex, "AccentColor has no Dark+HC slot")
+        let dark = RGB(Theme.accent, style: .dark, contrast: .high)
+        #expect(dark.hex != RGB(Theme.accent, style: .dark).hex, "AccentColor has no Dark+HC slot")
         #expect(dark.contrastRatio(against: Self.cardDark) >= Self.textGate, "HC accent \(dark.hex) on the dark card")
         #expect(dark.contrastRatio(against: white) >= 3.0, "white bold label on HC accent \(dark.hex)")
     }

@@ -62,12 +62,11 @@ enum UpdateNotice: String, CaseIterable, Identifiable {
 enum InstallRecord {
     private static let key = "install.firstBuild"
 
-    /// Records the first build when none is on file. An install that has
-    /// already finished onboarding predates the record and counts as build 0.
-    static func recordIfNeeded(hasCompletedOnboarding: Bool) {
+    /// Records the current build when no earlier launch has recorded one.
+    static func recordIfNeeded() {
         guard UserDefaults.standard.object(forKey: key) == nil else { return }
         let current = Int(LaunchCacheInputs.appBuild) ?? 0
-        UserDefaults.standard.set(hasCompletedOnboarding ? 0 : current, forKey: key)
+        UserDefaults.standard.set(current, forKey: key)
     }
 
     static var firstBuild: Int {

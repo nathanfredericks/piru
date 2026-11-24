@@ -32,9 +32,7 @@ struct NotificationSettingsView: View {
 
                 quietHoursSection
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Notifications")
         .inlineNavigationTitle()
         .task { await refresh() }
@@ -249,9 +247,7 @@ struct NotificationTypeDetailSheet: View {
                     askAgainSection
                 }
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle(category.title)
         .inlineNavigationTitle()
     }

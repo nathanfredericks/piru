@@ -33,7 +33,7 @@ struct MenuPillLabel<MenuContent: View>: View {
         .fixedSize(horizontal: true, vertical: false)
         .padding(.horizontal, 11)
         .frame(height: height)
-        .background(Color.platformSecondarySystemFill, in: skinChipShape())
+        .background(Color.platformSecondarySystemFill, in: Capsule())
         .foregroundStyle(.primary)
         .accessibilityHidden(true)
         .overlay {

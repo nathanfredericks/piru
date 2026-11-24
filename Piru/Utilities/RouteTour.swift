@@ -35,9 +35,6 @@
             // Let the launch passes settle, so the first step measures the
             // link rather than the launch.
             try? await Task.sleep(for: dwell)
-            // Links land by the bar (`TabRouting`); measure against the stock one.
-            TabLayoutStore.shared.setEphemeral(.default)
-            defer { TabLayoutStore.shared.setEphemeral(nil) }
             for loop in 1 ... loops {
                 for url in urls {
                     navigator.dismissAll()

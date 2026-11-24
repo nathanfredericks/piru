@@ -62,7 +62,7 @@ nonisolated enum StoreDiagnostics {
             lines.append("Recoverable sidecars (\(recoverable.count)):")
             for store in recoverable {
                 let when = store.timestamp.map { ISO8601DateFormatter().string(from: $0) } ?? "unknown"
-                lines.append("  • \(store.reason): rows=\(store.rowCount), size=\(byteString(store.bytes)), when=\(when)")
+                lines.append("  \(store.reason): rows=\(store.rowCount), size=\(byteString(store.bytes)), when=\(when)")
             }
         }
         return lines

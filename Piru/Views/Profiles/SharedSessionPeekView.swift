@@ -95,7 +95,7 @@ private struct SharedSessionPeekContent: View {
                     VStack(alignment: .leading, spacing: Spacing.xxs) {
                         Text(verbatim: profile.name)
                             .font(.headline)
-                        Text(verbatim: snapshot.title.map { "\($0) · \(dateText)" } ?? dateText)
+                        Text(verbatim: snapshot.title.map { "\($0), \(dateText)" } ?? dateText)
                             .font(.subheadline)
                             .foregroundStyle(Theme.secondaryLabel)
                     }

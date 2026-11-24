@@ -40,7 +40,7 @@ nonisolated enum NotificationType: String, CaseIterable, Identifiable {
     /// Whether the type is on for a user who has never touched the screen.
     /// Mirrors shipped behavior: routine and inventory fired with no switch
     /// (so they default on); the session types were gated behind
-    /// flags that defaulted off until onboarding enabled them.
+    /// flags that default to off.
     var defaultEnabled: Bool {
         switch self {
         // Follow-ups also default on: they fire only where the user explicitly

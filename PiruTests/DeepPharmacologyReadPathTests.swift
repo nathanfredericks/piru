@@ -48,7 +48,7 @@ struct DeepPharmacologyReadPathTests {
         let rows = SubstanceStore.shared.pharmacogenetics(forSubstanceName: "Ketamine")
         let findings = rows.map(\.phenotypeEffects)
         #expect(findings.count == Set(findings).count, "the same finding is shown more than once")
-        #expect(rows.contains { $0.gene.contains("·") })
+        #expect(rows.contains { $0.gene.contains(", ") })
     }
 
     @Test

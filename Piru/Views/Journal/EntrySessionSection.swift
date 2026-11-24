@@ -64,11 +64,11 @@ struct EntrySessionSection: View {
             ? String(localized: "1 entry")
             : String(localized: "\(doses.count) entries")
         if isActive(session) {
-            return "\(countText) · \(EntryDoseFormat.relativeText(from: session.startDate, now: .now))"
+            return "\(countText), \(EntryDoseFormat.relativeText(from: session.startDate, now: .now))"
         }
         guard let first = doses.first?.timestamp, let last = doses.last?.timestamp,
               last > first else { return countText }
-        return "\(countText) · \(last.timeIntervalSince(first).durationHM)"
+        return "\(countText), \(last.timeIntervalSince(first).durationHM)"
     }
 
     /// Whether any dose in the session is still inside its modeled effect window.
@@ -111,7 +111,7 @@ struct EntrySiblingRow: View {
         let time = sessionActive
             ? EntryDoseFormat.relativeText(from: dose.timestamp, now: .now)
             : dose.timestamp.formatted(date: .omitted, time: .shortened)
-        let detail = "\(name) \(dose.amountDisplay) \(dose.unit) · \(time)"
+        let detail = "\(name) \(dose.amountDisplay) \(dose.unit), \(time)"
         return HStack(spacing: Spacing.md) {
             Image(systemName: "circle.fill")
                 .font(.chartAnnotation)

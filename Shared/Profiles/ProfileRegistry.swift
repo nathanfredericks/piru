@@ -247,6 +247,6 @@ nonisolated enum ProfileScope {
     /// exists: "Alice · Concerta".
     static func personalized(_ title: String) -> String {
         guard ProfileRegistry.hasMultipleProfiles() else { return title }
-        return "\(current.name) · \(title)"
+        return "\(current.name), \(title)"
     }
 }

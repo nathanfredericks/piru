@@ -36,7 +36,7 @@ struct ReportsView: View {
             .padding(.top, Spacing.xs)
             .padding(.bottom, 80)
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .task(id: scopeToken) {
             await SubstanceStore.shared.ensureAllLoaded()
             model.recompute(sessions: sessions, entries: allEntries)
@@ -86,7 +86,7 @@ struct ReportsView: View {
                 } else {
                     Text("\(model.selectedSessions.count) of \(model.sessionSummaries.count) sessions")
                         .foregroundStyle(.primary)
-                    Text("· \(model.entryCountInScope) entries")
+                    Text("\(model.entryCountInScope) entries")
                         .foregroundStyle(Theme.secondaryLabel)
                 }
                 Spacer()
@@ -359,7 +359,6 @@ private struct SessionPickerSheet: View {
                                 HStack(spacing: Spacing.sm) {
                                     Text(summary.timeLabel)
                                         .captionSecondary()
-                                    Middot()
                                         .captionSecondary()
                                     Text(summary.substanceSummary)
                                         .captionSecondary()

@@ -60,10 +60,12 @@ struct DoseSourceComparisonView: View {
                         )
                     }
                 } header: {
-                    if let sharedUnit {
-                        Text("\(route.localizedName) · \(sharedUnit) · \(ladders.count) sources")
-                    } else {
-                        Text("\(route.localizedName) · \(ladders.count) sources")
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
+                        Text(route.localizedName)
+                        if let sharedUnit {
+                            Text(sharedUnit)
+                        }
+                        LabeledContent("Sources", value: ladders.count.formatted())
                     }
                 } footer: {
                     // This footer says how to read the bars and nothing else. Do not add
@@ -228,7 +230,7 @@ private struct LadderRow: View {
                         .textCase(.uppercase)
                         .foregroundStyle(accent)
                         .padding(.horizontal, 7).padding(.vertical, Spacing.xxs)
-                        .background(accent.opacity(Theme.Opacity.tint), in: skinChipShape())
+                        .background(accent.opacity(Theme.Opacity.tint), in: Capsule())
                 }
                 Spacer(minLength: 8)
                 if showsUnit {

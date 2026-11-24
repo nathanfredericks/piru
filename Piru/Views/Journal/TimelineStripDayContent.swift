@@ -321,9 +321,7 @@ struct TimelineStripDayContent: View {
         // Only the strip's very top edge cuts curves mid-flight — fade
         // them into the background there. Day boundaries fade nothing;
         // the strip continues.
-        // Erased (destination-out), never painted: a skin's backdrop behind
-        // the strip is a gradient, so a band of the flat background color
-        // would read as a darker stripe across the top.
+        // Erase the curve so the page background shows through the fade.
         if day.showsLiveEdge {
             let fadeHeight: CGFloat = 28
             context.blendMode = .destinationOut
@@ -610,36 +608,22 @@ struct SessionEnvelopeButton: View {
 
     private static let cornerRadius: CGFloat = 16
 
-    /// The envelope is chrome, not graph: under glass it is the timeline's
-    /// frosted frame; an edged skin draws it as one of its cards (solid,
-    /// stroked, hard shadow).
-    @ViewBuilder
+    /// The timeline's frosted session envelope.
     private var envelopeSurface: some View {
-        switch SkinStore.shared.current.surface {
-        case .glass:
-            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                        .fill(Color.primary.opacity(0.015))
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                        .strokeBorder(
-                            TimelineGlass.edgeHighlight(colorScheme: colorScheme, floor: Color.primary.opacity(0.06)),
-                            lineWidth: 0.5,
-                        )
-                }
-                .shadow(color: .black.opacity(colorScheme == .dark ? 0.2 : 0.04), radius: 12, y: 4)
-        case .edged, .soft, .paper, .neon, .frosted:
-            // An explicit shape, not the concentric card: concentric takes
-            // the radius as a minimum and inherits the screen's corner here,
-            // which is how the envelope stopped matching its bubbles.
-            Color.clear.modifier(ThemedBackground(
-                shape: RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous),
-                insetDash: true,
-            ))
-        }
+        RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+            .fill(.ultraThinMaterial)
+            .overlay {
+                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                    .fill(Color.primary.opacity(0.015))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        TimelineGlass.edgeHighlight(colorScheme: colorScheme, floor: Color.primary.opacity(0.06)),
+                        lineWidth: 0.5,
+                    )
+            }
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.2 : 0.04), radius: 12, y: 4)
     }
 
     var body: some View {

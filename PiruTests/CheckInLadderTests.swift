@@ -125,7 +125,7 @@ struct CheckInLadderTests {
 
     @Test
     func `The summary reads as relative times`() {
-        #expect(CheckInLadder.summary([45, 120]) == "+45m · +2h")
+        #expect(CheckInLadder.summary([45, 120]) == "+45m, +2h")
         #expect(CheckInLadder.summary([]).isEmpty)
     }
 }

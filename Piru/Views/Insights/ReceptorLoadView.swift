@@ -43,7 +43,7 @@ struct ReceptorLoadView: View {
             .padding()
             .padding(.bottom, 40)
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .toolbar {
             if !allEntries.isEmpty {
                 ToolbarItem(placement: .platformTopBarTrailing) { rangeMenu }

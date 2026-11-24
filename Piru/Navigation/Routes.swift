@@ -2,18 +2,17 @@ import Foundation
 
 // MARK: - Tabs
 
-/// The five stock tabs. Also the "home" a destination belongs to — deep links
-/// and `AppNavigator.open(_:home:)` speak it; the bar itself is `[TabID]`.
+/// The built-in navigation homes. Tools and Search identify legacy links and snapshots.
 nonisolated enum AppTab: String, Hashable, Codable, CaseIterable {
     case journal
+    case myMeds
     case library
-    case tools
     case insights
+    case tools
     case search
 }
 
-/// A screen the user can pin as its own tab (Settings ▸ Tabs). Each maps to
-/// exactly one `PushRoute`, whose destination view doubles as the tab's root.
+/// Decodes tab identities saved before destinations had fixed homes.
 nonisolated enum PinnedScreen: Hashable {
     case tool(Tool)
     case insight(Insight)
@@ -33,50 +32,6 @@ nonisolated enum PinnedScreen: Hashable {
         }
     }
 
-    /// The pinnable screen a route shows, or `nil` for routes that are not a
-    /// screen in their own right (a session, a substance). Routes that render
-    /// the same screen collapse onto one pin, so a link to either finds it.
-    init?(route: PushRoute) {
-        switch route {
-        case let .tool(tool): self = .tool(tool)
-        case .comedownGuide: self = .tool(.recovery)
-        case .insight(.inSystem), .insight(.bodyLoad), .insight(.steadyStateProjection):
-            self = .insightGroup(.inYourBody)
-        case let .insight(insight): self = .insight(insight)
-        case let .insightGroup(group): self = .insightGroup(group)
-        case .myMeds: self = .myMeds
-        case .timeline: self = .timeline
-        case .dataStorage: self = .dataStorage
-        default: return nil
-        }
-    }
-
-    /// Every screen the tab picker offers, in picker order. The In Your Body
-    /// insights are offered once, as their group — they share one screen.
-    static let pickable: [PinnedScreen] = {
-        let tools: [Tool] = [
-            .interactions, .inventory, .identify, .calculator, .steadyState, .injectionLevels,
-            .volumetric, .pharma, .benzoEquivalence, .opioidEquivalence, .ceiling,
-            .toleranceInfo, .recovery, .drugClasses, .effects,
-        ]
-        let insights: [Insight] = [
-            .adherence, .usage, .tolerance, .receptorLoad, .hormoneLevels, .patterns, .feltPatterns, .reports,
-        ]
-        return tools.map(PinnedScreen.tool) + [.myMeds, .dataStorage]
-            + insights.map(PinnedScreen.insight)
-            + [.insightGroup(.inYourBody), .insightGroup(.toleranceReceptors), .timeline]
-    }()
-
-    /// Screens that already put the app's overflow menu (Help · Skins ·
-    /// Settings) in their own toolbar, so their tab root must not add another.
-    var ownsOverflowMenu: Bool {
-        switch self {
-        case .tool(.benzoEquivalence), .tool(.opioidEquivalence), .tool(.ceiling), .tool(.toleranceInfo): true
-        default: false
-        }
-    }
-
-    /// Stable string identity — what the tab layout persists.
     var storageKey: String {
         switch self {
         case let .tool(tool): "tool.\(tool.rawValue)"
@@ -109,18 +64,15 @@ nonisolated enum PinnedScreen: Hashable {
     }
 }
 
-/// One slot in the tab bar: a stock tab or a pinned screen. `AppTab` keeps
-/// meaning "the tab a destination belongs to" (deep links speak it); this is
-/// what the bar, the selection and the per-tab push paths are keyed by.
-///
-/// Codes as a single string (`storageKey`) — a stock tab's key is its
-/// `AppTab` raw value, so a selection persisted before pinning existed still
-/// restores.
+/// Stable keys for tab selection and paths, including saved layouts from older Piru builds.
 nonisolated enum TabID: Hashable, Codable, CodingKeyRepresentable, Identifiable {
     case stock(AppTab)
     case pinned(PinnedScreen)
 
+    static let visible: [TabID] = [.journal, .myMeds, .library, .insights]
+
     static var journal: TabID { .stock(.journal) }
+    static var myMeds: TabID { .stock(.myMeds) }
     static var library: TabID { .stock(.library) }
     static var tools: TabID { .stock(.tools) }
     static var insights: TabID { .stock(.insights) }
@@ -195,6 +147,8 @@ nonisolated enum PushRoute: Hashable, Codable {
     case entry(timestamp: Date, id: UUID?)
     case comedownGuide
     case timeline
+    case journalDays
+    case toolsHub
     /// A substance's detail page. `brand` preselects that product in the page's
     /// Branded formulations picker — a search for "Concerta" lands on
     /// Methylphenidate with Concerta's curve drawn. The synthesized `Codable`
@@ -240,24 +194,10 @@ nonisolated enum PushRoute: Hashable, Codable {
     /// view-based `NavigationLink` in this path-driven stack is rebuilt on top
     /// of whatever the detail pushes next (its Substance Info row).
     case inventoryItem(id: UUID)
-    /// A deep-data page for a substance — the redesigned detail view's "Show
-    /// all" destination. One route parameterized by `section` so Mechanism's
-    /// "Show all", the per-section links, and the single "For the curious"
-    /// launcher all resolve to one place. The page renders the substance's
-    /// **full** data for that section regardless of the user's disclosure tier.
+    /// A legacy data destination. Sources opens inline; chemistry and pharmacology open the substance.
     case substanceData(name: String, section: DataSection)
 }
 
-/// A deep-data section reachable from a substance's detail. Excludes Effects —
-/// that keeps its existing in-view "Show all" sheet (`showAllEffects`); only the
-/// reference sections push a page.
-///
-/// `pharmacology` is deliberately one section, not separate
-/// receptor-literature / pharmacokinetics pages: the deep page reuses the whole
-/// `PharmacologySections` cluster (mechanism · monoamine · receptor literature ·
-/// PK · metabolism), so a single honest title beats two identical pages
-/// promising a subset. The inline placement of those subsections still differs
-/// (see `DetailSection`); this enum is only the deep-page routing target.
 nonisolated enum DataSection: String, Hashable, Codable, CaseIterable {
     case chemistry
     case pharmacology
@@ -373,13 +313,12 @@ nonisolated enum SheetRoute: Hashable, Identifiable, Codable {
         prefillSubstance: String? = nil,
         prefillDose: DosePrefill? = nil,
         prefillRoute: RouteOfAdministration? = nil,
+        prefillDate: Date? = nil,
     )
     case settings
     /// Settings ▸ Profiles on its own, from the avatar menu's Manage Profiles.
     case profiles
-    case skins
     case help
-    case onboarding
 
     /// Session / entries
     case sessionDetail
@@ -472,7 +411,7 @@ nonisolated enum SheetRoute: Hashable, Identifiable, Codable {
 // MARK: - Payloads
 
 /// The substance, route and unit of a custom substance just saved from quick
-/// log's "create custom" form, held by the dock host until the form dismisses
+/// log's "create custom" form, held by the recording sheet until the form dismisses
 /// and then staged into the tray.
 ///
 /// Marked `nonisolated` so the type is freely constructible from any actor
@@ -529,6 +468,31 @@ nonisolated struct NavigatorSnapshot: Hashable, Codable {
     var selectedTab: TabID
     var paths: [TabID: [PushRoute]]
     var sheetStack: [SheetRoute]
+
+    private enum CodingKeys: String, CodingKey {
+        case selectedTab
+        case paths
+        case sheetStack
+    }
+
+    private enum RetiredSheet: String, CodingKey {
+        case skins
+        case onboarding
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        selectedTab = try container.decode(TabID.self, forKey: .selectedTab)
+        paths = try container.decode([TabID: [PushRoute]].self, forKey: .paths)
+        var sheets = try container.nestedUnkeyedContainer(forKey: .sheetStack)
+        sheetStack = []
+        while !sheets.isAtEnd {
+            let sheet = try sheets.superDecoder()
+            let retired = try sheet.container(keyedBy: RetiredSheet.self)
+            guard !retired.contains(.onboarding) else { continue }
+            try sheetStack.append(retired.contains(.skins) ? .settings : SheetRoute(from: sheet))
+        }
+    }
 
     init(
         selectedTab: TabID = .journal,

@@ -120,7 +120,7 @@ struct TransporterTernaryView: View {
         func percent(_ value: Double) -> String {
             (value * 100).formatted(.number.precision(.fractionLength(0 ... 0)))
         }
-        return "DAT \(percent(shares.dat))% · NET \(percent(shares.net))% · SERT \(percent(shares.sert))%"
+        return "DAT \(percent(shares.dat))%, NET \(percent(shares.net))%, SERT \(percent(shares.sert))%"
     }
 }
 

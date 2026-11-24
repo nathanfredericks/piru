@@ -1,63 +1,48 @@
 import SwiftData
 import SwiftUI
 
-/// Long-form overview prose (FreeOD Wiki), resolved locale-first by the store:
-/// native Chinese when the app runs in Chinese, machine-translated English as a
-/// fallback. Hidden when no source supplies an overview.
-struct OverviewSection: View {
-    /// Passed in (not read off `substance`) so its arrival survives the shell→
-    /// full-record swap — see the note on ``SubstanceDetailLayout/overview``.
-    let overview: SubstanceOverview?
-    /// Only for the source deep link; the name it needs is already in the shell.
+/// Prose from the catalog with its own source or citation.
+struct SubstanceProseSection: View {
+    let title: LocalizedStringResource
+    let prose: SubstanceOverview?
     let substance: Substance
 
-    @State private var overviewExpanded = false
+    @State private var isExpanded = false
 
-    /// Overview collapses to `collapsedLines` lines with a "Read more" when the
-    /// prose exceeds `collapsedThreshold` characters (≈ that many lines), so
-    /// short blurbs show in full with no toggle.
     private let collapsedLines = 5
     private let collapsedThreshold = 320
 
     var body: some View {
-        if let overview, !overview.text.isEmpty {
-            // Unlike the other folded blocks, the Overview reads better as a few
-            // lines of prose with an inline "Read more" than as a closed
-            // disclosure — you see what the substance *is* without a tap.
-            let isLong = overview.text.count > collapsedThreshold
+        if let prose, !prose.text.isEmpty {
+            let isLong = prose.text.count > collapsedThreshold
             Section {
                 VStack(alignment: .leading, spacing: Spacing.md) {
-                    Text("Overview")
-                        .sectionLabel()
-                    Text(overview.text)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryLabel)
-                        .lineLimit(isLong && !overviewExpanded ? collapsedLines : nil)
+                    Text(prose.text)
+                        .lineLimit(isLong && !isExpanded ? collapsedLines : nil)
                         .fixedSize(horizontal: false, vertical: true)
                     if isLong {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) { overviewExpanded.toggle() }
-                        } label: {
-                            Text(overviewExpanded ? "Read less" : "Read more")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(Theme.accent)
+                        Button { isExpanded.toggle() } label: {
+                            Text(isExpanded ? "Read less" : "Read more")
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.borderless)
                     }
-                    if overview.machineTranslated {
-                        Label("Machine-translated from FreeOD Wiki", systemImage: "character.bubble")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.tertiaryLabel)
+                    if prose.machineTranslated {
+                        Label("Machine-translated", systemImage: "character.bubble")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    // Card and footer share one row — see ``DoseDurationSection``
-                    // for why a peer row grows a hairline at some card heights.
-                    SourceAttributionRow(
-                        slug: overview.sourceSlug,
-                        label: "Overview",
-                        deepLink: overview.citation?.resolvedURL
-                            ?? SubstanceSourceLinks.deepLink(overview.sourceSlug, substance: substance),
-                    )
                 }
+                let sourceName = SubstanceStore.shared.sourceDisplayName(forSlug: prose.sourceSlug)
+                if let url = prose.citation?.resolvedURL ?? SubstanceSourceLinks.deepLink(prose.sourceSlug, substance: substance) {
+                    Link(destination: url) {
+                        Label(prose.citation?.title ?? sourceName, systemImage: "book.closed")
+                    }
+                } else {
+                    Label(sourceName, systemImage: "book.closed")
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text(title)
             }
         }
     }
@@ -274,9 +259,7 @@ struct SubstanceStatusMarker: View {
             .foregroundStyle(kind.labelColor)
             .padding(.horizontal, 9)
             .padding(.vertical, Spacing.xs)
-            // Matches ``CategoryChip``'s fill: 0.10 is the alpha the accent
-            // scales' text variants are contrast-gated against.
-            .background(kind.markColor.opacity(Theme.Opacity.tint), in: skinChipShape())
+            .background(kind.markColor.opacity(Theme.Opacity.tint), in: Capsule())
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(kind.detail))

@@ -45,15 +45,15 @@ struct ToleranceRow: Identifiable {
         guard totalShift > 0 else { return [] }
         let severity = max(0, min(1, snapshot.severity))
         let family = familyColor
-        let raw: [(LocalizedStringResource, Double, Color)] = [
-            ("Tachyphylaxis", snapshot.sAcute, family.opacity(Theme.Opacity.dimmed)),
-            ("Tolerance", snapshot.sAdaptive + snapshot.sSynthesis, family.opacity(0.82)),
-            ("Deep", snapshot.sDeep, family),
+        let raw: [(Double, Color)] = [
+            (snapshot.sAcute, family.opacity(Theme.Opacity.dimmed)),
+            (snapshot.sAdaptive + snapshot.sSynthesis, family.opacity(0.82)),
+            (snapshot.sDeep, family),
         ]
         return raw.enumerated().compactMap { index, band in
-            let (label, shift, color) = band
+            let (shift, color) = band
             guard shift > 0 else { return nil }
-            return ToleranceBand(id: index, label: label, widthFraction: severity * shift / totalShift, color: color)
+            return ToleranceBand(id: index, widthFraction: severity * shift / totalShift, color: color)
         }
     }
 
@@ -169,7 +169,6 @@ struct ToleranceRow: Identifiable {
 /// tolerance level and split it by where that tolerance comes from.
 struct ToleranceBand: Identifiable {
     let id: Int
-    let label: LocalizedStringResource
     let widthFraction: Double
     let color: Color
 }
@@ -205,19 +204,6 @@ enum ToleranceBucket {
         case 0.30 ..< 0.50: self = .high
         default: self = .veryHigh
         }
-    }
-}
-
-// MARK: - Tier-aware wording / formatting
-
-/// The mechanism class's name at the given detail level.
-func toleranceClassName(
-    _ receptorClass: ReceptorClasses.ReceptorClass,
-    tier: UserProfile,
-) -> LocalizedStringResource {
-    switch tier {
-    case .casual: receptorClass.casualName
-    case .curious: receptorClass.displayName
     }
 }
 

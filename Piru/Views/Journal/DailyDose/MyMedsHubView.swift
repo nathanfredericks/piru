@@ -141,7 +141,6 @@ struct MyMedsHubView: View {
                                 .foregroundStyle(Theme.secondaryLabel)
                         }
                     }
-                    .listRowBackground(CardBackground())
                 }
 
                 Section {
@@ -151,14 +150,12 @@ struct MyMedsHubView: View {
                         Label("Notification Settings", systemImage: "bell.badge")
                     }
                 }
-                .listRowBackground(CardBackground())
             }
 
             UnlistedProductsSection(items: items) { product in
                 adoptingProduct = product
             }
         }
-        .themedPage()
         .navigationTitle("My Meds")
         .largeNavigationTitle()
         .toolbar {
@@ -190,7 +187,6 @@ struct MyMedsHubView: View {
                 addMedButton
             }
         }
-        .listRowBackground(CardBackground())
     }
 
     private var addMedButton: some View {
@@ -255,7 +251,6 @@ private struct UnlistedProductsSection: View {
             } footer: {
                 Text("Products you made, ready to add as a med.")
             }
-            .listRowBackground(CardBackground())
         }
     }
 }
@@ -314,22 +309,22 @@ private struct MedRow: View {
         let dose = item.doseLabel
         if item.isAsNeeded {
             if let limit = item.maxPerDay {
-                return "\(dose) · \(String(localized: "up to \(limit)× daily"))"
+                return "\(dose), \(String(localized: "up to \(limit)× daily"))"
             }
-            return "\(dose) · \(String(localized: "as needed"))"
+            return "\(dose), \(String(localized: "as needed"))"
         }
         let times = item.reminderTimesMinutes
         guard !times.isEmpty else {
-            return "\(dose) · \(String(localized: "anytime"))"
+            return "\(dose), \(String(localized: "anytime"))"
         }
         let inGroup = times.filter { MedTimeGroup.group(forMinutes: $0) == group }
         let others = times.filter { MedTimeGroup.group(forMinutes: $0) != group }
-        var text = "\(dose) · \(inGroup.map(Self.timeText).joined(separator: " · "))"
+        var text = "\(dose), \(inGroup.map(Self.timeText).joined(separator: ", "))"
         if !others.isEmpty {
-            text += " · \(String(localized: "also \(others.map(Self.timeText).joined(separator: ", "))"))"
+            text += ", \(String(localized: "also \(others.map(Self.timeText).joined(separator: ", "))"))"
         }
         if item.frequency != .daily {
-            text += " · \(item.frequencyShortLabel)"
+            text += ", \(item.frequencyShortLabel)"
         }
         return text
     }

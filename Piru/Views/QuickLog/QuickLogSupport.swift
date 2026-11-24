@@ -1,489 +1,189 @@
-import OSLog
-import SwiftData
 import SwiftUI
-import WidgetKit
+import UIKit
 
-/// The dock sheet's content root: owns the detent state and applies the
-/// presentation configuration.
-///
-/// Split out of `QuickLogView` so the dock's detent churn stays local: the
-/// detent selection and set are rewritten several times per transition (every
-/// stage, search enter/exit, drag settle), and as `@State` on `QuickLogView`
-/// each write would re-run the whole screen's body (toolbar, scroll chrome,
-/// this sheet closure) just to re-apply an unchanged presentation. Owned
-/// here, a detent write invalidates only this wrapper.
-/// Localizing the re-application also narrows the window where a SwiftUI
-/// presentation update can rewrite the sheet's detents mid-ramp (the
-/// self-heal in `QuickLogDock.animateHeightDetent` exists for exactly that).
-///
-/// Presentation configuration lives at this view's root so it reliably
-/// reaches the presentation (not shadowed by the nested sheet wrappers
-/// above it). The background *style* is clear: that swaps the default
-/// full-width sheet backing for the system's inset floating glass platter,
-/// which is the dock's one surface in every detent (Maps' collapsed-bar
-/// look at peek).
-struct DockSheetHost: View {
-    var tray: DoseTrayModel
-    var content: QuickLogContentModel
-    var containerHeight: CGFloat
-    let geometry: DockSheetGeometry
-    @Binding var searchText: String
-    @Binding var searchActive: Bool
-    /// Owned by `QuickLogView` (its body hides the cover content from
-    /// assistive tech while either sheet is up); presented from here because
-    /// the dock occupies the cover's only presentation slot, so these must
-    /// stack on the dock.
-    @Binding var showCustomForm: Bool
-    @Binding var showEditSheet: Bool
-    @Binding var showScanner: Bool
-    let onCommit: () -> Void
-
-    @Environment(\.appNavigator) private var navigator
-
-    /// The dock's current detent. ``QuickLogDock`` drives the transitions.
-    @State private var detent: PresentationDetent = QuickLogDockMetrics.peekDetent
-    /// The live detent set — dynamic because the dock's smallest detent is
-    /// fit-to-content once doses are staged. ``QuickLogDock`` owns the swaps.
-    @State private var detents: Set<PresentationDetent> = QuickLogDockMetrics.emptyDetents
-
-    @State private var pendingCustomPrefill: EntryPrefillPayload?
-
-    var body: some View {
-        QuickLogDock(
-            tray: tray,
-            content: content,
-            containerHeight: containerHeight,
-            geometry: geometry,
-            searchText: $searchText,
-            searchActive: $searchActive,
-            detent: $detent,
-            detents: $detents,
-            onCreateCustom: { showCustomForm = true },
-            onCommit: onCommit,
-        )
-        .sheet(isPresented: $showCustomForm, onDismiss: onCustomFormDismiss) {
-            CustomSubstanceFormView(initialName: searchText.trimmingCharacters(in: .whitespaces)) { saved in
-                pendingCustomPrefill = EntryPrefillPayload(
-                    substance: saved.name,
-                    route: saved.defaultRoute,
-                    unit: saved.unit,
-                )
-            }
-        }
-        .sheet(isPresented: $showEditSheet) {
-            QuickLogEditSheet()
-        }
-        // The label scanner stacks on the dock (the cover's slot is taken), like
-        // the sheets above — full-screen for the live camera.
-        .fullScreenCover(isPresented: $showScanner) {
-            LabelScannerView(
-                onResolved: stageScanned,
-                onSearch: { text in
-                    searchText = text
-                    searchActive = true
-                },
-            )
-        }
-        // Navigator sheets launched from quick log (Manage Routines, Edit
-        // Routine…) present here, stacked on the dock — the dock occupies
-        // the cover's only presentation slot, so they can't present there.
-        .hostsNestedNavigatorSheets(navigator)
-        .presentationDetents(detents, selection: $detent)
-        // At every height, never `upThrough: .medium`: a tall staged stack sets
-        // its compact detent above medium, and past that threshold the sheet
-        // turns modal, dimming and locking the cards the user is tapping.
-        .presentationBackgroundInteraction(.enabled)
-        // A swipe inside content that overflows scrolls it; the grabber,
-        // search bar and chips still resize. At `.large` the sheet scrolls
-        // its content either way.
-        .presentationContentInteraction(
-            geometry.compactOverflows || (geometry.contentOverflows && detent == .medium) ? .scrolls : .resizes,
-        )
-        .presentationBackground { Color.clear }
-        .interactiveDismissDisabled()
-    }
-
-    /// Stage a scanned label as a complete dose — the strength read off the box
-    /// pre-fills the amount, so it lands like a tapped chip. The scanned brand
-    /// rides along as `productName` (canonical name stays the substance's own),
-    /// exactly as a search hit does.
-    private func stageScanned(_ resolved: ResolvedDrug) {
-        withAnimation(.snappy) {
-            tray.stage(
-                substance: resolved.canonicalName,
-                route: resolved.stagingRoute,
-                amount: resolved.stagingAmount,
-                unit: resolved.stagingUnit,
-                tint: SubstancePalette.tint(for: resolved.canonicalName, tintMap: content.cachedColorLookup),
-                librarySubstance: resolved.substance,
-                productName: resolved.brandName,
-            )
-            searchActive = false
-            searchText = ""
-        }
-    }
-
-    private func onCustomFormDismiss() {
-        guard let prefill = pendingCustomPrefill else { return }
-        pendingCustomPrefill = nil
-        withAnimation(.snappy) {
-            tray.stageDraft(
-                substance: prefill.substance,
-                route: prefill.route,
-                unit: prefill.unit,
-                tint: SubstancePalette.tint(for: prefill.substance, tintMap: content.cachedColorLookup),
-                librarySubstance: SubstanceLibrary.lookup(prefill.substance.lowercased()),
-            )
-            searchActive = false
-            searchText = ""
-        }
-    }
-}
-
-// MARK: - Staging Haptics
-
-/// A zero-size leaf that fires the staging haptics. It exists so the tick-counter
-/// reads (`stageTick` / `incrementTick` / `unstageTick`) live *here* and not in `QuickLogView.body`
-/// — reading the `@Observable` counters in the parent body would re-run the whole
-/// quick-log screen on every chip tap. Mounted always-present via `.background`,
-/// so it fires regardless of which dock face is showing.
-struct StagingHaptics: View {
-    let tray: DoseTrayModel
-
-    var body: some View {
-        Color.clear
-            .sensoryFeedback(.impact(weight: .light), trigger: tray.stageTick)
-            .sensoryFeedback(.increase, trigger: tray.incrementTick)
-            .sensoryFeedback(.decrease, trigger: tray.unstageTick)
-    }
-}
-
-// iOS UIKit type (CoverAccessibilityUnmasker) is in QuickLogSupport+iOS.swift.
-
-// MARK: - Card List
-
-/// The quick-log scroll content — routines, favorites, and recent cards.
-///
-/// A closure-free child of `QuickLogView`: it takes only the two stable
-/// references it needs (`content`, `tray`) and owns its own `@Query`s and
-/// list-mutating actions. Closures can't be compared, so a view holding them
-/// always reads as changed; `QuickLogView`'s body re-runs on every search
-/// keystroke (it reads `searchText`), and a parent closure here
-/// would cascade that into every `SubstanceCardView`/`OneRowChips` body. With
-/// only stable references SwiftUI skips this subtree, and the cards still
-/// update through their own observation (the `content` caches, `tray` staging).
-struct QuickLogCardList: View {
+struct QuickLogDetails: View {
+    @Bindable var tray: DoseTrayModel
     let content: QuickLogContentModel
-    let tray: DoseTrayModel
+    let onFindLocation: () -> Void
 
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.appNavigator) private var navigator
+    @AppStorage(DoseTimeDefaults.choicesKey, store: UserDefaults(suiteName: DoseTimeDefaults.suite))
+    private var timePresets = DoseTimeDefaults.defaultRaw
 
-    @Query private var quickLogDoses: [QuickLogDose]
-    @Query(sort: [SortDescriptor(\FavoriteSubstance.sortOrder), SortDescriptor(\FavoriteSubstance.createdAt, order: .reverse)]) private var favorites: [FavoriteSubstance]
-
-    /// Folds the Routines & Prescriptions section down to its header — for
-    /// people who don't use the feature. Persisted across launches.
-    @AppStorage("quickLogRoutinesCollapsed") private var routinesCollapsed = false
-    /// The combination products, each listed as a card of its own.
-    @State private var customSubstanceStore = CustomSubstanceStore.shared
-
-    /// The amount each product's med is saved at, by lowercased product name,
-    /// so its card offers that amount as a chip too.
-    private var productMedAmounts: [String: Double] {
-        let products = customSubstanceStore.productMeds
-        var amounts: [String: Double] = [:]
-        for group in content.cachedDailyGroups {
-            for med in group.items {
-                guard let product = products[med.substance.lowercased()] else { continue }
-                amounts[product.name.lowercased()] = med.amount
+    var body: some View {
+        Section("Details") {
+            Menu {
+                Button("Now") { tray.time = .now }
+                ForEach(DoseTimeDefaults.parse(timePresets), id: \.self) { minutes in
+                    Button(TrayTime.offsetLabel(minutes: minutes)) { tray.time = .offset(minutes: minutes) }
+                }
+                Button("Pick date & time…") { tray.time = .custom(tray.time.resolved) }
+            } label: {
+                LabeledContent("When", value: tray.time.chipLabel)
+            }
+            if case let .custom(date) = tray.time {
+                // Keep the original selection available for editing even when
+                // an older launch URL supplied a future timestamp.
+                DatePicker(
+                    "Date and Time",
+                    selection: Binding(
+                        get: { if case let .custom(current) = tray.time { current } else { date } },
+                        set: { tray.time = .custom($0) },
+                    ),
+                    in: ...max(Date.now, date),
+                )
+            }
+            TrayRecipientRow(model: tray)
+            if tray.staged.contains(where: { $0.route == .oral }) {
+                Picker("Stomach", selection: $tray.meal) {
+                    Text("Unknown").tag(MealState?.none)
+                    ForEach(MealState.allCases, id: \.self) { meal in
+                        Text(meal.label).tag(Optional(meal))
+                    }
+                }
+            }
+            NavigationLink {
+                QuickLogTagsPage(tray: tray, suggestions: content.cachedTagSuggestions)
+            } label: {
+                LabeledContent("Tags", value: tray.tags.sorted().formatted(.list(type: .and)))
+            }
+            Button(action: onFindLocation) {
+                LabeledContent("Location", value: tray.location?.name ?? String(localized: "None"))
+            }
+            if tray.location != nil {
+                Button("Remove location") { tray.location = nil }
             }
         }
-        return amounts
+    }
+}
+
+private struct QuickLogTagsPage: View {
+    @Bindable var tray: DoseTrayModel
+    let suggestions: [String]
+    @State private var newTag = ""
+
+    private var tag: String {
+        newTag.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "#"))
     }
 
     var body: some View {
-        // Snapshot staged counts once per staging change; each card takes only
-        // its own slice, so a card whose staged state is unchanged is skipped by
-        // its `.equatable()` rather than re-diffing every chip + context menu.
-        let staged = tray.stagedCountsBySubstance()
-        return LazyVStack(alignment: .leading, spacing: Spacing.xl) {
-            if !content.hasLoaded {
-                // Loading: render nothing (the dock stays put) rather than
-                // the empty-state placeholder — the caches fill within a
-                // frame or two off the warm batch cache, so this avoids the
-                // jarring "No Previous Substances" flash on open.
-                EmptyView()
+        Form {
+            Section {
+                TextField("New tag", text: $newTag)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .onSubmit(add)
+                Button("Add", action: add).disabled(tag.isEmpty)
+            }
+            Section("Tags") {
+                ForEach(Set(suggestions).union(tray.tags).sorted(), id: \.self) { tag in
+                    Toggle(isOn: Binding(
+                        get: { tray.tags.contains(tag) },
+                        set: { selected in
+                            if selected { tray.tags.insert(tag) } else { tray.tags.remove(tag) }
+                        },
+                    )) {
+                        Text(verbatim: tag)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Tags")
+    }
+
+    private func add() {
+        guard !tag.isEmpty else { return }
+        tray.tags.insert(tag)
+        newTag = ""
+    }
+}
+
+struct QuickLogLocationPage: View {
+    let recents: [PickedLocation]
+    let onPick: (PickedLocation) -> Void
+
+    @Environment(\.openURL) private var openURL
+    @State private var model = LocationSearchModel()
+    @State private var query = ""
+
+    var body: some View {
+        List {
+            Section {
+                Button {
+                    Task {
+                        if let place = await model.requestCurrentLocation() { onPick(place) }
+                    }
+                } label: {
+                    Label("Current Location", systemImage: "location.fill")
+                }
+                .disabled(model.isLocating)
+                if model.isLocating { ProgressView() }
+                if model.authDenied, let settings = URL(string: UIApplication.openSettingsURLString) {
+                    Button("Open Settings") { openURL(settings) }
+                }
+            }
+            if query.isEmpty {
+                Section("Recents") {
+                    ForEach(recents.uniqued(by: \.name), id: \.name) { place in
+                        Button(place.name) { onPick(place) }
+                    }
+                }
             } else {
-                scrollContentInner(staged: staged)
-            }
-        }
-    }
-
-    /// One header style for every section: sentence case, no icon, no caps —
-    /// matching how the rest of the app titles things. The extra top padding
-    /// separates sections; header → content is the stack's own 12pt.
-    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
-        Text(title)
-            .sectionLabel()
-            .foregroundStyle(Theme.secondaryLabel)
-            .padding(.top, Spacing.md)
-            .accessibilityAddTraits(.isHeader)
-    }
-
-    @ViewBuilder
-    private func scrollContentInner(staged: [String: StagedChipCounts]) -> some View {
-        // Meds are always surfaced (discoverability) — with none defined
-        // the section is just the Add a Med pill, and the whole thing is
-        // collapsible for people who don't use it. "What should I take
-        // now?" is answered on the pills themselves (a due pill wears the
-        // slot time and a check circle), never as a second list of the same
-        // meds above them.
-        //
-        // Whose journal this log goes into leads the sheet, before anything is
-        // staged, once there is more than one profile.
-        TrayRecipientRow(model: tray)
-        dailySection()
-
-        let products = customSubstanceStore.all.filter(\.isCombination)
-        let medAmounts = productMedAmounts
-
-        if content.cachedCards.isEmpty, content.cachedDailyGroups.isEmpty, products.isEmpty {
-            ContentUnavailableView(
-                "No Previous Substances",
-                systemImage: "magnifyingglass",
-                description: Text("Search for a substance to log your first entry."),
-            )
-        }
-
-        // ONE substances section — favorites pinned first (their saved order),
-        // recents filling behind. Two headers ("Favorites" / "Recent") made
-        // three competing lists on one screen; the split is still visible
-        // through the star, without costing a second decision.
-        if !content.cachedCards.isEmpty || !content.cachedFavoriteLibrarySubstances.isEmpty || !products.isEmpty {
-            sectionHeader("Your Substances")
-            // A combination product is one card of its own, whatever its
-            // components' cards show: it is what the user takes.
-            ForEach(products) { product in
-                ProductCardView(
-                    product: product,
-                    stagedQuantity: tray.stagedQuantity(of: product),
-                    medAmount: medAmounts[product.name.lowercased()],
-                    tray: tray,
-                    colorLookup: content.cachedColorLookup,
-                )
-                .equatable()
-            }
-            ForEach(content.cachedFavoriteCards) { card in
-                cardView(card, isFavorite: true, staged: staged)
-                    .id("\(card.id)_fav")
-            }
-            ForEach(content.cachedFavoriteLibrarySubstances) { substance in
-                libraryRow(substance)
-            }
-            ForEach(content.cachedNonFavoriteCards) { card in
-                cardView(card, isFavorite: false, staged: staged)
-                    .id("\(card.id)_recent")
-            }
-        }
-    }
-
-    // MARK: - Daily routine
-
-    @ViewBuilder
-    private func dailySection() -> some View {
-        // The collapse toggle is the whole header row — chevron included.
-        Button {
-            withAnimation(.snappy) { routinesCollapsed.toggle() }
-        } label: {
-            HStack(spacing: Spacing.sm) {
-                Text("My Meds")
-                    .sectionLabel()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .rotationEffect(.degrees(routinesCollapsed ? 0 : 90))
-                Spacer()
-            }
-            .foregroundStyle(Theme.secondaryLabel)
-            .padding(.top, Spacing.md)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("My Meds")
-        .accessibilityValue(routinesCollapsed ? Text("Collapsed") : Text("Expanded"))
-
-        if !routinesCollapsed {
-            FlowLayout(spacing: Spacing.md) {
-                ForEach(content.cachedDailyGroups) { group in
-                    routinePill(group)
+                Section("Results") {
+                    ForEach(model.suggestions) { suggestion in
+                        Button {
+                            Task {
+                                if let place = await model.resolve(suggestion) { onPick(place) }
+                            }
+                        } label: {
+                            VStack(alignment: .leading) {
+                                Text(verbatim: suggestion.title)
+                                if !suggestion.subtitle.isEmpty {
+                                    Text(verbatim: suggestion.subtitle)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
                 }
-                manageMedsPill
             }
         }
+        .navigationTitle("Location")
+        .searchable(text: $query, prompt: "Search for a place or address")
+        .onChange(of: query) { model.query = query }
     }
+}
 
-    /// Trailing pill of the meds row — adding/editing meds lives with the
-    /// pills they produce.
-    private var manageMedsPill: some View {
-        Button {
-            navigator.present(.dailyDoseSettings)
-        } label: {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: "plus")
-                    .imageScale(.small)
-                    .accessibilityHidden(true)
-                Text("Add a Med")
-            }
-            .sectionLabel()
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(Color.platformSecondarySystemFill, in: skinChipShape())
-            .foregroundStyle(Theme.secondaryLabel)
-        }
-        .buttonStyle(.plain)
-    }
+struct QuickLogBrowsePage: View {
+    let onSelect: (QuickLogStagePayload) -> Void
 
-    private func routinePill(_ group: DailyCategoryGroup) -> some View {
-        // "Staged" means this pill's own doses are all still in the tray, so
-        // the look and the tap agree: a staged pill's tap takes them back out.
-        MedGroupPill(
-            group: group,
-            allStaged: tray.isPillStaged(group.id),
-            onTap: {
-                withAnimation(.snappy) {
-                    tray.togglePill(group.id, meds: group.items, colorLookup: content.cachedColorLookup)
+    var body: some View {
+        List(LibraryFamily.browsable) { family in
+            NavigationLink {
+                List {
+                    QuickLogSearchResults(
+                        results: substances(in: family).map { .custom($0) },
+                        onAdd: onSelect,
+                        onAddCombination: { _ in },
+                    )
                 }
-            },
-        )
-    }
-
-    // MARK: - Substance Card
-
-    /// Builds the extracted ``SubstanceCardView`` for a recent/favorite card,
-    /// wiring the list-owned actions (favorite toggle + curated-list edits)
-    /// while the card itself owns its layout and ephemeral expansion state.
-    private func cardView(_ card: SubstanceCard, isFavorite: Bool, staged: [String: StagedChipCounts]) -> some View {
-        SubstanceCardView(
-            card: card,
-            isFavorite: isFavorite,
-            badge: content.cachedMostRecent[card.id],
-            stagedCounts: staged[card.id] ?? .empty,
-            tray: tray,
-            onToggleFavorite: { withAnimation(.snappy) { toggleFavorite(card) } },
-            onMoveChip: { group, chip, toFront in moveChip(group: group, chip: chip, toFront: toFront) },
-            onRemoveChip: { group, chip in removeChip(group: group, chip: chip) },
-            onRemoveCard: { withAnimation(.snappy) { removeCard(card) } },
-        )
-        // Skip rebuilding this card (its chip buttons + context menus) when its
-        // content and staged slice are unchanged — the staging-cascade fix.
-        .equatable()
-    }
-
-    private func toggleFavorite(_ card: SubstanceCard) {
-        let nowFavorite = FavoriteService.toggle(
-            substance: card.substanceName,
-            substanceUID: card.substanceUID,
-            isomer: card.isomer,
-            releaseForm: card.releaseForm,
-            saltForm: card.saltForm,
-            productName: card.productName,
-            in: modelContext,
-        )
-        content.setFavorite(identity: card.id, on: nowFavorite)
-    }
-
-    // MARK: - Library Row
-
-    private func libraryRow(_ substance: Substance) -> some View {
-        Button {
-            openLibrarySubstance(substance)
-        } label: {
-            HStack(spacing: Spacing.lg) {
-                Image(systemName: "pill")
-                    .foregroundStyle(Theme.secondaryLabel)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text(substance.name)
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-                    Text("\(substance.defaultRoute.displayName) · \(substance.defaultUnit)")
-                        .captionSecondary()
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .captionSecondary()
-                    .accessibilityHidden(true)
+                .navigationTitle(family.title)
+            } label: {
+                Label(family.title, systemImage: family.icon)
             }
-            .padding(14)
-            .themeCard(cornerRadius: 20)
         }
-        .buttonStyle(.plain)
+        .navigationTitle("Browse")
     }
 
-    /// Stages a draft for a library substance tapped in the card list. A card
-    /// in the list isn't a search surface, so staging skips the search-state
-    /// reset a dock search hit performs, and opens the draft at the dock's
-    /// half height without raising the keyboard.
-    private func openLibrarySubstance(_ substance: Substance) {
-        withAnimation(.snappy) {
-            tray.stageDraft(
-                substance: substance.name,
-                route: substance.defaultRoute,
-                unit: substance.defaultUnit,
-                tint: SubstancePalette.tint(for: substance.name, tintMap: content.cachedColorLookup),
-                librarySubstance: substance,
-                focusesAmount: false,
-            )
+    private func substances(in family: LibraryFamily) -> [Substance] {
+        let list: [Substance] = switch family.source {
+        case let .category(category): SubstanceLibrary.substances(in: category)
+        case let .tag(tag): SubstanceLibrary.substances(taggedWith: tag)
+        case nil: family.subclasses.flatMap { SubstanceLibrary.substances(in: $0.category) }
         }
-    }
-
-    // MARK: - Quick-log list curation
-
-    /// The curated row backing a chip, matched by substance + route + measurement.
-    private func quickLogDose(for group: SubstanceGroup, chip: DoseChip) -> QuickLogDose? {
-        let key = QuickLogDose.makeKey(
-            substance: group.substanceName,
-            route: group.route,
-            amount: chip.amount,
-            unit: chip.unit,
-            substanceUID: group.substanceUID,
-            isomer: group.isomer,
-            releaseForm: group.releaseForm,
-            saltForm: group.saltForm,
-            volumeML: chip.volumeML,
-            abv: chip.abv,
-            drinkName: chip.drinkName,
-        )
-        return quickLogDoses.first { $0.key == key }
-    }
-
-    /// Remove a whole substance from the quick-log list — every chip on every
-    /// route, in one action, and it stays removed across the history re-seed.
-    private func removeCard(_ card: SubstanceCard) {
-        QuickLogManager.removeFromRecents(identityKey: card.id, context: modelContext)
-        content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites)
-    }
-
-    private func removeChip(group: SubstanceGroup, chip: DoseChip) {
-        guard let dose = quickLogDose(for: group, chip: chip) else { return }
-        modelContext.delete(dose)
-        try? modelContext.save()
-        withAnimation(.snappy) { content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites) }
-    }
-
-    /// Move a chip to the front (or back) of its (substance, route) group by
-    /// rewriting its `sortOrder` just past the current min/max.
-    private func moveChip(group: SubstanceGroup, chip: DoseChip, toFront: Bool) {
-        guard let dose = quickLogDose(for: group, chip: chip) else { return }
-        // Reorder within the same (identity, route) group — a Concerta chip floats
-        // past its Concerta siblings, not Ritalin's.
-        let siblings = quickLogDoses.filter { $0.identityKey == group.cardKey && $0.route == group.route }
-        if toFront {
-            dose.sortOrder = (siblings.map(\.sortOrder).min() ?? 0) - 1
-        } else {
-            dose.sortOrder = (siblings.map(\.sortOrder).max() ?? 0) + 1
-        }
-        try? modelContext.save()
-        withAnimation(.snappy) { content.rebuildCards(quickLogDoses: quickLogDoses, favorites: favorites) }
+        return Array(list.sorted {
+            if $0.popularity != $1.popularity { return $0.popularity > $1.popularity }
+            return $0.displayTitle.localizedCaseInsensitiveCompare($1.displayTitle) == .orderedAscending
+        }.prefix(20))
     }
 }

@@ -32,15 +32,13 @@ struct CustomSubstancesListView: View {
                                 if let components = substance.componentsSummary {
                                     // A combination is its components: "500 mg
                                     // Paracetamol · 30 mg Codeine" per tablet.
-                                    Text("\(components) · per \(substance.unit)")
+                                    Text("\(components), per \(substance.unit)")
                                         .captionSecondary()
                                         .lineLimit(2)
                                 } else {
                                     HStack(spacing: Spacing.sm) {
                                         Text(substance.category.displayName)
-                                        Middot()
                                         Text(substance.defaultRoute.localizedName)
-                                        Middot()
                                         Text(substance.unit)
                                     }
                                     .captionSecondary()
@@ -57,10 +55,8 @@ struct CustomSubstancesListView: View {
                 .onDelete { offsets in
                     store.delete(at: offsets)
                 }
-                .listRowBackground(CardBackground())
             }
         }
-        .themedPage()
         .navigationTitle("Custom Substances")
         .inlineNavigationTitle()
         .toolbar {

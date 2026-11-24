@@ -9,21 +9,17 @@ extension View {
         font(.caption).foregroundStyle(Theme.secondaryLabel)
     }
 
-    /// The label above a group of rows inside a card. Always the system face:
-    /// this role also carries data (receptor names, section titles), and a
-    /// skin's label face is for chips and badges, where a word is a token,
-    /// not something to read.
+    /// The label above a group of rows inside a card.
     func sectionLabel() -> some View {
         font(.subheadline.weight(.semibold))
     }
 
-    /// The title of a card or a banner. In the skin's display face.
+    /// The title of a card or a banner.
     func cardTitle() -> some View {
         font(.piru(.headline))
     }
 
-    /// The title at the top of a screen or a full-width sheet. In the skin's
-    /// display face.
+    /// The title at the top of a screen or a full-width sheet.
     func screenTitle() -> some View {
         font(.piru(.title3, weight: .semibold))
     }

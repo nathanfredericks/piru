@@ -1,32 +1,15 @@
 import SwiftUI
 
-/// The pharmacology cluster: the unified Pharmacology (mechanism) card, the
-/// Receptor Literature / Pharmacokinetics / Metabolism disclosures,
-/// and the metabolic-interaction and contraceptive-caution banners. Grouped into
-/// one subview so the async pharma fields (`literatureBindings`, `pkRoutes`,
-/// `metabolismRows`, …) invalidate only this boundary as they load off the store,
-/// not the whole detail screen. Owns its own disclosure state, so the parent
-/// carries none of the `*Expanded` flags.
+/// Collapsed reference sections for mechanism, receptor literature, pharmacokinetics, and metabolism.
 struct PharmacologySections: View {
     let substance: Substance
     let model: SubstanceDetailModel
-    let policy: DisclosurePolicy
-    let profile: UserProfile
     let onGlossary: (PharmacologyGlossarySheet.Topic) -> Void
 
-    private enum Disclosure: Hashable {
-        case mechanism
-        case receptorLit
-        case pharmacokinetics
-        case metabolism
-    }
-
-    /// Section expansion state. Absence of a key means "use the policy default
-    /// for the current tier"; once the user toggles a section, the stored Bool
-    /// sticks. The keys are dropped on profile change so the new tier's defaults
-    /// take effect (otherwise the user would be permanently stuck on whatever
-    /// defaults applied the first time the section was rendered).
-    @State private var expanded: [Disclosure: Bool] = [:]
+    @State private var mechanismExpanded = false
+    @State private var receptorLiteratureExpanded = false
+    @State private var pharmacokineticsExpanded = false
+    @State private var metabolismExpanded = false
 
     /// Metabolites whose formation runs through a polymorphic enzyme
     /// (CYP2D6/CYP2C19) *and* that carry real effect — the codeine → morphine,
@@ -50,14 +33,12 @@ struct PharmacologySections: View {
         Group {
             // The Pharmacology card: mechanism of action, with the monoamine slider
             // hero inline when the substance has a monoamine profile.
-            if policy.showsMechanism, let moa = composedMechanism {
+            if let moa = composedMechanism {
                 CollapsibleSection(
                     "Pharmacology",
                     onInfo: { onGlossary(.mechanism) },
-                    isExpanded: binding(.mechanism, default: policy.mechanismDefaultExpanded),
+                    isExpanded: $mechanismExpanded,
                 ) {
-                    // Card and footer share one row — see ``DoseDurationSection``
-                    // for why a peer row grows a hairline at some card heights.
                     VStack(alignment: .leading, spacing: 0) {
                         // Load-bearing, not decoration. Every number below this line was
                         // measured on the molecule, and without the line the card reads as
@@ -81,25 +62,17 @@ struct PharmacologySections: View {
                         if let cascade = model.signalingCascade {
                             SignalingCascadeRow(cascade: cascade, accent: substance.category.color)
                         }
-                        if let slug = model.provenance?.mechanismSource {
-                            SourceAttributionRow(
-                                slug: slug,
-                                label: "Mechanism",
-                                deepLink: SubstanceSourceLinks.deepLink(slug, substance: substance),
-                                substanceName: substance.name, field: .mechanism,
-                            )
-                        }
                     }
                 }
             }
 
             // Suppressed for receptor-panel classes (opioid/benzo/dissociative): their hero already
             // carries the primary receptors, so a second table would duplicate it.
-            if policy.showsReceptorLiterature, hero == nil, !model.visibleLiteratureBindings.isEmpty {
+            if hero == nil, !model.visibleLiteratureBindings.isEmpty {
                 CollapsibleSection(
                     "Receptor Literature",
                     onInfo: { onGlossary(.receptor) },
-                    isExpanded: binding(.receptorLit, default: policy.receptorLitDefaultExpanded),
+                    isExpanded: $receptorLiteratureExpanded,
                 ) {
                     GroupedReceptorLiterature(rows: model.visibleLiteratureBindings, accent: substance.category.color)
                         .padding(.vertical, Spacing.xs)
@@ -111,95 +84,25 @@ struct PharmacologySections: View {
             // about the user's experience, so it lives open on the main screen
             // (``AlsoActiveSection``) while these cards start folded.
 
-            if policy.showsPharmacokinetics, !model.pkRoutes.isEmpty {
+            if !model.pkRoutes.isEmpty {
                 CollapsibleSection(
                     "Pharmacokinetics",
                     onInfo: { onGlossary(.pharmacokinetics) },
-                    isExpanded: binding(.pharmacokinetics, default: policy.pharmacokineticsDefaultExpanded),
+                    isExpanded: $pharmacokineticsExpanded,
                 ) {
                     pharmacokineticsBody
                 }
             }
 
-            // Metabolism (CYP enzymes / metabolites) — split out of Pharmacokinetics into its own
-            // section and placed next to the metabolic-interaction banners below: it's the more
-            // actionable, grapefruit-adjacent half of the PK story.
-            // No ⓘ on this header. ``AlsoActiveSection`` already opens the identical
-            // `.metabolism` sheet, and it is the only ⓘ a Casual reader can reach —
-            // so the duplicate to cut is this one, not that one.
-            if policy.showsPharmacokinetics, !model.metabolismRows.isEmpty {
+            if !model.metabolismRows.isEmpty {
                 CollapsibleSection(
                     "Metabolism",
-                    isExpanded: binding(.metabolism, default: policy.pharmacokineticsDefaultExpanded),
+                    isExpanded: $metabolismExpanded,
                 ) {
                     metabolismBody
                 }
             }
-
-            // Metabolic modulation — grapefruit/smoking/self-edge education for
-            // substances with a major clearance route through a modulated enzyme.
-            if !model.metabolicEducation.isEmpty {
-                Section {
-                    ForEach(model.metabolicEducation) { effect in
-                        MetabolicModulationBanner(effect: effect)
-                    }
-                } header: {
-                    // No ⓘ: each banner states its own effect in a sentence, so a help sheet one
-                    // header below the Metabolism card was the sixth ⓘ on one screen and explained
-                    // nothing the banner didn't.
-                    Text("Metabolism Interactions")
-                }
-            }
-
-            // Measured PK interactions from the literature, below the predicted
-            // modulation banners above. The order is the claim strength: those are
-            // modeled and badged as predictions, these are what a study measured.
-            // Two thirds of these rows name a drug *class* rather than a drug, which
-            // is why they live here on the substance's own page — the pair matcher in
-            // `InteractionChecker` can only ever fire on the third that names
-            // something the catalog carries.
-            if policy.showsPharmacokinetics, !model.pkInteractions.isEmpty {
-                Section {
-                    // One List row holding a stack, not a row per element: a
-                    // `Divider()` emitted as a sibling of the row inside a
-                    // `ForEach` lands in that row's implicit horizontal layout
-                    // and draws as a short VERTICAL rule with blank space
-                    // around it.
-                    VStack(alignment: .leading, spacing: Spacing.md) {
-                        ForEach(model.pkInteractions) { hit in
-                            PKInteractionRow(hit: hit)
-                            if hit.id != model.pkInteractions.last?.id { Divider() }
-                        }
-                    }
-                } header: {
-                    Text("Measured Interactions")
-                }
-            }
-
-            // Enzyme-induction contraceptive caution — a CYP3A4 inducer (modafinil, rifampicin, …)
-            // can lower hormonal-contraception levels. Ungated (a safety fact), kept to one compact
-            // note since it only applies to people on hormonal birth control.
-            if let contraceptionCaution = model.contraceptionCaution {
-                Section {
-                    ContraceptionCautionBanner(inducer: contraceptionCaution)
-                }
-            }
         }
-        .onChange(of: profile) { _, _ in
-            // Reset stuck overrides so the new tier's policy defaults win. Any
-            // disclosure the user touches after this point sticks until the next
-            // profile change.
-            expanded[.mechanism] = nil
-            expanded[.receptorLit] = nil
-            expanded[.pharmacokinetics] = nil
-        }
-    }
-
-    private func binding(_ key: Disclosure, default def: Bool) -> Binding<Bool> {
-        Binding(
-            get: { expanded[key] ?? def },
-            set: { expanded[key] = $0 },
-        )
     }
 
     /// Mechanism shown in the detail card, composed from three sources by

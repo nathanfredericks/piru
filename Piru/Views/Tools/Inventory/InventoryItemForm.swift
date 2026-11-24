@@ -208,8 +208,8 @@ struct InventoryItemForm: View {
 
     /// "Restock · Caffeine" / "Track · Caffeine" / "Track Substance".
     private var navTitle: String {
-        if isRestock { return String(localized: "Restock · \(titleName)") }
-        if substanceFixed { return String(localized: "Track · \(titleName)") }
+        if isRestock { return String(localized: "Restock, \(titleName)") }
+        if substanceFixed { return String(localized: "Track, \(titleName)") }
         return String(localized: "Track Substance")
     }
 
@@ -247,7 +247,6 @@ struct InventoryItemForm: View {
                 noteSection
             }
             .scrollDismissesKeyboard(.interactively)
-            .themedPage()
             .navigationTitle(navTitle)
             .inlineNavigationTitle()
             .toolbar {
@@ -289,7 +288,6 @@ struct InventoryItemForm: View {
             } header: {
                 Text("Substance")
             }
-            .listRowBackground(CardBackground())
         }
     }
 
@@ -311,7 +309,6 @@ struct InventoryItemForm: View {
         } footer: {
             Text("Marks the amount after this as a full supply, so the bar can show how full you are. Leave off if this isn't a full restock.")
         }
-        .listRowBackground(CardBackground())
     }
 
     /// The note field is always present; an empty note simply isn't saved.
@@ -323,7 +320,6 @@ struct InventoryItemForm: View {
         } header: {
             Text("Note")
         }
-        .listRowBackground(CardBackground())
     }
 
     // MARK: - Commit
@@ -448,7 +444,6 @@ private struct InventoryAmountSection: View {
                 Text("Counted in \(draft.countUnit). A dose logged in mg is taken off at this strength.")
             }
         }
-        .listRowBackground(CardBackground())
     }
 }
 
@@ -542,7 +537,6 @@ private struct InventoryFormSection: View {
             } footer: {
                 Text("Doses of the chosen form come off this item. An item set to Any takes the rest.")
             }
-            .listRowBackground(CardBackground())
         }
     }
 }

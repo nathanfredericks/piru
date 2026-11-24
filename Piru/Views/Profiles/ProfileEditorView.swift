@@ -76,7 +76,6 @@ struct ProfileEditorView: View {
                 Color.clear
             }
         }
-        .themedPage()
         .navigationTitle(editing == nil ? Text("New Profile") : Text(verbatim: editing?.name ?? ""))
         .inlineNavigationTitle()
         .toolbar {
@@ -169,7 +168,6 @@ private struct ProfileEditorForm: View {
                     DeleteProfileSection(profile: editing, onDeleted: onDeleted)
                 }
             }
-            .listRowBackground(CardBackground())
         }
         // A new person starts at their name.
         .task { if editing == nil { nameFocused = true } }

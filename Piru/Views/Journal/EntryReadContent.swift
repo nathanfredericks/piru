@@ -169,7 +169,7 @@ struct EntryReadHero: View {
                                 .padding(.trailing, -6)
                         }
                     }
-                    Text(verbatim: "\(entry.timestamp.formatted(date: .abbreviated, time: .shortened)) · \(EntryDoseFormat.relativeText(from: entry.timestamp, now: context.date))")
+                    Text(verbatim: "\(entry.timestamp.formatted(date: .abbreviated, time: .shortened)), \(EntryDoseFormat.relativeText(from: entry.timestamp, now: context.date))")
                         .font(.subheadline)
                         .foregroundStyle(Theme.secondaryLabel)
                         .monospacedDigit()
@@ -251,7 +251,7 @@ struct EntryReadHero: View {
         if entry.combinationName != nil {
             // Fractions of a milliliter are the point of a liquid, so the
             // volume keeps the dose rounding rather than one decimal.
-            return "\(ml.doseFormatted) mL · \(abv.doseFormatted) \(entry.unit)/mL"
+            return "\(ml.doseFormatted) mL, \(abv.doseFormatted) \(entry.unit)/mL"
         }
         // Percent by volume only for a substance whose own input is ABV
         // (alcohol); any other solution in grams reads as g/mL.
@@ -259,9 +259,9 @@ struct EntryReadHero: View {
         if isPercentByVolume {
             return ByVolumeBreadcrumb.make(name: entry.drinkName, volumeML: ml, abv: abv)
         }
-        let core = "\(ByVolumeDosing.formatTrimmed(ml)) mL · \(ByVolumeDosing.formatTrimmed(abv)) \(entry.unit)/mL"
+        let core = "\(ByVolumeDosing.formatTrimmed(ml)) mL, \(ByVolumeDosing.formatTrimmed(abv)) \(entry.unit)/mL"
         if let name = entry.drinkName?.trimmingCharacters(in: .whitespaces), !name.isEmpty {
-            return "\(name) · \(core)"
+            return "\(name), \(core)"
         }
         return core
     }
@@ -350,7 +350,7 @@ struct EntryEndedReceipt: View {
 
     private var text: Text {
         if let cleared, cleared > end {
-            Text("Effects ended ~\(SessionBodyLoadModel.milestoneText(end)) · cleared ~\(SessionBodyLoadModel.milestoneText(cleared))")
+            Text("Effects ended ~\(SessionBodyLoadModel.milestoneText(end)), cleared ~\(SessionBodyLoadModel.milestoneText(cleared))")
         } else {
             Text("Effects ended ~\(SessionBodyLoadModel.milestoneText(end))")
         }

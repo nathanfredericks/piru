@@ -1,11 +1,10 @@
 import SwiftUI
 
 /// A full-width pill CTA — the app's one standard for prominent standalone
-/// actions (onboarding steps, empty-state CTAs, list-footer actions).
+/// actions in empty states and at the end of lists.
 /// `.prominent` is the accent-tinted primary (the system "Allow" pill);
 /// `.neutral` is its plain counterpart for skip / not-now escape hatches.
-/// The skin supplies the form (Liquid Glass, or an edged sticker) through
-/// ``skinButtonStyle``; `controlSize(.large)` gives the system pill height so
+/// The large system glass style gives the pill enough height so
 /// the label always sits optically centered.
 struct GlassPillButton: View {
     enum Prominence {
@@ -21,20 +20,19 @@ struct GlassPillButton: View {
         switch prominence {
         case .prominent:
             button
-                .skinButtonStyle(.prominent)
+                .buttonStyle(.glassProminent)
                 .controlSize(.large)
                 .tint(Theme.accent)
         case .neutral:
             button
-                .skinButtonStyle(.neutral)
+                .buttonStyle(.glass)
                 .controlSize(.large)
         }
     }
 
     private var button: some View {
         Button(action: action) {
-            // The style owns the prominent label color (system glass, or the
-            // skin's on-accent ink); only the neutral label sets its own.
+            // The system supplies the prominent label color.
             label
                 .frame(maxWidth: .infinity)
         }

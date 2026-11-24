@@ -39,7 +39,7 @@ struct SteadyStateProjectionCard: View {
             Text(projection.displayName)
                 .cardTitle()
             Spacer()
-            Text("\(projection.medianDose.doseFormatted) \(projection.unit) · \(cadenceText)")
+            Text("\(projection.medianDose.doseFormatted) \(projection.unit), \(cadenceText)")
                 .captionSecondary()
         }
     }

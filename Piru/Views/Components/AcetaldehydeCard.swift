@@ -80,7 +80,7 @@ struct AcetaldehydeCard: View {
                                 .foregroundStyle(load.tint)
                                 .padding(.horizontal, Spacing.md)
                                 .padding(.vertical, 3)
-                                .background(load.tint.opacity(Theme.Opacity.tint), in: skinChipShape())
+                                .background(load.tint.opacity(Theme.Opacity.tint), in: Capsule())
                         }
                     }
 
@@ -96,7 +96,7 @@ struct AcetaldehydeCard: View {
         } header: {
             Text("Acetaldehyde (ALDH2)")
         } footer: {
-            Text("Based on your self-reported alcohol flush · educational.")
+            Text("Based on your self-reported alcohol flush, educational.")
         }
     }
 }

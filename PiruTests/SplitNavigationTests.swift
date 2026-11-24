@@ -113,7 +113,6 @@ struct OpenRecordTests {
             selectedTab: .library,
             paths: [.library: path],
             storage: makeIsolatedDefaults(),
-            layout: TabLayoutStore(defaults: makeIsolatedDefaults()),
         )
     }
 
@@ -175,9 +174,9 @@ struct OpenRecordTests {
     @Test
     func `an edit in another tab does not hold this one`() {
         let nav = navigator([mdma])
-        nav.selectedTab = .journal
+        nav.select(.journal)
         nav.setEditing(true, record: entryID)
-        nav.selectedTab = .library
+        nav.select(.library)
         nav.openRecord(caffeine, besideList: true)
         #expect(nav.path(for: .library) == [caffeine])
     }

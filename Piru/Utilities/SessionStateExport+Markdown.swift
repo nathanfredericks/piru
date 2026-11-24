@@ -133,11 +133,11 @@ extension SessionStateExport {
             out.append("")
             for note in notes {
                 var head = "**\(TripReport.tPlus(note.timestamp.timeIntervalSince(sessionStart)))** (\(clock(note.timestamp)))"
-                if note.kind == .checkIn { head += " · check-in" }
-                if !note.structure.isEmpty { head += " · " + note.structure }
+                if note.kind == .checkIn { head += ", check-in" }
+                if !note.structure.isEmpty { head += ", " + note.structure }
                 out.append("- " + head)
                 if !note.text.isEmpty { out.append("  " + note.text.replacingOccurrences(of: "\n", with: "\n  ")) }
-                if !note.descriptors.isEmpty { out.append("  _" + note.descriptors.joined(separator: " · ") + "_") }
+                if !note.descriptors.isEmpty { out.append("  _" + note.descriptors.joined(separator: ", ") + "_") }
             }
             out.append("")
         }

@@ -38,7 +38,7 @@ private struct CombinationRow: View {
                         .foregroundStyle(Theme.secondaryLabel)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
-                        .background(Theme.secondaryLabel.opacity(Theme.Opacity.tint), in: skinChipShape())
+                        .background(Theme.secondaryLabel.opacity(Theme.Opacity.tint), in: Capsule())
                 }
                 Spacer(minLength: 8)
                 EditorialPill(

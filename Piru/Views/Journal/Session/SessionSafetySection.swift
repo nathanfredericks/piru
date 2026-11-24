@@ -5,9 +5,7 @@ import SwiftUI
 ///
 /// Findings that have earned an interruption are inline; the quiet ones fold
 /// behind a count once there are enough of them for folding to help (see
-/// ``partitionedForReview``). This is the only home for interactions: the
-/// QuickLog dock records what has already been taken, so a warning there would
-/// arrive after the decision it would inform. Rows echo the dose rows: a
+/// ``partitionedForReview``). Rows echo the dose rows: a
 /// leading severity triangle in place of the color dot, the involved
 /// substances in normal text, and the severity level as a tinted chip on the
 /// right, the only colored element. Warnings from the same rule are grouped so
@@ -115,7 +113,7 @@ struct SessionSafetySection: View {
                 HStack(spacing: Spacing.sm) {
                     Text("Heart rate")
                         .font(.body.weight(.semibold))
-                    Text("avg \(summary.average) · peak \(summary.peak) bpm")
+                    Text("avg \(summary.average), peak \(summary.peak) bpm")
                         .font(.subheadline)
                         .monospacedDigit()
                         .foregroundStyle(Theme.secondaryLabel)

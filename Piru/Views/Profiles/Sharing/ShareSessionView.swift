@@ -23,7 +23,6 @@ struct ShareSessionView: View {
                     Text("Pair with someone first: you each scan the other's code, once, in person.")
                         .foregroundStyle(Theme.secondaryLabel)
                 }
-                .listRowBackground(CardBackground())
             } else {
                 Section {
                     ForEach(directory.people) { person in
@@ -34,7 +33,6 @@ struct ShareSessionView: View {
                 } footer: {
                     Text("Sends your doses, notes and body weight from this session, sealed so only they can open it.")
                 }
-                .listRowBackground(CardBackground())
             }
 
             Section {
@@ -44,17 +42,14 @@ struct ShareSessionView: View {
                     Label("Pair with Someone", systemImage: "qrcode")
                 }
             }
-            .listRowBackground(CardBackground())
 
             if let error {
                 Section {
                     Text(verbatim: error)
                         .foregroundStyle(Theme.secondaryLabel)
                 }
-                .listRowBackground(CardBackground())
             }
         }
-        .themedPage()
         .navigationTitle("Share With")
         .inlineNavigationTitle()
         .toolbar {
@@ -155,7 +150,6 @@ struct PeopleSection: View {
         } footer: {
             Text("People on other phones you share sessions with. Unpairing removes the sessions they sent.")
         }
-        .listRowBackground(CardBackground())
         .confirmationDialog(
             Text("Unpair \(unpairing?.profile.name ?? "")?"),
             isPresented: Binding(get: { unpairing != nil }, set: { if !$0 { unpairing = nil } }),

@@ -31,7 +31,7 @@ struct MetabolicModulationBanner: View {
             effect.strength.map { String(localized: $0.label) },
             effect.confidence.map { String(localized: $0.label) },
         ].compactMap(\.self)
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 
     /// The enzyme is deliberately omitted from the headline — the note below already names it

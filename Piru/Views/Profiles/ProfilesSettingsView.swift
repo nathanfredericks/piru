@@ -19,11 +19,9 @@ struct ProfilesSettingsView: View {
             } footer: {
                 Text("Each profile is its own journal. Deleting one deletes its journal.")
             }
-            .listRowBackground(CardBackground())
 
             PeopleSection()
         }
-        .themedPage()
         .navigationTitle("Profiles")
         .inlineNavigationTitle()
         .navigationDestination(isPresented: $addingProfile) {
@@ -52,7 +50,7 @@ private struct ProfileRow: View {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(verbatim: profile.name)
                 if profile.isOwner {
-                    Text("This device · Apple Health")
+                    Text("This device, Apple Health")
                         .captionSecondary()
                 }
             }

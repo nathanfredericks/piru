@@ -97,7 +97,6 @@ struct InventoryItemEditView: View {
                 } footer: {
                     Text("The exact amount you have now. Changing it is logged as a correction.")
                 }
-                .listRowBackground(CardBackground())
 
                 Section {
                     InventoryStepperRow(value: $baseline, unit: unit, label: "Baseline (100%)", stepBasis: stepBasis)
@@ -106,7 +105,6 @@ struct InventoryItemEditView: View {
                 } footer: {
                     Text("The amount that counts as a full supply for the bar. Set to 0 to hide the bar.")
                 }
-                .listRowBackground(CardBackground())
 
                 Section {
                     InventoryStepperRow(value: $doseSize, unit: unit, label: "Single dose", stepBasis: stepBasis)
@@ -115,7 +113,6 @@ struct InventoryItemEditView: View {
                 } footer: {
                     Text("Used to show how many doses you have left. Set to 0 to disable.")
                 }
-                .listRowBackground(CardBackground())
 
                 Section {
                     InventoryStepperRow(value: $threshold, unit: unit, label: "Warn when below", stepBasis: stepBasis)
@@ -124,7 +121,6 @@ struct InventoryItemEditView: View {
                 } footer: {
                     Text("Your remaining amount stands out once it drops below this. Set to 0 to disable.")
                 }
-                .listRowBackground(CardBackground())
 
                 let candidates = shareCandidates
                 if !candidates.isEmpty {
@@ -132,7 +128,6 @@ struct InventoryItemEditView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .themedPage()
             .navigationTitle("Edit")
             .inlineNavigationTitle()
             .toolbar {

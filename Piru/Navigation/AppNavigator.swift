@@ -19,7 +19,7 @@ final class AppNavigator {
 
     // MARK: - State
 
-    var selectedTab: TabID {
+    private(set) var selectedTab: TabID {
         didSet {
             guard selectedTab != oldValue else { return }
             storage.set(selectedTab.storageKey, forKey: Self.selectedTabKey)
@@ -27,6 +27,7 @@ final class AppNavigator {
     }
 
     private(set) var paths: [TabID: [PushRoute]]
+    private(set) var librarySearchRequest: String?
 
     /// How many times each tab has reopened the record already beside its list. The
     /// path does not change then, so a split tab watches this to show the record again.
@@ -59,10 +60,6 @@ final class AppNavigator {
     @ObservationIgnored
     private static let selectedTabKey = "AppNavigator.selectedTab"
 
-    /// The user's tab bar — what a "land me here" request resolves against.
-    @ObservationIgnored
-    private let layout: TabLayoutStore
-
     // MARK: - Init
 
     init(
@@ -70,60 +67,74 @@ final class AppNavigator {
         paths: [TabID: [PushRoute]] = [:],
         sheetStack: [SheetRoute] = [],
         storage: UserDefaults = .standard,
-        layout: TabLayoutStore = .shared,
     ) {
         self.storage = storage
-        self.layout = layout
-        let visible = layout.layout.visible
-        if let selectedTab {
-            self.selectedTab = selectedTab
-        } else if let key = storage.string(forKey: Self.selectedTabKey),
-                  let tab = TabID(storageKey: key),
-                  visible.contains(tab) {
-            self.selectedTab = tab
-        } else {
-            // Nothing persisted, or a tab the user has since taken out of the bar.
-            self.selectedTab = visible.first ?? .journal
-        }
-        self.paths = paths
+        let saved = storage.string(forKey: Self.selectedTabKey).flatMap(TabID.init(storageKey:))
+        let requested = selectedTab ?? saved ?? .journal
+        let destination = TabRouting.destination(for: requested, path: paths[requested, default: []])
+        self.selectedTab = destination.tab
+        self.paths = Self.fixedPaths(paths, selecting: requested)
         self.sheetStack = sheetStack
     }
 
     // MARK: - Tabs
 
     func select(_ tab: TabID) {
-        selectedTab = tab
+        if TabID.visible.contains(tab) {
+            selectedTab = tab
+        } else if tab == .search {
+            openLibrarySearch()
+        } else {
+            let destination = TabRouting.destination(for: tab, path: [])
+            selectedTab = destination.tab
+            setPath(destination.path, in: destination.tab)
+        }
     }
 
-    /// Follow a tab-bar edit: a selection that left the bar moves to the first
-    /// tab, and stacks of removed tabs are dropped so re-adding one starts at
-    /// its root.
-    func reconcile(visible: [TabID]) {
-        if !visible.contains(selectedTab), let first = visible.first {
-            selectedTab = first
-        }
-        paths = paths.filter { visible.contains($0.key) }
+    func openLibrarySearch(_ query: String = "") {
+        selectedTab = .library
+        setPath([], in: .library)
+        librarySearchRequest = query
+    }
+
+    func takeLibrarySearchRequest() -> String? {
+        let query = librarySearchRequest
+        librarySearchRequest = nil
+        return query
     }
 
     /// Pop every tab to its root.
     func resetAllPaths() {
         paths.removeAll()
+        librarySearchRequest = nil
     }
 
-    /// Land on `route` — the dock's shortcuts and other "take me there"
-    /// actions. `home` is the tab the route belongs to; where it actually
-    /// lands depends on the user's bar (`TabRouting`).
+    /// Open a destination from a cross-tab shortcut.
     func open(_ route: PushRoute, home: AppTab) {
-        switch TabRouting.target(for: route, home: home, visible: layout.layout.visible) {
-        case let .pinned(tab):
-            selectedTab = tab
-            setPath([], in: tab)
-        case let .home(tab):
+        let tab = TabID.stock(home)
+        if TabID.visible.contains(tab) {
             selectedTab = tab
             push(route, in: tab)
-        case .current:
-            push(route, in: selectedTab)
+        } else {
+            let destination = TabRouting.destination(for: tab, path: [route])
+            selectedTab = destination.tab
+            setPath(destination.path, in: destination.tab)
         }
+    }
+
+    private static func fixedPaths(_ paths: [TabID: [PushRoute]], selecting tab: TabID) -> [TabID: [PushRoute]] {
+        var result = paths.filter { TabID.visible.contains($0.key) }
+        for legacy in [TabID.tools, .search] where paths[legacy] != nil {
+            let destination = TabRouting.destination(for: legacy, path: paths[legacy, default: []])
+            if result[destination.tab] == nil {
+                result[destination.tab] = destination.path
+            }
+        }
+        if !TabID.visible.contains(tab) {
+            let selected = TabRouting.destination(for: tab, path: paths[tab, default: []])
+            result[selected.tab] = selected.path
+        }
+        return result
     }
 
     // MARK: - Push
@@ -334,8 +345,10 @@ final class AppNavigator {
     var snapshot: NavigatorSnapshot {
         get { NavigatorSnapshot(selectedTab: selectedTab, paths: paths, sheetStack: sheetStack) }
         set {
-            selectedTab = newValue.selectedTab
-            paths = newValue.paths
+            let tab = newValue.selectedTab
+            selectedTab = TabRouting.destination(for: tab, path: []).tab
+            paths = Self.fixedPaths(newValue.paths, selecting: tab)
+            librarySearchRequest = nil
             // Same `maxSheetDepth` clamp as `present(_:)`. A snapshot loaded
             // from disk or assembled programmatically must not bypass the
             // limit and create invisible sheets that `dismiss()` would have
@@ -366,7 +379,7 @@ final class AppNavigator {
     /// happened.
     private func revealOpenSession(id: UUID) -> Bool {
         let target = PushRoute.session(id: id)
-        let candidates = [selectedTab] + layout.layout.visible.filter { $0 != selectedTab }
+        let candidates = [selectedTab] + TabID.visible.filter { $0 != selectedTab }
         guard let tab = candidates.first(where: { paths[$0, default: []].contains(target) }),
               let index = paths[tab]?.lastIndex(of: target)
         else { return false }
@@ -386,9 +399,12 @@ final class AppNavigator {
     func apply(_ outcome: DeepLinkOutcome, currentSessionID: UUID? = nil) {
         if let path = outcome.path {
             land(on: path, home: outcome.tab)
-        } else if let tab = outcome.tab, layout.layout.visible.contains(.stock(tab)) {
-            // A tab-only link to a tab the user took out of the bar changes nothing.
-            selectedTab = .stock(tab)
+        } else if let tab = outcome.tab {
+            if tab == .search, outcome.sheet != nil {
+                select(.library)
+            } else {
+                select(.stock(tab))
+            }
         }
         if let sheet = outcome.sheet {
             if sheet == .sessionDetail, sheetStack.isEmpty,
@@ -410,23 +426,16 @@ final class AppNavigator {
         }
     }
 
-    /// A push path is a "land me here" intent, not an append onto wherever
-    /// the user already was: it replaces the stack of the tab it lands on —
-    /// the pinned tab showing its first route (which becomes the root), else
-    /// the home tab. With neither in the bar it goes onto the current tab,
-    /// and there it appends, since that stack is the user's own.
+    /// Replace the requested tab's stack. Links without a home append to the current stack.
     private func land(on path: [PushRoute], home: AppTab?) {
-        switch TabRouting.target(for: path.first, home: home, visible: layout.layout.visible) {
-        case let .pinned(tab):
-            selectedTab = tab
-            setPath(Array(path.dropFirst()), in: tab)
-        case let .home(tab):
-            selectedTab = tab
-            setPath(path, in: tab)
-        case .current:
+        if let home {
+            let destination = TabRouting.destination(for: .stock(home), path: path)
+            selectedTab = destination.tab
+            setPath(destination.path, in: destination.tab)
+        } else {
             let current = self.path(for: selectedTab)
             if !current.ends(with: path) {
-                setPath(current + path)
+                setPath(current + path, in: selectedTab)
             }
         }
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The live "where is this dose in its arc" readout: a phase-tinted progress bar
-/// over a phase label + "{elapsed} in · {remaining} left". Shared by the dose
+/// over a phase label + "{elapsed} in, {remaining} left". Shared by the dose
 /// detail hero and the Journal's active-session hero so the two read identically.
 ///
 /// Renders only while the dose is within its modeled window (`start ..< end`);
@@ -13,7 +13,7 @@ struct DosePhaseProgressBar: View {
 
     /// How much of the readout to draw.
     enum Style {
-        /// The 6 pt bar over the dotted phase word and "{elapsed} in · {remaining} left".
+        /// The 6 pt bar over the dotted phase word and "{elapsed} in, {remaining} left".
         case full
         /// The phase word over a 3 pt bar, sized to sit at the trailing edge of a
         /// timeline bubble — the same fill and phase color, no clock text.
@@ -74,7 +74,7 @@ struct DosePhaseProgressBar: View {
                         .foregroundStyle(phase.labelColor)
                 }
                 Spacer(minLength: 8)
-                Text("\(now.timeIntervalSince(start).durationHM) in \u{00B7} \(end.timeIntervalSince(now).durationHM) left")
+                Text("\(now.timeIntervalSince(start).durationHM) in, \(end.timeIntervalSince(now).durationHM) left")
                     .captionSecondary()
                     .monospacedDigit()
             }

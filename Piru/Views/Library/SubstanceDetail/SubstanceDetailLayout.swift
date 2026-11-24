@@ -1,15 +1,5 @@
 import SwiftUI
 
-/// The placement-driven composition of the substance-detail screen. It reuses
-/// the existing section views as content but decides — per the user's
-/// disclosure tier and the compound's spine — which sections render inline,
-/// which fold into a collapsed group, which move behind a "Show all" deep page,
-/// and which are hidden. The single source of truth is
-/// ``DisclosurePolicy/placement(for:spine:)``.
-///
-/// This is the thin coordinator the redesign calls for: no async data of its
-/// own (that lives in the shared ``SubstanceDetailModel``), no duplicated
-/// route/salt state (owned by ``SubstanceDetailView``) — just the arrangement.
 struct SubstanceDetailLayout: View {
     let substance: Substance
     /// Threaded separately from `substance` so it survives the shell→full-record
@@ -18,9 +8,10 @@ struct SubstanceDetailLayout: View {
     /// an `Equatable` `SubstanceOverview?` field the diff *can* see forces the
     /// re-render when the resolved record lands.
     let overview: SubstanceOverview?
+    let howItWorks: SubstanceOverview?
     let model: SubstanceDetailModel
-    let policy: DisclosurePolicy
-    let profile: UserProfile
+    let sourceLinks: [DetailSourceLink]
+    let showsSources: Bool
     let routes: RouteResolution
     let routeSelection: Binding<RouteOfAdministration>
     let saltSelection: Binding<String?>
@@ -35,16 +26,15 @@ struct SubstanceDetailLayout: View {
     let showAllEffects: Binding<Bool>
     let onGlossary: (PharmacologyGlossarySheet.Topic) -> Void
 
-    private func placement(_ section: DetailSection) -> SectionPlacement {
-        policy.placement(for: section, displayClass: substance.displayClass)
-    }
-
     var body: some View {
-        // Header — identity above the fold: name, category chip, alias chips,
-        // formula.
         SubstanceDetailHeader(substance: substance)
+        SubstanceProseSection(title: "How It Works", prose: howItWorks, substance: substance)
+        SafetySection(substance: substance, model: model)
 
-        // Your history — the user's own data leads (only when entries exist).
+        if overview?.text != howItWorks?.text {
+            SubstanceProseSection(title: "Overview", prose: overview, substance: substance)
+        }
+
         if !historyEntries.isEmpty {
             HistorySection(entries: historyEntries, model: model, defaultUnit: substance.defaultUnit)
             // A hormone with depot ester curves: the serum level those doses add
@@ -54,9 +44,7 @@ struct SubstanceDetailLayout: View {
             }
         }
 
-        // Dose & Duration — the single most-consulted card. Inline on the
-        // recreational spine; hidden on the medical one (the matrix decides).
-        if placement(.doseDuration) == .inline {
+        if substance.displayClass.showsDoseLadder {
             DoseDurationSection(
                 routes: routes,
                 routeSelection: routeSelection,
@@ -73,17 +61,10 @@ struct SubstanceDetailLayout: View {
         // Effects — the dose dial and what's reported at each band. The dose
         // card above carries the same five tiers as a *grid*: same scale,
         // different instrument for a different question.
-        if placement(.effects) == .inline {
-            EffectsSection(substance: substance, policy: policy, showAllEffects: showAllEffects)
+        if substance.displayClass.showsDoseLadder {
+            EffectsSection(substance: substance, showAllEffects: showAllEffects)
         }
 
-        // What it is, in prose — above the pharmacology so the plain-language
-        // "what is this" comes before the mechanism detail. Self-hides for the
-        // ~80% of the library with no overview.
-        OverviewSection(overview: overview, substance: substance)
-
-        // Inventory — directly under Overview: once you know what it is, the next
-        // practical question is whether you have any.
         InventoryStockSection(
             substanceName: substance.name,
             selectedSaltForm: selectedSaltForm,
@@ -95,22 +76,15 @@ struct SubstanceDetailLayout: View {
         // reaches for first. Self-hides outside the family.
         BenzoDurationSection(substance: substance, model: model)
 
-        // What makes it different / In the body — mechanism · receptor · PK ·
-        // metabolism, one inline block or one deep-page target.
-        pharmacologyInline
+        PharmacologySections(substance: substance, model: model, onGlossary: onGlossary)
 
-        // What else it touches — hERG, bladder, taste receptors. Called
-        // unconditionally rather than through the placement matrix: it self-hides
-        // on absent data and folds identically at every tier and on both spines,
-        // so a matrix row would encode no decision. The matrix is for sections
-        // whose placement actually varies.
+        // What else it touches — hERG, bladder, taste receptors.
         OffTargetSection(substance: substance, model: model)
 
-        // The antidepressant class explainer, self-hiding outside its family —
-        // out of the placement matrix for the same reason as OffTarget above.
+        // The antidepressant class explainer, self-hiding outside its family.
         DrugClassSection(substance: substance)
 
-        // Metabolites doing some of the work — on the main screen at every tier.
+        // Metabolites doing some of the work.
         AlsoActiveSection(substance: substance, model: model, onGlossary: onGlossary)
 
         // What CYP2D6 does to this substance — present for a CYP2D6-major substrate.
@@ -122,7 +96,7 @@ struct SubstanceDetailLayout: View {
         }
 
         // The genes behind that note and the ones it does not cover — CYP3A4,
-        // OPRM1, COMT — each with the study. Self-hiding, folded at every tier.
+        // OPRM1, COMT — each with the study.
         PharmacogeneticsSection(substance: substance, model: model)
 
         // Pathway bias, receptor complexes, in-vivo imaging; self-hiding, and
@@ -132,16 +106,6 @@ struct SubstanceDetailLayout: View {
         // What the family shares. Above Safety because for a research chemical
         // with no data of its own this is most of what there is to read.
         ClassContextSection(model: model)
-
-        // Safety — combinations, water & heat, and myth
-        // corrections in one card below the pharmacology, beside Prescribing.
-        // Self-hides when a compound carries none of them.
-        SafetySection(
-            substance: substance,
-            policy: policy,
-            accent: substance.category.color,
-            valvularWarning: model.valvularWarning,
-        )
 
         // Peptide protocol/reconstitution (self-hides for non-peptides).
         SubstancePeptideSection(substance: substance)
@@ -159,20 +123,6 @@ struct SubstanceDetailLayout: View {
         referenceDepth
     }
 
-    /// The pharmacology cluster, keyed on `.mechanism` as its representative
-    /// placement row.
-    @ViewBuilder private var pharmacologyInline: some View {
-        if placement(.mechanism) != .hidden {
-            PharmacologySections(
-                substance: substance,
-                model: model,
-                policy: policy,
-                profile: profile,
-                onGlossary: onGlossary,
-            )
-        }
-    }
-
     @ViewBuilder private var referenceDepth: some View {
         // Identity — category, default route, and the full alias list, collapsed.
         // The header's alias chips only exist for a substance with curated
@@ -182,33 +132,11 @@ struct SubstanceDetailLayout: View {
         // reference depth.
         InfoDisclosureSection(substance: substance, model: model)
 
-        // Chemistry and Sources are collapsed cards on the page. Never wrap them
-        // in a launcher that pushes a screen holding one collapsed card.
-        if placement(.chemistry) != .hidden, ChemistrySection.hasData(for: substance) {
-            ChemistrySection(
-                substance: substance,
-                showsMechanism: policy.showsMechanism,
-                moleculeStructure: model.moleculeStructure,
-            )
-        }
-        if placement(.sources) != .hidden {
-            let links = model.sourceLinks(for: substance)
-            if !links.isEmpty {
-                SourcesSection(showsSources: true, links: links)
-            }
-        }
+        ChemistrySection(substance: substance, moleculeStructure: model.moleculeStructure)
+        SourcesSection(links: sourceLinks, initiallyExpanded: showsSources)
     }
 }
 
-/// The detail header — identity above the fold, as a **title block rather than a
-/// card**: the name at display size, a byline that says *what kind of thing* this
-/// is (category chip · formula), and the curated "also known as" chips with an
-/// overflow count for the rest of the search index.
-///
-/// Deliberately background-less and outside the card rhythm (proto8's `.head`):
-/// as its own card the byline burned a full row of vertical space to carry one
-/// chip. The screen's real title lives here — the nav bar keeps only the compact
-/// one (see ``SubstanceDetailView``).
 private struct SubstanceDetailHeader: View {
     let substance: Substance
 
@@ -231,37 +159,16 @@ private struct SubstanceDetailHeader: View {
     }
 
     var body: some View {
-        // **A section header, not a row.** In a grouped list every row is clipped
-        // to a rounded rect, and at any inset that curve bites into whatever sits
-        // in a corner — it was shaving the category chip at the bottom-left, and
-        // no amount of slack fixes it because the clip follows the row. Section
-        // headers are outside that chrome entirely, which is also what makes this
-        // read as a title rather than a card pretending to be one.
         Section {
-            EmptyView()
-        } header: {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(substance.displayTitle)
-                    .font(.piru(size: 40, weight: .heavy, design: .rounded, relativeTo: .largeTitle, maximumSize: 64))
-                    .skinHeroTitle()
-                    // `Color.primary`, not `.primary`: a section header carries a
-                    // secondary style, and the hierarchical `.primary` resolves to
-                    // the primary *level of that style* — which is still gray. The
-                    // absolute label color is the only way to get a black title
-                    // out of a header.
-                    .foregroundStyle(Color.primary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.5)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 // The formula drops under the chip at accessibility sizes,
                 // where the two cannot share a row.
                 let bylineLayout = dynamicTypeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.sm))
                     : AnyLayout(HStackLayout(spacing: Spacing.md))
                 bylineLayout {
-                    CategoryChip(category: substance.category)
+                    Text(substance.category.displayName)
+                        .font(.subheadline.weight(.semibold))
                     if let formula = substance.formula {
                         Text(formula)
                             .font(.caption.monospaced())
@@ -282,10 +189,10 @@ private struct SubstanceDetailHeader: View {
                     FlowLayout(spacing: 7) {
                         ForEach(shownAliases, id: \.self) { alias in
                             Text(alias)
-                                .sectionLabel()
+                                .font(.subheadline)
                                 .padding(.horizontal, Spacing.lg)
                                 .padding(.vertical, 5)
-                                .background(Color.platformTertiarySystemFill, in: skinChipShape())
+                                .background(Color.platformTertiarySystemFill, in: Capsule())
                         }
                         if overflowCount > 0 {
                             Text("+ \(overflowCount) chemical names", comment: "Alias overflow count")
@@ -298,11 +205,10 @@ private struct SubstanceDetailHeader: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            // Headers arrive uppercased and in the secondary style by default.
-            .textCase(nil)
-            .listRowInsets(EdgeInsets())
+        } footer: {
+            Text("Data from published literature, product labels, and community databases, provided as is and without warranty. Not medical advice.")
+                .textCase(nil)
         }
-        .listSectionSpacing(8)
     }
 
     private var aliasAccessibilityLabel: String {
@@ -311,26 +217,5 @@ private struct SubstanceDetailHeader: View {
             return String(localized: "Also known as \(names), and \(overflowCount) other names.")
         }
         return String(localized: "Also known as \(names).")
-    }
-}
-
-/// A compact category tag — the accent-tinted "what kind of thing is this" chip
-/// shown in the detail header (e.g. `EMPATHOGEN`, `STIMULANT`).
-struct CategoryChip: View {
-    let category: SubstanceCategory
-
-    var body: some View {
-        Text(category.displayName)
-            .font(.caption2.weight(.bold))
-            .textCase(.uppercase)
-            .tracking(0.6)
-            .foregroundStyle(category.labelColor)
-            .padding(.horizontal, 9)
-            .padding(.vertical, Spacing.xs)
-            // 0.10 is the alpha every scale's `text` variant is gated against. At
-            // 0.14 this measured 4.40:1 on device — a fill a few percent darker
-            // than the one a token was derived for is enough to fail its gate.
-            .background(category.color.opacity(Theme.Opacity.tint), in: skinChipShape())
-            .accessibilityLabel(Text(category.displayName))
     }
 }

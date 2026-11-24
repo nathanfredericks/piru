@@ -68,7 +68,7 @@ struct DrinkPresetManagerView: View {
                     } label: {
                         Image(systemName: "checkmark")
                     }
-                    .skinButtonStyle(.prominent)
+                    .buttonStyle(.glassProminent)
                     .accessibilityLabel("Done")
                 }
             }

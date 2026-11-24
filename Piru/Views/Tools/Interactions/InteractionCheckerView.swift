@@ -68,7 +68,7 @@ struct InteractionCheckerView: View {
             .padding(.bottom, 80)
         }
         .scrollDismissesKeyboard(.interactively)
-        .skinBackdrop()
+        .piruPageBackground()
         .task(id: DoseLogService.shared.revision) {
             rebuildUsedCounts()
         }
@@ -295,7 +295,7 @@ struct InteractionCheckerView: View {
                             .font(.caption2)
                             .padding(.horizontal, Spacing.sm)
                             .padding(.vertical, Spacing.xxs)
-                            .background(.fill.secondary, in: skinChipShape())
+                            .background(.fill.secondary, in: Capsule())
                     }
                     .padding(.horizontal, Spacing.xxl)
                     .padding(.vertical, Spacing.lg)
@@ -323,7 +323,7 @@ struct InteractionCheckerView: View {
                             .font(.caption2)
                             .padding(.horizontal, Spacing.sm)
                             .padding(.vertical, Spacing.xxs)
-                            .background(Theme.accent.opacity(Theme.Opacity.emphasis), in: skinChipShape())
+                            .background(Theme.accent.opacity(Theme.Opacity.emphasis), in: Capsule())
                             .foregroundStyle(Theme.accent)
                     }
                     .padding(.horizontal, Spacing.xxl)
@@ -354,7 +354,7 @@ struct InteractionCheckerView: View {
             .padding(.vertical, 7)
             .background(color.opacity(Theme.Opacity.tint))
             .foregroundStyle(color)
-            .clipShape(skinChipShape())
+            .clipShape(Capsule())
         }
         .accessibilityLabel(removable ? Text("Remove \(name)") : Text(name))
     }

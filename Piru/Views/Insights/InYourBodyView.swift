@@ -57,7 +57,7 @@ struct InYourBodyView: View {
             .padding(.top, Spacing.xs)
             .padding(.bottom, 80)
         }
-        .skinBackdrop()
+        .piruPageBackground()
         .toolbar {
             if !allEntries.isEmpty {
                 ToolbarItem(placement: .platformTopBarTrailing) { filterMenu }

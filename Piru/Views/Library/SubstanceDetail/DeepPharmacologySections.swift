@@ -10,7 +10,6 @@ struct PharmacogeneticsSection: View {
     let substance: Substance
     let model: SubstanceDetailModel
 
-    /// Folded at every tier, like its Metabolism and Off-Target neighbours.
     @State private var isExpanded = false
 
     var body: some View {

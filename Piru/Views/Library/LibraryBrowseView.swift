@@ -48,7 +48,6 @@ struct LibraryBrowseView: View {
                     .padding(.top, 80)
             }
         }
-        .themedPage()
         .task {
             // Resolve against the warmed batch cache so the ~12 category counts
             // and favorite lookups are dict hits, not a cold main-thread resolve.
@@ -99,8 +98,7 @@ struct LibraryBrowseView: View {
 
 /// The Library's signature card surface: a category-tinted diagonal gradient
 /// with a faint hero graphic (molecule or glyph) bleeding off the top-trailing
-/// edge, rounded and shadowed. Shared by the family cards, the favorites card,
-/// and the Search screen's class mini-cards so the recipe lives in one place.
+/// edge, rounded and shadowed. Shared by the family and favorites cards.
 struct FamilyGradientCard<Hero: View, Content: View>: View {
     let color: Color
     var cornerRadius: CGFloat = 22
@@ -109,7 +107,6 @@ struct FamilyGradientCard<Hero: View, Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        let skin = SkinStore.shared.current
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         content()
             // White text on a light gradient. The colors are deliberately vivid
@@ -130,7 +127,7 @@ struct FamilyGradientCard<Hero: View, Content: View>: View {
                 ),
             )
             .clipShape(shape)
-            .modifier(FamilyGradientCardEdge(shape: shape, color: color, surface: skin.surface))
+            .shadow(color: color.opacity(0.3), radius: 10, x: 0, y: 5)
     }
 }
 
@@ -150,37 +147,6 @@ private struct CardBlurbWidth: ViewModifier {
 
     func body(content: Content) -> some View {
         content.frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? nil : width, alignment: .leading)
-    }
-}
-
-/// The gradient card's edge, by skin: the soft tinted drop shadow the app
-/// shipped with, or the edged skin's stroke and hard offset shadow — the same
-/// treatment as every other card, so the gradient tiles stop reading as
-/// imports from another app.
-private struct FamilyGradientCardEdge: ViewModifier {
-    let shape: RoundedRectangle
-    let color: Color
-    let surface: SkinSurface
-
-    func body(content: Content) -> some View {
-        switch surface {
-        case .glass:
-            content.shadow(color: color.opacity(0.3), radius: 10, x: 0, y: 5)
-        case let .soft(_, _, glowRadius):
-            content.shadow(color: color.opacity(0.45), radius: glowRadius, x: 0, y: 5)
-        case .frosted:
-            content.shadow(color: color.opacity(0.35), radius: 10, x: 0, y: 5)
-        case let .paper(stroke, _):
-            content.overlay(shape.stroke(stroke.opacity(0.25), lineWidth: 1))
-        case let .neon(stroke, glow):
-            content
-                .overlay(shape.stroke(stroke, lineWidth: 1.5))
-                .shadow(color: glow.opacity(0.45), radius: 8)
-        case let .edged(stroke, strokeWidth, shadow, shadowOffset):
-            content
-                .background(shape.fill(shadow).offset(shadowOffset))
-                .overlay(shape.stroke(stroke, lineWidth: strokeWidth))
-        }
     }
 }
 
@@ -276,7 +242,7 @@ private struct LibraryFamilyCard: View {
     }
 
     private var exemplarsLine: some View {
-        Text(LibraryFamily.exemplars(for: family.source).joined(separator: " · "))
+        Text(LibraryFamily.exemplars(for: family.source).joined(separator: ", "))
             .font(.caption.weight(.semibold))
             .foregroundStyle(.white.legibleOpacity(0.92))
             .lineLimit(1)
@@ -289,7 +255,7 @@ private struct LibraryFamilyCard: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background(.black.opacity(0.22), in: skinChipShape())
+            .background(.black.opacity(0.22), in: Capsule())
     }
 
     private func chip(_ sub: LibrarySubclass) -> some View {
@@ -298,7 +264,7 @@ private struct LibraryFamilyCard: View {
             .foregroundStyle(.white)
             .padding(.horizontal, Spacing.lg)
             .padding(.vertical, 5)
-            .background(.white.opacity(0.22), in: skinChipShape())
+            .background(.white.opacity(0.22), in: Capsule())
     }
 
     // MARK: Surface
@@ -468,7 +434,7 @@ private struct LibraryYoursCard: View {
                 title: "Favorites",
                 blurb: favorites.isEmpty
                     ? Text("Star a substance to keep it here")
-                    : Text(verbatim: favorites.prefix(3).map(\.displayTitle).joined(separator: " · ")),
+                    : Text(verbatim: favorites.prefix(3).map(\.displayTitle).joined(separator: ", ")),
                 count: favorites.count,
                 route: .libraryFavorites,
             ),
@@ -552,7 +518,7 @@ private struct LibraryYoursCard: View {
         .foregroundStyle(.white)
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 5)
-        .background(.white.opacity(0.22), in: skinChipShape())
+        .background(.white.opacity(0.22), in: Capsule())
     }
 }
 

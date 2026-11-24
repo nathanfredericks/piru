@@ -59,18 +59,40 @@ final class SessionEditingService {
     /// Live Activity snapshot in sync. Colors are fetched from the context so
     /// the row doesn't have to thread a `@Query` array through.
     func delete(_ entry: DoseEntry, in context: ModelContext) {
+        try? RoutineOccurrenceService.stageInvalidatedLinks(for: entry, deleting: true, in: context)
+        try? remove(entry, in: context, commitImmediately: false)
+    }
+
+    /// Remove a confirmed occurrence's exact dose and clear its links in the
+    /// same commit. The confirmation is revalidated after the alert closes.
+    func deleteOccurrenceDose(
+        _ correction: RoutineOccurrenceService.Correction,
+        in context: ModelContext,
+        confirming: (DoseEntry) -> Bool,
+    ) throws {
+        try RoutineOccurrenceService.requireCleanContext(context)
+        let entry = try RoutineOccurrenceService.linkedEntry(for: correction, in: context)
+        guard confirming(entry) else { throw RoutineOccurrenceService.CorrectionError.occurrenceChanged }
+        try RoutineOccurrenceService.stageInvalidatedLinks(for: entry, deleting: true, in: context)
+        try remove(entry, in: context, commitImmediately: true)
+    }
+
+    private func remove(_ entry: DoseEntry, in context: ModelContext, commitImmediately: Bool) throws {
         // Capture before delete — the entry is invalid afterwards.
         let id = entry.id
         let name = entry.substance
         let timestamp = entry.timestamp
         let session = entry.session
 
-        DoseNotificationManager.doseDeleted(entryID: id, timestamp: timestamp)
         withAnimation {
             context.delete(entry)
         }
         session?.refreshDoseBounds()
+        if commitImmediately {
+            try RoutineOccurrenceService.saveCorrection(in: context)
+        }
 
+        DoseNotificationManager.doseDeleted(entryID: id, timestamp: timestamp)
         let colors = (try? context.fetch(FetchDescriptor<SubstanceColor>())) ?? []
         ActiveSessionManager.shared.removeDose(
             id: id,
@@ -173,6 +195,10 @@ final class SessionEditingService {
         in context: ModelContext,
     ) {
         entry.session?.refreshDoseBounds()
+        let previousDay = Calendar.current.journalDay(for: previousTimestamp, loggedIn: entry.timeZoneIdentifier)
+        try? RoutineOccurrenceService.stageInvalidatedLinks(
+            for: entry, deleting: false, movedBetweenDays: entry.journalDay() != previousDay, in: context,
+        )
 
         // The session accessory and Live Activity read ActiveSessionManager's
         // snapshot of the dose.

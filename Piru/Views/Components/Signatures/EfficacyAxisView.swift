@@ -211,7 +211,7 @@ private struct EfficacyAxisTrack: View {
             return String(localized: "full activation", comment: "Right end of the efficacy axis")
         }
         return String(
-            localized: "full activation · \(reference)",
+            localized: "full activation, \(reference)",
             comment: "Right end of the efficacy axis, naming the reference agonist",
         )
     }
@@ -263,7 +263,7 @@ private struct EfficacyAxisTrack: View {
         var isGated: Bool
 
         var name: String {
-            names.joined(separator: " · ")
+            names.joined(separator: ", ")
         }
     }
 }

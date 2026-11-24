@@ -91,6 +91,27 @@ struct SourceFieldPriorityTests {
 
     @Test
     @MainActor
+    func `Reference prose carries the citation and translation status of its selected row`() throws {
+        let (store, tempDir) = try makeIsolatedSubstanceStore()
+        defer { tearDownIsolatedSubstanceStore(store, tempDir: tempDir) }
+        store.languageOverride = .en
+
+        let sertraline = try #require(store.lookup("Sertraline")?.mechanismOfAction)
+        let citedProse = try #require(sertraline.referenceProse)
+        #expect(citedProse.text == sertraline.description.trimmingCharacters(in: .whitespacesAndNewlines))
+        #expect(citedProse.sourceSlug == "piru-curated")
+        #expect(citedProse.citation?.resolvedURL != nil)
+        #expect(!citedProse.machineTranslated)
+
+        let translated = try #require(store.lookup("2C-EF")?.mechanismOfAction)
+        let translatedProse = try #require(translated.referenceProse)
+        #expect(translatedProse.text == translated.summary.trimmingCharacters(in: .whitespacesAndNewlines))
+        #expect(translatedProse.sourceSlug == "freeodwiki")
+        #expect(translatedProse.machineTranslated)
+    }
+
+    @Test
+    @MainActor
     func `A reviewed dose.wiki ladder outranks the other community sources`() throws {
         let (store, tempDir) = try makeIsolatedSubstanceStore()
         defer { tearDownIsolatedSubstanceStore(store, tempDir: tempDir) }

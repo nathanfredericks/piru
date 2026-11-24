@@ -48,7 +48,6 @@ struct InventoryItemDetailView: View {
             historySection
         }
         .insetGroupedListStyle()
-        .themedPage()
         .navigationTitle(item.displayTitle)
         .inlineNavigationTitle()
         .toolbar {
@@ -142,7 +141,6 @@ struct InventoryItemDetailView: View {
             .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)
             .padding(.vertical, Spacing.md)
-            .listRowBackground(CardBackground())
         }
     }
 
@@ -174,11 +172,9 @@ struct InventoryItemDetailView: View {
                 Text("No restocks or entries yet.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryLabel)
-                    .listRowBackground(CardBackground())
             } else if let rows = historyRows {
                 ForEach(rows) { row in
                     rowView(row)
-                        .listRowBackground(CardBackground())
                 }
             }
         } header: {
@@ -280,7 +276,7 @@ struct InventoryItemDetailView: View {
     private func basisLine(_ runOut: InventoryMath.RunOut) -> String {
         let avg = "\(runOut.dailyAvg.inventoryFormatted) \(item.unit)"
         if let size = item.doseSize, size > 0 {
-            return String(localized: "Single dose \(size.inventoryFormatted) \(item.unit) · daily avg \(avg)")
+            return String(localized: "Single dose \(size.inventoryFormatted) \(item.unit), daily avg \(avg)")
         }
         return String(localized: "Daily avg \(avg)")
     }

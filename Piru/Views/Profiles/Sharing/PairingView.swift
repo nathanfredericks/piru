@@ -27,9 +27,7 @@ struct PairingView: View {
                     Label("Scan Their Code", systemImage: "qrcode.viewfinder")
                 }
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Pair")
         .inlineNavigationTitle()
         .task(id: directory.activeProfile) { makeCode() }
@@ -71,7 +69,6 @@ struct PairingView: View {
         } footer: {
             Text("They scan this code, and you scan theirs. After that you can send each other sessions. Nothing is sent until you choose to.")
         }
-        .listRowBackground(CardBackground())
     }
 
     private func makeCode() {
@@ -133,7 +130,6 @@ struct ShareNameSection: View {
         } footer: {
             Text("The other person sees this name beside your sessions.")
         }
-        .listRowBackground(CardBackground())
     }
 
     private var trimmed: String {

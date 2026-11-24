@@ -64,7 +64,7 @@ struct ByVolumeDoseInputView: View {
                         .frame(width: 60)
                         .padding(.vertical, Spacing.md)
                     }
-                    .skinButtonStyle(.neutral)
+                    .buttonStyle(.glass)
                     .tint(Theme.accent)
                     .accessibilityLabel(Text(preset.name))
                 }
@@ -148,7 +148,7 @@ struct ByVolumeDoseInputView: View {
                         .foregroundStyle(readoutColor ?? .primary)
                         .contentTransition(.numericText())
                     let standardDrinks = ByVolumeDosing.standardDrinks(grams: grams)
-                    Text("ethanol · ≈ \(standardDrinks, format: .number.precision(.fractionLength(1))) standard drinks")
+                    Text("ethanol, ≈ \(standardDrinks, format: .number.precision(.fractionLength(1))) standard drinks")
                         .captionSecondary()
                 }
             }

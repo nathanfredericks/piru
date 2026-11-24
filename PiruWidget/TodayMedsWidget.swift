@@ -608,7 +608,7 @@ private struct MedsRectangularView: View {
                 if let minutes = next.timeMinutes {
                     let time = TodayMedsEntry.timeText(minutes)
                     if next.isDueNow(at: entry.date) {
-                        Text("Due · \(time)")
+                        Text("Due, \(time)")
                             .font(.caption2)
                     } else {
                         Text(verbatim: time)

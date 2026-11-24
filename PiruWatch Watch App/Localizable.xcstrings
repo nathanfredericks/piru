@@ -51,36 +51,36 @@
         }
       }
     },
-    "%@ mL · %@%%" : {
+    "%@ mL, %@%%" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$@ mL · %2$@%%"
+            "value" : "%1$@ mL, %2$@%%"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ mL · %@%%"
+            "value" : "%@ mL, %@%%"
           }
         },
         "es-ES" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ mL · %@%%"
+            "value" : "%@ mL, %@%%"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ 毫升 · %2$@%%"
+            "value" : "%1$@ 毫升，%2$@%%"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ 毫升 · %2$@%%"
+            "value" : "%1$@ 毫升，%2$@%%"
           }
         }
       }
@@ -141,30 +141,30 @@
         }
       }
     },
-    "≈ %@ g · ≈ %@ drinks" : {
+    "≈ %@ g, ≈ %@ drinks" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "≈ %@ g · ≈ %@ bebidas"
+            "value" : "≈ %@ g, ≈ %@ bebidas"
           }
         },
         "es-ES" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "≈ %@ g · ≈ %@ bebidas"
+            "value" : "≈ %@ g, ≈ %@ bebidas"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "≈ %1$@ g · ≈ %2$@ 标准杯"
+            "value" : "≈ %1$@ g，≈ %2$@ 标准杯"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "≈ %1$@ g · ≈ %2$@ 標準杯"
+            "value" : "≈ %1$@ g，≈ %2$@ 標準杯"
           }
         }
       }

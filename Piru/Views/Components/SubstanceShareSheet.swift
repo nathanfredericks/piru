@@ -1,55 +1,27 @@
 import SwiftUI
 import UIKit
 
-/// The "Share Substance" surface: a custom sheet reached from the substance
-/// screen's share button. Renders the colorful ``SubstanceShareCard`` specimen
-/// image with a **detail-level** segmented picker (Minimal / Standard / Rich)
-/// that re-renders the preview live, plus Copy and Share actions. Reuses the
-/// same ``ShareSheetPresenter`` / ``ImageQuickLook`` infrastructure as
-/// ``SessionShareSheet``.
+/// Preview, copy, or share a substance reference card.
 struct SubstanceShareSheet: View {
     let substance: Substance
     let route: SubstanceRoute?
 
-    @State private var detail: ShareDetailLevel = .standard
-    @State private var molecule: MoleculeStructure?
-    @State private var reportedEffects: [ReportedEffect] = []
-    @State private var mechanism: MechanismOfAction?
-    @State private var monoamineProfile: MonoamineProfile?
-    @State private var moleculeLoaded = false
-    @State private var images: [ShareDetailLevel: PlatformImage] = [:]
+    @State private var currentImage: PlatformImage?
     @State private var imageFileURL: URL?
     @State private var imageSourceView: PlatformView?
     @State private var justCopied = false
     @State private var copiedResetTask: Task<Void, Never>?
 
-    private var currentImage: PlatformImage? {
-        images[detail]
-    }
-
     var body: some View {
         FittedShareSheet("Share Substance", estimatedHeight: 460) {
             VStack(spacing: Spacing.xxl) {
-                detailPicker
                 imageCard
                 actions
             }
             .padding(.horizontal, Spacing.xxl)
             .padding(.bottom, Spacing.xxl)
         }
-        .task { await loadData() }
-        .onChange(of: detail) { _, _ in renderIfNeeded() }
-    }
-
-    // MARK: picker
-
-    private var detailPicker: some View {
-        Picker("Detail level", selection: $detail) {
-            ForEach(ShareDetailLevel.allCases) { level in
-                Text(level.displayName).tag(level)
-            }
-        }
-        .pickerStyle(.segmented)
+        .task { renderImage() }
     }
 
     // MARK: image card
@@ -61,7 +33,7 @@ struct SubstanceShareSheet: View {
                 if let currentImage {
                     Image(platformImage: currentImage)
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .scaledToFit()
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .padding(Spacing.lg)
                         .overlay { ZoomSourceView { imageSourceView = $0 } }
@@ -108,42 +80,17 @@ struct SubstanceShareSheet: View {
 
     // MARK: rendering
 
-    private func loadData() async {
-        if !moleculeLoaded {
-            molecule = substance.smiles != nil
-                ? SubstanceStore.shared.moleculeStructure(forSubstanceName: substance.name)
-                : nil
-            reportedEffects = SubstanceStore.shared.reportedEffects(forSubstanceName: substance.name)
-            mechanism = MechanismOfActionDatabase.resolvedMechanism(
-                dbMechanism: substance.mechanismOfAction,
-                category: substance.category,
-            )
-            monoamineProfile = MonoamineProfile.from(
-                bindings: SubstanceStore.shared.bindings(forSubstanceName: substance.name),
-                isSoldAsMDMA: SubstanceStore.shared.hasFlag(
-                    PharmacologyParameters.Flag.missoldAsMDMA, forSubstanceName: substance.name,
-                ),
-            )
-            moleculeLoaded = true
-        }
-        renderIfNeeded()
-    }
-
-    private func renderIfNeeded() {
-        guard moleculeLoaded, images[detail] == nil else {
-            refreshFileURL()
-            return
-        }
+    private func renderImage() {
+        guard currentImage == nil else { return }
+        let store = SubstanceStore.shared
+        let molecule = substance.smiles != nil ? store.moleculeStructure(forSubstanceName: substance.name) : nil
         let card = SubstanceShareCard(
             substance: substance, route: route, molecule: molecule,
-            reportedEffects: reportedEffects, mechanism: mechanism,
-            monoamineProfile: monoamineProfile, detail: detail,
+            reportedEffects: store.reportedEffects(forSubstanceName: substance.name),
         )
         let renderer = ImageRenderer(content: card)
         renderer.scale = 3
-        if let image = renderer.platformImage {
-            images[detail] = image
-        }
+        currentImage = renderer.platformImage
         refreshFileURL()
     }
 
@@ -151,7 +98,7 @@ struct SubstanceShareSheet: View {
     private func refreshFileURL() {
         guard let image = currentImage, let data = image.pngData() else { return }
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("piru-\(substance.name.replacingOccurrences(of: " ", with: "-"))-\(detail.rawValue).png")
+            .appendingPathComponent("piru-\(substance.name.replacingOccurrences(of: " ", with: "-")).png")
         try? data.write(to: url)
         imageFileURL = url
     }

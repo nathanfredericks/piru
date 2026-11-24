@@ -15,30 +15,16 @@
     /// `<dir>/.tour/done.json` closes the run. The tour runs on its own store
     /// (`StoreRecovery.activeStoreName`).
     ///
-    /// Screens are captured in the `piru` skin first, then a subset again in
-    /// every other skin the picker offers (`Skin.available`), so a skin added to
-    /// the enum is in the next pass with no change here. The language is the
-    /// process's own (`-AppleLanguages`), so one launch is one locale.
-    ///
     /// Arguments, all optional after the first:
     /// - `-piruScreenshots <dir>` — output directory; enables the tour.
     /// - `-piruScreenshotScreens all|<name,…>` — which screens (default all).
-    /// - `-piruScreenshotSkins all|none|<skin,…>` — which skins beyond `piru`.
-    /// - `-piruScreenshotSkinScreens all|<name,…>` — screens per skin.
     /// - `-piruScreenshotSettle <seconds>` — wait after navigating (default 1.2).
-    /// - `-piruWallpapers` — the root shows only the skin backdrop (no chrome,
-    ///   no status bar) and the tour captures one frame per skin, as
-    ///   `<skin>.png`, so each skin's scene can be used as a wallpaper.
     @MainActor
     enum ScreenshotTour {
         // MARK: - Launch arguments
 
         static var isRequested: Bool {
             argument(after: "-piruScreenshots") != nil
-        }
-
-        static var wantsWallpapers: Bool {
-            ProcessInfo.processInfo.arguments.contains("-piruWallpapers")
         }
 
         private static func argument(after flag: String) -> String? {
@@ -67,12 +53,10 @@
         /// Every screen, in capture order. Names are the file names.
         static let catalog: [Screen] = [
             Screen(name: "journal") { stage in
-                stage.grouping(.timeline)
                 stage.tab(.journal)
             },
             Screen(name: "journal-days") { stage in
-                stage.grouping(.byDay)
-                stage.tab(.journal)
+                stage.push(.journalDays, in: .journal)
             },
             Screen(name: "timeline") { stage in
                 stage.grouping(.timeline)
@@ -102,10 +86,7 @@
                 stage.tab(.search)
             },
             Screen(name: "search-results") { stage in
-                // Entering Search from Journal seeds the Journal scope; from
-                // Library it searches the catalog.
                 stage.tab(.library)
-                stage.tab(.search)
                 await stage.search("ket")
             },
             Screen(name: "substance-mdma") { stage in
@@ -127,7 +108,7 @@
                 stage.tab(.tools)
             },
             Screen(name: "my-meds") { stage in
-                stage.push(.myMeds, in: .tools)
+                stage.tab(.myMeds)
             },
             Screen(name: "inventory") { stage in
                 stage.push(.tool(.inventory), in: .tools)
@@ -157,10 +138,6 @@
             Screen(name: "receptor-load") { stage in
                 stage.push(.insight(.receptorLoad), in: .insights)
             },
-            Screen(name: "skins") { stage in
-                stage.tab(.journal)
-                stage.present(.skins)
-            },
             Screen(name: "settings") { stage in
                 stage.tab(.journal)
                 stage.present(.settings)
@@ -168,7 +145,7 @@
             // New screens go last: a file's number is its place in this list,
             // so an insertion renumbers every capture after it.
             Screen(name: "quicklog-concerta") { stage in
-                Self.stagedDockSearch = "Concerta"
+                Self.stagedQuickLogSearch = "Concerta"
                 stage.tab(.journal)
                 stage.present(.quickLog(routine: nil))
             },
@@ -176,12 +153,12 @@
             // each is a portrait panel, where the pushed screens fill a
             // landscape-wide canvas.
             Screen(name: "my-meds-sheet") { stage in
-                stage.tab(.tools)
+                stage.tab(.myMeds)
                 stage.present(.dailyDoseSettings)
             },
             Screen(name: "med-concerta") { stage in
                 guard let med = stage.med(product: "Concerta") else { return }
-                stage.tab(.tools)
+                stage.tab(.myMeds)
                 stage.present(.dailyDoseSettings)
                 await stage.settleSheet()
                 stage.pushInSheet(.medDetail(identityKey: med.identityKey, sortOrder: med.sortOrder))
@@ -219,12 +196,10 @@
                 stage.push(.session(id: id), in: .journal)
                 stage.present(.addPeople(sessionID: id))
             },
-        ]
-
-        /// The screens captured again in every skin: the ones where a skin
-        /// shows — the strip, the sheets, the cards.
-        static let skinScreenNames = [
-            "journal", "timeline", "quicklog", "library", "substance-mdma", "tools", "insights", "stats",
+            Screen(name: "journal-search-results") { stage in
+                stage.tab(.journal)
+                await stage.search("Caffeine")
+            },
         ]
 
         // MARK: - Seams
@@ -239,14 +214,14 @@
             return stagedInteraction
         }
 
-        /// A search the quick-log dock runs on its next appearance, staging the
+        /// A search the Quick Log sheet runs on its next appearance, staging the
         /// recent it finds with the editor open; `.quickLog` carries no search
-        /// text. Read once by `takeStagedDockSearch()`.
-        private static var stagedDockSearch: String?
+        /// text. Read once by `takeStagedQuickLogSearch()`.
+        private static var stagedQuickLogSearch: String?
 
-        static func takeStagedDockSearch() -> String? {
-            defer { stagedDockSearch = nil }
-            return stagedDockSearch
+        static func takeStagedQuickLogSearch() -> String? {
+            defer { stagedQuickLogSearch = nil }
+            return stagedQuickLogSearch
         }
 
         // MARK: - Run
@@ -255,7 +230,6 @@
         private struct Request: Codable {
             let file: String
             let screen: String
-            let skin: String
             let index: Int
             let total: Int
         }
@@ -274,86 +248,42 @@
             let started = Date.now
             print("ScreenshotTour: now is \(DebugClock.now.formatted(date: .abbreviated, time: .shortened))\(DebugClock.override == nil ? " (wall clock)" : " (pinned)")")
             let settle = argument(after: "-piruScreenshotSettle").flatMap(Double.init) ?? 1.2
-            // A wallpaper is the backdrop alone, so there is nothing to stage.
-            let wallpaper = Screen(name: "wallpaper", stage: { _ in })
-            let mainScreens = wantsWallpapers ? [wallpaper] : select(list(after: "-piruScreenshotScreens"), from: catalog)
-            let skinScreens = wantsWallpapers ? [wallpaper] : select(list(after: "-piruScreenshotSkinScreens") ?? skinScreenNames, from: catalog)
-            let skins = selectSkins(list(after: "-piruScreenshotSkins"))
-
+            let screens = select(list(after: "-piruScreenshotScreens"), from: catalog)
             let tourDirectory = URL(filePath: root).appending(path: ".tour")
             try? FileManager.default.createDirectory(at: tourDirectory, withIntermediateDirectories: true)
 
-            // No onboarding cover, no launch sheet on top of a capture.
-            UserDefaults.standard.set(true, forKey: OnboardingState.completedKey)
             try? await Task.sleep(for: .seconds(1.5))
             await SubstanceStore.shared.ensureAllLoaded()
-            await waitForOwnership()
 
-            // The stock bar in every capture, whatever this device's own layout.
-            TabLayoutStore.shared.setEphemeral(.default)
             let stage = Stage(context: container.mainContext)
             let originalGrouping = stage.currentGrouping
-            let skinStore = SkinStore.shared
-            let originalSkin = skinStore.chosen
             var report = Report()
-            let total = mainScreens.count + skins.count * skinScreens.count
             var index = 0
 
-            @MainActor
-            func capture(_ screen: Screen, skin: Skin) async {
+            for screen in screens {
                 index += 1
-                let number = catalog.firstIndex { $0.name == screen.name }.map { $0 + 1 } ?? 0
-                let stem = String(format: "%02d-%@", number, screen.name)
-                let file = if wantsWallpapers {
-                    "\(skin.rawValue).png"
-                } else if skin == .piru {
-                    "\(stem).png"
-                } else {
-                    "skins/\(skin.rawValue)/\(stem)-\(skin.rawValue).png"
-                }
+                let position = catalog.firstIndex { $0.name == screen.name }.map { $0 + 1 } ?? 0
+                // Reserve slot 27 to keep the published filenames stable.
+                let number = position >= 27 ? position + 1 : position
+                let file = String(format: "%02d-%@.png", number, screen.name)
                 if let needed = screen.persona, needed != argument(after: "-piruPersona") {
                     report.skipped.append(file)
-                    print("ScreenshotTour: [\(index)/\(total)] \(file) skipped — needs -piruPersona \(needed)")
-                    return
+                    print("ScreenshotTour: [\(index)/\(screens.count)] \(file) skipped — needs -piruPersona \(needed)")
+                    continue
                 }
                 await stage.reset()
                 await screen.stage(stage)
                 try? await Task.sleep(for: .seconds(settle))
-                let request = Request(file: file, screen: screen.name, skin: skin.rawValue, index: index, total: total)
-                print("ScreenshotTour: [\(index)/\(total)] \(file)")
+                let request = Request(file: file, screen: screen.name, index: index, total: screens.count)
+                print("ScreenshotTour: [\(index)/\(screens.count)] \(file)")
                 switch await handshake(request, in: tourDirectory) {
                 case .captured: report.captured.append(file)
                 case .timedOut: report.failed.append(file)
                 }
             }
 
-            @MainActor
-            func wear(_ skin: Skin) async {
-                guard skinStore.chosen != skin else { return }
-                skinStore.setSkin(skin)
-                // The root re-creates itself on a skin change.
-                try? await Task.sleep(for: .seconds(max(settle, 1.5)))
-            }
-
-            await wear(.piru)
-            for screen in mainScreens {
-                await capture(screen, skin: .piru)
-            }
-            for skin in skins {
-                await wear(skin)
-                guard skinStore.chosen == skin else {
-                    report.skipped.append(contentsOf: skinScreens.map { "skins/\(skin.rawValue)/\($0.name)" })
-                    print("ScreenshotTour: cannot wear \(skin.rawValue) — not owned; pass -piruOwnEverything")
-                    continue
-                }
-                for screen in skinScreens {
-                    await capture(screen, skin: skin)
-                }
-            }
-            await wear(originalSkin)
             await stage.reset()
             stage.restoreGrouping(originalGrouping)
-            TabLayoutStore.shared.setEphemeral(nil)
 
             report.seconds = Date.now.timeIntervalSince(started)
             write(report, to: tourDirectory.appending(path: "done.json"))
@@ -372,45 +302,6 @@
                 print("ScreenshotTour: unknown screens \(unknown) — known: \(catalog.map(\.name).joined(separator: ", "))")
             }
             return catalog.filter { names.contains($0.name) }
-        }
-
-        private static func selectSkins(_ names: [String]?) -> [Skin] {
-            let offered = Skin.available.filter { $0 != .piru }
-            guard let names, names != ["all"] else { return offered }
-            if names == ["none"] { return [] }
-            let unknown = names.filter { name in !offered.contains { $0.rawValue == name } }
-            if !unknown.isEmpty {
-                print("ScreenshotTour: unknown skins \(unknown) — known: \(offered.map(\.rawValue).joined(separator: ", "))")
-            }
-            return offered.filter { names.contains($0.rawValue) }
-        }
-
-        /// `-piruOwnEverything` lands through `SkinShop.refreshOwned()`, which
-        /// is async; a paid skin worn before it lands is refused.
-        private static func waitForOwnership() async {
-            guard ProcessInfo.processInfo.arguments.contains("-piruOwnEverything") else { return }
-            for _ in 0 ..< 100 where !SkinShop.shared.ownsEverything {
-                try? await Task.sleep(for: .milliseconds(100))
-            }
-        }
-
-        // MARK: - Wallpaper
-
-        /// The root under `-piruWallpapers`: the skin's backdrop and nothing
-        /// else. Decorations are forced on by naming the skin, and the home
-        /// indicator is hidden so the capture is the scene alone. The status
-        /// bar is hidden by the app root, outside the view `SkinnedRoot`
-        /// re-creates per skin: re-registering the preference on every skin
-        /// change left the simulator's Dynamic Island painted black in one
-        /// capture out of eight.
-        struct WallpaperCanvas: View {
-            @State private var skins = SkinStore.shared
-
-            var body: some View {
-                SkinBackdrop(skin: skins.current)
-                    .ignoresSafeArea()
-                    .persistentSystemOverlays(.hidden)
-            }
         }
 
         // MARK: - Handshake
@@ -467,8 +358,9 @@
             }
 
             func push(_ route: PushRoute, in tab: TabID) {
-                navigator.select(tab)
-                navigator.setPath([route], in: tab)
+                let destination = TabRouting.destination(for: tab, path: [route])
+                navigator.select(destination.tab)
+                navigator.setPath(destination.path, in: destination.tab)
             }
 
             func present(_ sheet: SheetRoute) {
@@ -531,7 +423,7 @@
                 return try? context.fetch(descriptor).first
             }
 
-            /// Focuses the Search tab's field and types `query` through UIKit:
+            /// Focuses the active root's field and types `query` through UIKit:
             /// the field is a `UISearchTextField` under SwiftUI's `.searchable`,
             /// and its `editingChanged` action is what feeds the text binding.
             func search(_ query: String) async {
@@ -548,7 +440,7 @@
 
             private static func searchField() -> UISearchTextField? {
                 for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
-                    for window in scene.windows {
+                    for window in scene.windows where window.isKeyWindow {
                         if let field = searchField(in: window) { return field }
                     }
                 }
@@ -556,6 +448,7 @@
             }
 
             private static func searchField(in view: UIView) -> UISearchTextField? {
+                guard !view.isHidden, view.alpha > 0 else { return nil }
                 if let field = view as? UISearchTextField { return field }
                 for subview in view.subviews {
                     if let field = searchField(in: subview) { return field }

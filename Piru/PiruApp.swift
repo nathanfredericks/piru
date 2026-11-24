@@ -68,10 +68,6 @@ struct PiruApp: App {
         AppLaunch.openStore()
         storeOpening.end()
 
-        // Reads what this person owns and starts listening for purchases that
-        // land outside a purchase call (Ask to Buy, refunds, another device).
-        SkinShop.shared.start()
-
         // Routes notification taps (routine reminders carry a piru:// deep
         // link). The center holds its delegate weakly — the shared instance
         // keeps it alive.
@@ -94,12 +90,10 @@ struct PiruApp: App {
     var body: some Scene {
         WindowGroup {
             ProfileRoot {
-                SkinnedRoot {
-                    if AppIdentity.isLegacy {
-                        AppMovedView()
-                    } else {
-                        root
-                    }
+                if AppIdentity.isLegacy {
+                    AppMovedView()
+                } else {
+                    root
                 }
             }
             .task(id: SyncMonitorID(
@@ -110,9 +104,6 @@ struct PiruApp: App {
                 guard scenePhase == .active, !AppIdentity.isLegacy else { return }
                 await ProfileSync.shared.monitor(profileID: profiles.activeProfileID, container: container)
             }
-            #if DEBUG
-            .statusBarHidden(ScreenshotTour.wantsWallpapers)
-            #endif
             .task {
                 guard !AppIdentity.isLegacy else { return }
                 WidgetCenter.shared.reloadAllTimelines()
@@ -132,17 +123,10 @@ struct PiruApp: App {
     @ViewBuilder
     private var root: some View {
         #if DEBUG
-            if ScreenshotTour.wantsWallpapers {
-                ScreenshotTour.WallpaperCanvas()
-            } else {
-                // `-piruDifferentiateWithoutColor` turns the setting on
-                // for this launch: the simulator's Accessibility
-                // preference can't be set from simctl.
-                ContentView()
-                    .transformEnvironment(\._accessibilityDifferentiateWithoutColor) { value in
-                        if Self.forcesDifferentiateWithoutColor { value = true }
-                    }
-            }
+            ContentView()
+                .transformEnvironment(\._accessibilityDifferentiateWithoutColor) { value in
+                    if Self.forcesDifferentiateWithoutColor { value = true }
+                }
         #else
             ContentView()
         #endif
@@ -151,9 +135,7 @@ struct PiruApp: App {
     private func enterBackground() {
         // Tear down any live keyboard before suspension. Suspending with
         // a first responder up can strand UIKit's scene-level keyboard
-        // state, and every sheet presented after foregrounding then lays
-        // out keyboard-avoiding — the QuickLog dock floats one keyboard
-        // height above the bottom with a dead touch zone below it.
+        // state and affect the layout of sheets after foregrounding.
         UIApplication.shared.sendAction(
             #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil,
         )

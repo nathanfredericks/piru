@@ -1,6 +1,6 @@
 import Foundation
 
-/// Distress-keyword detection shared by the quick-log dock and the library
+/// Distress-keyword detection shared by the Quick Log sheet and the library
 /// search, so both surface crisis resources for the same queries and the
 /// matchers can't drift apart.
 enum CrisisKeywords {

@@ -137,27 +137,10 @@ struct InfoDisclosureSection: View {
 /// and carries a Copy action — an InChIKey you can't copy is useless.
 struct ChemistrySection: View {
     let substance: Substance
-    let showsMechanism: Bool
-    /// The 2D skeleton ``SubstanceDetailModel`` loaded for this substance.
     let moleculeStructure: MoleculeStructure?
 
-    @State private var chemistryExpanded: Bool
+    @State private var chemistryExpanded = false
     @Environment(\.openURL) private var openURL
-
-    /// `initiallyExpanded` seeds the disclosure open — the deep-data page passes
-    /// `true` so a "Show all / Chemistry" tap lands on the numbers, not on a
-    /// second collapsed row the user has to open again (the double-collapse void).
-    init(
-        substance: Substance,
-        showsMechanism: Bool,
-        moleculeStructure: MoleculeStructure?,
-        initiallyExpanded: Bool = false,
-    ) {
-        self.substance = substance
-        self.showsMechanism = showsMechanism
-        self.moleculeStructure = moleculeStructure
-        _chemistryExpanded = State(initialValue: initiallyExpanded)
-    }
 
     /// Whether the substance holds any chemistry to show. Gates on data we
     /// actually hold: `pubChemURL` cannot be part of this test, since it falls
@@ -173,7 +156,7 @@ struct ChemistrySection: View {
     var body: some View {
         let hasPubChem = substance.pubchemCID != nil
         let phys = substance.physicochemical
-        if showsMechanism, Self.hasData(for: substance) {
+        if Self.hasData(for: substance) {
             CollapsibleSection("Chemistry", isExpanded: $chemistryExpanded) {
                 // The molecule hero — omitted entirely when the substance has
                 // no generated structure (no SMILES, or obabel couldn't parse
@@ -302,87 +285,58 @@ struct ChemistrySection: View {
     }
 }
 
-/// Unified provenance, as an **accountability ledger rather than a link dump**:
-/// the databases that contributed this compound's data (deep-linked to their page
-/// for it) and the primary literature, each paired with *what it supplied here* —
-/// dose, duration, effects, pharmacology. A raw list of eight site names told the
-/// reader nothing about which one is behind the number they were just looking at.
-///
-/// The pairing is read from the bundled DB's per-row `source_id` / `citation_id`
-/// columns (``SubstanceStore/sourceContributions(forSubstanceName:)``), not from
-/// a hand-written table — what a source supplies differs per substance.
+enum SubstanceDetailScrollTarget: Hashable {
+    case sources
+}
+
+/// Catalog sources and citations, with the fields each one supplied.
 struct SourcesSection: View {
-    let showsSources: Bool
-    /// The merged ledger, each row paired with what it supplied. Built by
-    /// ``SubstanceDetailModel/sourceLinks(for:)`` — a `.task` of this
-    /// section's own would sit inside a collapsed disclosure and not run until
-    /// the reader opened it.
     let links: [DetailSourceLink]
+    private let initiallyExpanded: Bool
 
     @State private var isExpanded: Bool
 
-    /// `initiallyExpanded` seeds the disclosure open — the deep-data page passes
-    /// `true` so a "Sources" tap lands on the ledger rather than on a second
-    /// collapsed row, the same double-collapse void ``ChemistrySection`` avoids.
-    init(
-        showsSources: Bool,
-        links: [DetailSourceLink],
-        initiallyExpanded: Bool = false,
-    ) {
-        self.showsSources = showsSources
+    init(links: [DetailSourceLink], initiallyExpanded: Bool) {
         self.links = links
+        self.initiallyExpanded = initiallyExpanded
         _isExpanded = State(initialValue: initiallyExpanded)
     }
 
     var body: some View {
-        if showsSources, !links.isEmpty {
-            // Folded, like every other reference card on the page, as
-            // `DisclosurePolicy` says (`sourcesDefaultExpanded` is `false` at every
-            // tier, and the placement matrix says `.inlineCollapsed`): the ledger
-            // is one row per source, which makes it the longest block on the screen
-            // for the reader least likely to want it.
-            CollapsibleSection(
-                "Sources",
-                count: links.count,
-                isExpanded: $isExpanded,
-            ) {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
+        if !links.isEmpty {
+            Section {
+                DisclosureGroup("Sources", isExpanded: $isExpanded) {
                     ForEach(links) { link in
                         if let url = link.url {
                             Link(destination: url) {
                                 SourceLedgerRow(link: link, linked: true)
                             }
-                            .buttonStyle(.plain)
                         } else {
                             SourceLedgerRow(link: link, linked: false)
                         }
                     }
                     Text("Each row lists what that source supplied here. Links open the source's own page. Always verify against the original.")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.secondaryLabel)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, Spacing.xs)
+                .id(SubstanceDetailScrollTarget.sources)
+                .onChange(of: initiallyExpanded) { _, expanded in
+                    isExpanded = expanded
+                }
             }
         }
     }
 }
 
-/// One ledger row: **who** on the left, **what they supplied** on the right.
-///
-/// Two columns, and therefore two ways to break — an accessibility text size, or
-/// a source whose facet list is long. Both are handled by *reflowing to a stack*
-/// rather than truncating: an attribution that has been clipped to "dose · dur…"
-/// is worse than one that took two lines, and for CC BY-SA content it is also a
-/// licensing question, not only a legibility one.
 private struct SourceLedgerRow: View {
     let link: DetailSourceLink
     let linked: Bool
 
-    /// " · "-joined rather than `Text` concatenation: `Text + Text` is
-    /// deprecated, and each facet is independently localized.
+    @Environment(\.locale) private var locale
+
     private var providesSummary: String {
-        link.provides.map { String(localized: $0.label) }.joined(separator: " · ")
+        link.provides.map { String(localized: $0.label) }
+            .formatted(.list(type: .and).locale(locale))
     }
 
     var body: some View {

@@ -81,4 +81,18 @@ struct AmountFieldParsingTests {
         #expect(!model.amountTextIsUnreadable)
         #expect(dose.totalAmount == 1_000)
     }
+
+    @Test
+    func `Showing an unchanged amount leaves the next edit enabled`() {
+        var dose = StagedDose(substanceName: "Caffeine", amount: 12, unit: "mg", route: .oral)
+        let model = StagedDoseEditorModel()
+        model.showAmount(12)
+        model.commitAmountText(to: &dose)
+
+        model.showAmount(12)
+        model.amountText = "14"
+        model.commitAmountText(to: &dose)
+
+        #expect(dose.totalAmount == 14)
+    }
 }

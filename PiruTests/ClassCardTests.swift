@@ -139,11 +139,7 @@ struct ClassCardTests {
         let diazepam = try #require(SubstanceLibrary.resolveFull("Diazepam"))
         let parent = try #require(diazepam.halfLifeMinutes)
         let model = SubstanceDetailModel()
-        model.load(
-            substanceName: diazepam.name,
-            category: diazepam.category,
-            policy: DisclosurePolicy(profile: .curious),
-        )
+        model.load(substanceName: diazepam.name, category: diazepam.category)
         let rungs = BenzoDurationLadder.rungs(
             for: diazepam,
             metabolites: model.activeMetabolites,

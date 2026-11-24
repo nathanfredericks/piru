@@ -14,9 +14,7 @@ struct DatabaseSourcesView: View {
             } footer: {
                 Text("Each substance page lists which of these supplied each field.")
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Database Sources")
         .inlineNavigationTitle()
         .onAppear(perform: reload)

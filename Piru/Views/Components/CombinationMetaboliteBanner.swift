@@ -20,6 +20,6 @@ struct CombinationMetaboliteBanner: View {
     private var caution: String {
         let note = String(localized: formation.cautionNote)
         let confidence = String(localized: formation.confidence.label)
-        return String(localized: "\(note) · modeled (\(confidence)).")
+        return String(localized: "\(note), modeled (\(confidence)).")
     }
 }

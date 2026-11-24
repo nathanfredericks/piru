@@ -7,18 +7,14 @@ struct SettingsView: View {
         List {
             Group {
                 LanguageSection()
-                DetailLevelSection()
                 if LocalizedSubstanceName.isAvailable {
                     SubstanceNamesSection()
                 }
                 ScreensSection()
-                DiscordSection()
                 AboutSection()
                 AppVersionFooter()
             }
-            .listRowBackground(CardBackground())
         }
-        .themedPage()
         .navigationTitle("Settings")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -67,40 +63,6 @@ private struct LanguageSection: View {
     }
 }
 
-// MARK: - Detail level
-
-/// A title and a picker, with what it governs in the footer.
-private struct DetailLevelSection: View {
-    @State private var profileStore = UserProfileStore.shared
-
-    var body: some View {
-        Section {
-            Picker(selection: profileBinding) {
-                ForEach(UserProfile.allCases) { profile in
-                    Label {
-                        Text(profile.displayName)
-                    } icon: {
-                        Image(systemName: profile.icon)
-                            .accessibilityHidden(true)
-                    }
-                    .tag(profile)
-                }
-            } label: {
-                Label("Detail Level", systemImage: "slider.horizontal.3")
-            }
-        } footer: {
-            Text("How much pharmacology is shown by default on substance pages and in the Tolerance tool.")
-        }
-    }
-
-    private var profileBinding: Binding<UserProfile> {
-        Binding(
-            get: { profileStore.disclosureTier },
-            set: { profileStore.setDisclosureTier($0) },
-        )
-    }
-}
-
 // MARK: - Substance names
 
 /// Shown only when the app runs in a language with localized substance names.
@@ -140,9 +102,9 @@ private struct ScreensSection: View {
                 Label("Journal", systemImage: "book")
             }
             NavigationLink {
-                TabsSettingsView()
+                DataStorageView()
             } label: {
-                Label("Tabs", systemImage: "dock.rectangle")
+                Label("Data & Backup", systemImage: "externaldrive")
             }
             NavigationLink {
                 YourBodyView()

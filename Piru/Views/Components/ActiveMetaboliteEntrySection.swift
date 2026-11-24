@@ -7,13 +7,8 @@ import SwiftUI
 // matters: the person reading a dose detail wants to know whether the thing
 // still working is the thing they swallowed. It sits beside In Your Body for
 // that reason — that card says how much is left, this one says of what.
-//
-// Deliberately **not** gated on ``DisclosurePolicy``. The library surface is,
-// because it lives among reference tables; this is not reference data. Someone
-// tracking an SSRI never opens the pharmacology tier and is exactly who needs
-// to hear that a metabolite outlives the dose — a detail-level gate would show
-// it only to the readers who already know.
 
+//
 /// Loads the metabolite rows for one dose off the render path.
 ///
 /// A `@MainActor` GRDB query in `body` would re-run on every invalidation of a

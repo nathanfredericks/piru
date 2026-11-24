@@ -3,35 +3,6 @@ import SwiftData
 import Testing
 @testable import Piru
 
-@Suite("UserProfile")
-struct UserProfileTests {
-    @Test
-    func `All cases are Codable round-trip stable`() throws {
-        for profile in UserProfile.allCases {
-            let data = try JSONEncoder().encode(profile)
-            let decoded = try JSONDecoder().decode(UserProfile.self, from: data)
-            #expect(decoded == profile)
-        }
-    }
-
-    @Test
-    func `Raw values are stable wire format`() {
-        #expect(UserProfile.casual.rawValue == "casual")
-        #expect(UserProfile.curious.rawValue == "harm-reduction")
-        // The retired third tier opens as Curious rather than resetting.
-        #expect(UserProfile(wire: "pharma-nerd") == .curious)
-        #expect(UserProfile(wire: "casual") == .casual)
-        #expect(UserProfile(wire: "nonsense") == nil)
-    }
-
-    @Test
-    func `All cases enumerated`() {
-        #expect(UserProfile.allCases.count == 2)
-        #expect(UserProfile.allCases.contains(.casual))
-        #expect(UserProfile.allCases.contains(.curious))
-    }
-}
-
 @Suite("UserProfileStore", .serialized)
 @MainActor
 struct UserProfileStoreTests {
@@ -51,41 +22,83 @@ struct UserProfileStoreTests {
         return store
     }
 
-    // MARK: - Disclosure tier
+    @Test(arguments: ["casual", "harm-reduction", "pharma-nerd", "future-tier"])
+    func `Legacy disclosure values round-trip through sync and native export`(wireValue: String) throws {
+        let source = try makeContainer()
+        let target = try makeContainer()
+        let sourceRecord = UserProfileRecord(
+            disclosureTierRaw: wireValue, bodyWeightKg: 73, weightSourceRaw: "manual",
+            grapefruitLoggingEnabled: true, aldh2Deficient: true,
+        )
+        source.mainContext.insert(sourceRecord)
+        try source.mainContext.save()
 
-    @Test
-    func `Defaults to harm-reduction when unset`() throws {
-        let store = try makeStore()
-        #expect(store.disclosureTier == .curious)
+        let key = SyncRecordKey(kind: "userProfile", id: SyncProjection.singletonID)
+        let profileID = UUID()
+        let projectedFields = try SyncProjection.fields(for: key, in: source.mainContext, profileID: profileID)
+        let fields = try #require(projectedFields)
+        let encodedWireValue = try SyncJSON.encode(wireValue)
+        #expect(fields["disclosureTierRaw"] == encodedWireValue)
+        try SyncProjection.apply(key, fields: fields, in: target.mainContext, profileID: profileID)
+        try target.mainContext.save()
+
+        let store = UserProfileStore()
+        store.configure(container: target, legacyPrefsDBURL: nil)
+        #expect(store.weightKg == 73)
+        #expect(store.weightSource == .manual)
+        #expect(store.grapefruitLoggingEnabled)
+        #expect(store.aldh2Deficient)
+
+        store.setManualWeight(75)
+        let record = try #require(target.mainContext.fetch(FetchDescriptor<UserProfileRecord>()).first)
+        let data = try JSONEncoder().encode(PiruProfileData(record))
+        let decoded = try JSONDecoder().decode(PiruProfileData.self, from: data)
+        let restored = UserProfileRecord()
+        decoded.apply(to: restored)
+        #expect(restored.disclosureTierRaw == wireValue)
+        #expect(restored.bodyWeightKg == 75)
+        #expect(restored.grapefruitLoggingEnabled)
+        #expect(restored.aldh2Deficient)
     }
 
     @Test
-    func `Persists disclosure tier change`() throws {
-        let store = try makeStore()
-        store.setDisclosureTier(.casual)
-        #expect(store.disclosureTier == .casual)
-        store.setDisclosureTier(.casual)
-        #expect(store.disclosureTier == .casual)
+    func `A legacy detail preference does not block restoring physiology`() throws {
+        let target = try makeContainer()
+        let existing = UserProfileRecord(disclosureTierRaw: "pharma-nerd")
+        target.mainContext.insert(existing)
+        try target.mainContext.save()
+
+        let bytes = Data("""
+        {
+          "piruExportVersion": 4,
+          "profile": {
+            "disclosureTier": "casual",
+            "bodyWeightKg": 73,
+            "weightSource": "manual",
+            "grapefruitLoggingEnabled": true,
+            "aldh2Deficient": true
+          }
+        }
+        """.utf8)
+        let file = try JSONDecoder().decode(PiruFile.self, from: bytes)
+        try DataExportImport.importNativeRecords(file, context: target.mainContext)
+        try target.mainContext.save()
+
+        #expect(existing.disclosureTierRaw == "pharma-nerd")
+        #expect(existing.bodyWeightKg == 73)
+        #expect(existing.weightSourceRaw == "manual")
+        #expect(existing.grapefruitLoggingEnabled)
+        #expect(existing.aldh2Deficient)
     }
 
     @Test
-    func `Setting same tier is a no-op`() throws {
-        let store = try makeStore()
-        let original = store.disclosureTier
-        store.setDisclosureTier(original)
-        #expect(store.disclosureTier == original)
-    }
-
-    @Test
-    func `Tier survives a reconfigure against the same container`() throws {
+    func `New physiology records retain the historical sync default`() throws {
         let container = try makeContainer()
-        let first = UserProfileStore()
-        first.configure(container: container, legacyPrefsDBURL: nil)
-        first.setDisclosureTier(.casual)
-
-        let second = UserProfileStore()
-        second.configure(container: container, legacyPrefsDBURL: nil)
-        #expect(second.disclosureTier == .casual)
+        let store = UserProfileStore()
+        store.configure(container: container, legacyPrefsDBURL: nil)
+        store.setManualWeight(75)
+        let record = try #require(container.mainContext.fetch(FetchDescriptor<UserProfileRecord>()).first)
+        #expect(record.disclosureTierRaw == "harm-reduction")
     }
 
     // MARK: - Body weight
@@ -160,15 +173,6 @@ struct UserProfileStoreTests {
         second.configure(container: container, legacyPrefsDBURL: nil)
         #expect(second.weightKg == 70)
         #expect(second.weightSource == .healthKit)
-    }
-
-    @Test
-    func `Tier and weight share one record`() throws {
-        let store = try makeStore()
-        store.setDisclosureTier(.casual)
-        store.setManualWeight(75)
-        #expect(store.disclosureTier == .casual)
-        #expect(store.weightKg == 75)
     }
 
     // MARK: - Metabolic context flags (Stage 4c)

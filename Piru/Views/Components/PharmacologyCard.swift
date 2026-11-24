@@ -105,7 +105,7 @@ struct PharmacologyCard: View {
         } else if !moa.primaryTargets.isEmpty {
             HStack(spacing: 0) {
                 Text("Primary Targets: ").font(.caption.weight(.medium))
-                Text(moa.primaryTargets.joined(separator: " · ")).font(.caption)
+                Text(moa.primaryTargets.joined(separator: ", ")).font(.caption)
             }
             .foregroundStyle(Theme.secondaryLabel)
         }

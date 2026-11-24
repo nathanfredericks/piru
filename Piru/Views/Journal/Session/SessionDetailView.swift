@@ -264,7 +264,6 @@ struct SessionDetailView: View {
                     SessionRecoverySection(categories: SessionResolveModel.recoveryCategories(entries: entries))
                 }
             }
-            .listRowBackground(CardBackground())
         }
         .insetGroupedListStyle()
         .scrollContentBackground(.hidden)
@@ -273,7 +272,6 @@ struct SessionDetailView: View {
         // replace the safe area, so cards slide under iPhone Duo's vertical bar.
         .listSectionMargins(.horizontal, Spacing.xxl)
         .listSectionSpacing(Spacing.xxl)
-        .skinBackdrop()
         .task(id: session.sharedExperienceID) {
             await model.followSharedExperience(session.sharedExperienceID)
         }
@@ -326,10 +324,8 @@ struct SessionDetailView: View {
                     onEditSummary: editSummary,
                     onToggleLiveActivity: toggleLiveActivity,
                 )
-                .popoverTip(SessionMenuTip(), arrowEdge: .top)
             }
         }
-        .task { await OnboardingTips.retireDataTipAfterSessionMenuTip() }
         // The primary "Record an entry" action lives in the tab bar's bottom accessory
         // (always on screen beneath this detail), so the day view floats no add
         // button of its own.
