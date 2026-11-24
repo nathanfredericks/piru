@@ -19,10 +19,12 @@ import SwiftData
 /// schema-migration policy in `StoreRecovery`).
 @Model
 final class CustomSubstanceRecord {
+    #Index<CustomSubstanceRecord>([\.id])
+
     /// Stable identity, preserved across edits and import round-trips. Not a
     /// `.unique` constraint — uniqueness is enforced by name in code, and unique
     /// constraints have sharp migration edges (see ``DoseEntry``).
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
 
     /// Canonical name used for logging/lookup (matched case-insensitively).
     var name: String = ""

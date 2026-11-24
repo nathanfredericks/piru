@@ -127,7 +127,7 @@ struct StoreRecoveryTests {
         let schema = Set(PiruSchema.models.map { String(describing: $0) })
         #expect(counted.union(derived) == schema)
         #expect(counted.isDisjoint(with: derived))
-        #expect(derived == ["ToleranceState", "NotificationPreferences"])
+        #expect(derived == ["ToleranceState", "NotificationPreferences", "ProfileSyncState", "ProfileSyncDocument"])
     }
 
     @Test

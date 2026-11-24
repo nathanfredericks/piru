@@ -10,13 +10,15 @@ import SwiftData
 /// cancellation and the future "did I take it" surfaces read this record
 /// instead of re-inferring from raw `DoseEntry` scans.
 ///
-/// The item is referenced by an identity snapshot (`substance` /
-/// `substanceUID` / `routeRaw`), not a UUID — `DailyDoseItem` has no stable
-/// id field, and adding one repeats the `DoseEntry.id` lightweight-migration
-/// trap. Property-level defaults keep the addition a pure lightweight
-/// migration.
+/// The occurrence keeps the item's substance, substance UID, and route as
+/// they were when the item was due, including after the item is edited or deleted.
 @Model
 final class RoutineOccurrence {
+    #Index<RoutineOccurrence>([\.syncID])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
+
     /// The owning routine, string-joined like `DailyDoseItem.category`.
     var routineName: String = ""
     /// The item's substance name at materialization time.

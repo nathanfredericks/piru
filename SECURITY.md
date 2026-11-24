@@ -1,9 +1,13 @@
 # Security Policy
 
-Piru is an on-device iOS app: your dose journal lives locally in SwiftData, there is no account and no
-server, and backups are opt-in and end-to-end encrypted. Two things here are worth protecting, and they're
-unusual for a phone app — the **privacy** of a record of controlled-substance use, and the **integrity** of
-pharmacology data that people act on. Reports on either are welcome.
+Piru stores journals on device in SwiftData. Backups and encrypted profile sync are opt-in.
+Sync requires Sign in with Apple and explicit enrollment of a local profile. The relay stores
+encrypted records, public grant keys, wrapped content keys, and encrypted recovery material.
+It can see the account association, traffic timing, grant scopes, record identifiers and sizes.
+Devices and integrations with profile access can decrypt the journal. Revoking a grant rotates
+the content key for future writes. Revoked clients can keep data they already received.
+
+Reports concerning journal privacy and the integrity of the pharmacology reference are welcome.
 
 ## Reporting a vulnerability
 
@@ -19,7 +23,7 @@ acknowledge within a few days. Once a fix ships, we're happy to credit you — o
 ## Scope — what matters most
 
 - **Anything that moves journal data off the device.** Piru's core promise is that nothing leaves your
-  phone unless you explicitly export or back up. A path that sends dose history, timestamps, location, or
+  phone unless you explicitly share, export, back up, or enable sync. A path that sends dose history, timestamps, location, or
   health data to the network, a system log, the pasteboard, or another app *without the user asking* is the
   most serious class of bug here.
 - **Weaknesses in the encrypted-backup path.** Backups are AES-256-GCM, with a device key held in the

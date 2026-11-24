@@ -75,6 +75,8 @@ struct PiruSchemaTests {
             context.insert(RoutineOccurrence(substance: "Caffeine", route: .oral, dueDay: .now))
             context.insert(SessionNote(text: "Private note", session: session))
             context.insert(LabMeasurement(value: 100, note: "Private result"))
+            context.insert(ProfileSyncState(cloudID: "synthetic"))
+            context.insert(ProfileSyncDocument(cloudID: "synthetic", kind: "dose", recordID: "test", document: Data(), fields: nil, pending: false))
             try context.save()
             for model in PiruSchema.models { #expect(try Self.count(model, in: context) > 0) }
             try DataExportImport.deleteAll(context: context)

@@ -75,8 +75,10 @@ struct ManualEvent: Codable, Identifiable, Hashable {
 /// `SchemaMigrationPlan` (see `StoreRecovery.swift`).
 @Model
 final class InventoryItem {
+    #Index<InventoryItem>([\.id])
+
     /// Stable identity for routing (sheets, deep links).
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     /// Canonical substance name; matched case-insensitively against `DoseEntry`.
     var substance: String = ""
     /// Salt/form variant; `nil` means base/freebase. Matched strictly.

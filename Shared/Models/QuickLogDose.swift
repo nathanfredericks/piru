@@ -19,6 +19,11 @@ import SwiftData
 /// widget, and Live Activity targets that open the same store.
 @Model
 final class QuickLogDose {
+    #Index<QuickLogDose>([\.syncID])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
+
     /// Substance name as logged (matched case-insensitively against history).
     var substance: String
     /// Route of administration; persisted as `rawValue`.

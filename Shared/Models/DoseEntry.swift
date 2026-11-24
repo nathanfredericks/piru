@@ -33,7 +33,7 @@ final class DoseEntry {
     // (`timestamp >= cutoff`), the widget, and session recovery all sort or range-filter on it — so an
     // index earns its (small, append-time) cost many times over at 3k+ rows. `id` is also indexed for
     // the exact-match lookups deep links / edits / dedup do (`#Predicate { $0.id == … }`, fetchLimit 1).
-    #Index<DoseEntry>([\.timestamp], [\.id])
+    #Index<DoseEntry>([\.pendingSyncSessionID], [\.timestamp], [\.id])
 
     /// Stable identity for cross-boundary references — route payloads, deep
     /// links, notification keys, and the Piru export format. `persistentModelID`
@@ -47,7 +47,7 @@ final class DoseEntry {
     /// `StoreRecovery.backfillDuplicateEntryIDs` as the post-open safety net,
     /// because a lightweight migration fills ONE shared default into every
     /// existing row).
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
 
     /// The substance's canonical (non-normalized) display name as logged by the user.
     var substance: String
@@ -143,6 +143,9 @@ final class DoseEntry {
     /// lightweight and `nil` for any not-yet-populated entry; ``Session`` owns
     /// the inverse with a `.nullify` delete rule.
     var session: Session?
+
+    /// Parent received before its session exists in this store. Cleared once linked.
+    var pendingSyncSessionID: UUID?
 
     /// Whether this dose was logged as a *background* medication (a daily med
     /// flagged "background"). Background doses never open or extend a recreational

@@ -17,9 +17,14 @@ struct AboutPrivacySection: View {
                 caption: Text("Stored in the app on this device, and in any device or iCloud backup your settings make of it. Anyone who can unlock the device can read it."),
             )
             CaptionedRowLabel(
+                title: "Optional Journal Sync",
+                systemImage: "lock.icloud",
+                caption: Text("If you turn on sync, Piru encrypts the selected profile’s records before upload. Only authorized devices and apps can decrypt them. The service can see which account synced, when, and how much data moved."),
+            )
+            CaptionedRowLabel(
                 title: "Apple Health",
                 systemImage: "heart.text.square",
-                caption: Text("Used only when you connect it, for display beside your journal."),
+                caption: Text("Connect Apple Health to see readings alongside your entries. Journal Sync excludes readings from Apple Health."),
             )
             CaptionedRowLabel(
                 title: "Exports and backups",

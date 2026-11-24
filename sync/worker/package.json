@@ -1,0 +1,22 @@
+{
+  "name": "piru-sync-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "migrate:local": "wrangler d1 migrations apply DB --local",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "jose": "6.2.18"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260702.1",
+    "esbuild": "0.27.7",
+    "miniflare": "4.20260611.0",
+    "typescript": "5.9.3",
+    "wrangler": "4.100.0"
+  }
+}

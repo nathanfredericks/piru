@@ -412,8 +412,8 @@ enum DataExportImport {
         return session
     }
 
-    static func deleteAll(context: ModelContext) throws {
-        try PiruSchema.deleteAll(in: context)
+    static func deleteAll(context: ModelContext, preservingSyncState: Bool = false) throws {
+        try PiruSchema.deleteAll(in: context, preservingSyncState: preservingSyncState)
     }
 
     static var exportFilename: String {

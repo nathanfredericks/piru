@@ -102,6 +102,14 @@ struct PiruApp: App {
                     }
                 }
             }
+            .task(id: SyncMonitorID(
+                active: scenePhase == .active,
+                profile: profiles.activeProfileID,
+                linked: SyncAccount.shared.isLinked(localProfileID: profiles.activeProfileID),
+            )) {
+                guard scenePhase == .active, !AppIdentity.isLegacy else { return }
+                await ProfileSync.shared.monitor(profileID: profiles.activeProfileID, container: container)
+            }
             #if DEBUG
             .statusBarHidden(ScreenshotTour.wantsWallpapers)
             #endif
@@ -172,4 +180,10 @@ struct PiruApp: App {
             await assertion?.end()
         }
     }
+}
+
+private struct SyncMonitorID: Equatable {
+    let active: Bool
+    let profile: UUID
+    let linked: Bool
 }

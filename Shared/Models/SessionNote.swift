@@ -25,10 +25,10 @@ final class SessionNote {
         case summary
     }
 
-    #Index<SessionNote>([\.timestamp])
+    #Index<SessionNote>([\.pendingSyncSessionID], [\.timestamp])
 
     /// Stable identifier for routing (a sheet editing one note) and export.
-    @Attribute(.unique) var id: UUID
+    @Attribute(.unique, .preserveValueOnDeletion) var id: UUID
 
     /// When the observation was made — editable, so a note typed later can be
     /// placed at the moment it describes.
@@ -68,6 +68,9 @@ final class SessionNote {
     var kindRaw: String
 
     var session: Session?
+
+    /// Parent received before its session exists in this store. Cleared once linked.
+    var pendingSyncSessionID: UUID?
 
     var kind: Kind {
         get { Kind(rawValue: kindRaw) ?? .observation }

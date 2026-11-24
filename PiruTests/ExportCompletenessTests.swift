@@ -188,17 +188,28 @@ private enum Fields {
 /// else in the schema must be in a ``Fields`` table.
 private enum ExportCoverage {
     static let excludedEntities: [String: String] = [
+        "ProfileSyncDocument": "device outbox, Automerge history and retry receipts for the linked cloud journal",
+        "ProfileSyncState": "device checkpoints for the linked cloud journal",
         "ToleranceState": "a cache of the dose-log replay; ToleranceStore rebuilds it from the restored doses",
         "DoseRoutine": "folded into DailyDoseItem reminder fields by MedsMigrator and no longer read",
     ]
 
     static let derivedFields: [String: [String: String]] = [
+        "DoseEntry": ["pendingSyncSessionID": "local link awaiting a synced session"],
+        "SessionNote": ["pendingSyncSessionID": "local link awaiting a synced session"],
+        "DailyDoseItem": ["syncID": "journal sync document identity"],
+        "FavoriteSubstance": ["syncID": "journal sync document identity"],
+        "QuickLogDose": ["syncID": "journal sync document identity"],
+        "CustomDrinkPreset": ["syncID": "journal sync document identity"],
+        "CustomUnitPreset": ["syncID": "journal sync document identity"],
+        "RoutineOccurrence": ["syncID": "journal sync document identity"],
         "Session": ["lastDoseDate": "refreshDoseBounds recomputes it from the restored doses"],
         "InventoryItem": [
             "currentQuantity": "InventoryService.recomputeAll rebuilds it from doses and manual events",
             "lowStockNotified": "transient alert latch, reset by the recompute",
         ],
         "SubstanceColor": [
+            "syncID": "journal sync document identity",
             "hexColor": "legacy sRGB column; its color travels as P3 components and restores as a resolved row",
         ],
     ]
@@ -209,6 +220,8 @@ private enum ExportCoverage {
 /// `UserDefaults` keys found in the source that deliberately stay on the
 /// device, with the reason. See ``ExportedSettings`` for the ones that travel.
 private let excludedSettingKeys: [String: String] = [
+    "sync.account.": "per-relay sign-in marker for this installation",
+    "sync.bindings.": "device-specific bindings between local stores and cloud profiles",
     "activeProfileID": "which profile is open on this device; a backup carries the profiles themselves",
     "appLanguage": "the app group mirror of AppleLanguages, for the extensions",
     "appLaunchCount": "launch counter",

@@ -14,7 +14,9 @@ import SwiftData
 /// in SwiftData, not the bundled substance DB.
 @Model
 final class LabMeasurement {
-    var id: UUID = UUID()
+    #Index<LabMeasurement>([\.id])
+
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     /// Blood-draw time.
     var date: Date = Date()
     /// Which analyte this measures: `"estradiol"` or `"testosterone"`.

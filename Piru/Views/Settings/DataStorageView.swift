@@ -45,6 +45,15 @@ struct DataStorageView: View {
     var body: some View {
         List {
             LocalStorageSection()
+            Section {
+                NavigationLink {
+                    JournalSyncView(profile: directory.activeProfile)
+                        .id(directory.activeProfileID)
+                } label: {
+                    Label("Journal Sync", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .listRowBackground(CardBackground())
+            }
             // ICloudBackupSection() — gated for App Store submission (Guideline 5.1.3(ii))
             ExportImportSection(
                 isGenerating: model.isGenerating,
@@ -123,7 +132,7 @@ struct DataStorageView: View {
             Button("Delete", role: .destructive) { Task { await model.deleteAllData(context: modelContext) } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This deletes your journal, profile, schedules, inventory, custom presets and local recovery copies. Your Watch clears its copy when it reconnects. Exported files, Apple Health records and device backups are not affected.")
+            Text("This erases this profile’s local data and disconnects Journal Sync even if you’re signed out. Your Watch clears its copy when it reconnects. The cloud journal is kept. To erase it, use Delete Cloud Journal in Journal Sync.")
         }
         .alert("Restore This Copy?", isPresented: restoreConfirmBinding, presenting: pendingRestore) { store in
             Button("Restore", role: .destructive) { restore(store) }
@@ -768,7 +777,7 @@ private struct DeleteEverythingSection: View {
             }
             .listRowBackground(CardBackground())
         } footer: {
-            Text("Deletes journal records, profile, schedules, inventory, custom presets and local recovery copies. Watch deletion takes effect when it reconnects.")
+            Text("Deletes this profile’s journal, schedules, inventory, presets, recovery copies, sync data, and archived profile photos from this device. Exported files, Apple Health records, and device backups are kept.")
         }
     }
 }

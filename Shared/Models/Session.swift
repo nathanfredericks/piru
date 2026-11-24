@@ -34,7 +34,7 @@ final class Session {
 
     /// Stable identifier for routing and deep links (`PersistentIdentifier`
     /// isn't URL-stable). Unique; safe because CloudKit mirroring is disabled.
-    @Attribute(.unique) var id: UUID
+    @Attribute(.unique, .preserveValueOnDeletion) var id: UUID
 
     /// Denormalized first-dose timestamp, cached for cheap sorting and
     /// day-header grouping. Keep in sync via ``refreshDoseBounds()`` whenever the

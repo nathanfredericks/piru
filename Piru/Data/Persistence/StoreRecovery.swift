@@ -397,7 +397,7 @@ nonisolated enum StoreRecovery {
     /// ``SubstanceColor`` counts: a row is minted only for a substance the user
     /// logged, stocked, scheduled or imported, or picked a color for.
     static var derivedModels: [any PersistentModel.Type] {
-        [ToleranceState.self, NotificationPreferences.self]
+        [ToleranceState.self, NotificationPreferences.self, ProfileSyncState.self, ProfileSyncDocument.self]
     }
 
     /// The SQLite tables behind ``userDataModels``. Core Data stores an entity

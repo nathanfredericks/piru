@@ -5,14 +5,17 @@ import WidgetKit
 /// Delete Everything: the journal itself, then every store, cache, schedule
 /// and system surface that holds a copy of it or would act on it.
 ///
-/// Two steps, so a caller can drop its own references to the old journal
-/// between them: ``deleteJournal(context:)`` throws and leaves everything else
-/// untouched when the journal cannot be deleted; ``resetEverythingElse(context:)``
-/// runs only after it succeeds.
+/// The caller releases its journal references after the local erase succeeds,
+/// before resetting notifications, backups and other system surfaces.
 enum AllDataDeletion {
     /// Deletes every journal row in `context`'s store, with pending deferred
     /// bookkeeping cancelled first so none of it lands on the empty store.
-    static func deleteJournal(context: ModelContext) throws {
+    static func deleteJournal(context: ModelContext, account: SyncAccount = .shared) throws {
+        let directory = account.linkDirectory ?? ProfileDirectory.shared
+        let id = directory.activeProfileID
+        guard let profile = directory.profiles.first(where: { $0.id == id }),
+              try account.verifiedStore(for: profile, directory: directory) === context.container else { throw SyncAccount.Issue.changed }
+        try account.detachForLocalErase(id)
         DoseLogService.shared.cancelPendingBookkeeping()
         try DataExportImport.deleteAll(context: context)
     }

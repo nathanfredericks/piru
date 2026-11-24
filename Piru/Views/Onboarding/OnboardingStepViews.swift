@@ -132,20 +132,20 @@ struct OnboardingPrivacyStep: View {
     var body: some View {
         OnboardingLayout(
             title: "Where your journal lives",
-            subtitle: "Your journal is stored in the app on this device.",
+            subtitle: "You can keep a journal on this device without an account.",
         ) {
             OnboardingIconHero(symbol: "lock.shield")
         } mid: {
             VStack(spacing: 18) {
                 OnboardingBulletRow(
-                    symbol: "iphone",
-                    title: "No account",
-                    detail: "No sign-up, and no Piru server that receives your journal.",
+                    symbol: "lock.icloud",
+                    title: "Optional Journal Sync",
+                    detail: "Sign in with Apple and start sync for a profile you choose. Its records are encrypted end to end.",
                 )
                 OnboardingBulletRow(
                     symbol: "square.and.arrow.up",
-                    title: "Copies only when you ask",
-                    detail: "An export or backup is made when you ask and saved where you choose.",
+                    title: "Exports and backups",
+                    detail: "You choose where to save exported files. Device backups can also include your journal.",
                 )
                 OnboardingBulletRow(
                     symbol: "hand.raised",

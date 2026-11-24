@@ -23,6 +23,11 @@ import SwiftData
 /// instance rather than constructing a new one.
 @Model
 final class SubstanceColor {
+    #Index<SubstanceColor>([\.syncID])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
+
     /// Substance name this color applies to. Unique key.
     @Attribute(.unique) var substance: String
     /// sRGB hex from builds that predate class colors. Non-empty marks a row

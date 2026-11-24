@@ -92,7 +92,10 @@ nonisolated enum DoseFrequency: String, Codable, CaseIterable, Identifiable {
 @Model
 final class DailyDoseItem {
     // Every daily-dose surface (settings, quick-log, the item form) fetches sorted by `sortOrder`.
-    #Index<DailyDoseItem>([\.sortOrder])
+    #Index<DailyDoseItem>([\.syncID], [\.sortOrder])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
 
     /// The substance's display name.
     var substance: String
@@ -308,6 +311,11 @@ extension DoseEntry {
 /// the new name to its items' `category`.
 @Model
 final class DoseRoutine {
+    #Index<DoseRoutine>([\.syncID])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
+
     @Attribute(.unique) var name: String
     /// User-defined position in the Routines list and the Log screen pills.
     var sortOrder: Int = 0

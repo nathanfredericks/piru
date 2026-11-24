@@ -15,6 +15,11 @@ import SwiftData
 /// that open the same store.
 @Model
 final class CustomUnitPreset {
+    #Index<CustomUnitPreset>([\.syncID])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
+
     /// Canonical substance this unit belongs to, lowercased for matching. A
     /// custom unit is scoped to one substance — a "capsule" of Lisdexamfetamine
     /// is not a "capsule" of anything else.

@@ -31,6 +31,10 @@ Piru puts doses, timestamped notes and estimated drug-level curves on one timeli
 
 </details>
 
+## Journal Sync
+
+The encrypted sync implementation, local relay setup, integration SDK, and two-device verification harness are documented in the [sync guide](sync/README.md).
+
 ## Automation
 
 Two actions in the Shortcuts app and Siri, for any automation that already knows what was taken. **Log Dose** saves straight to the journal and answers with the entry's id. **Start Dose Log** opens the quick log with the dose staged, and nothing is saved until you tap Log. Both take a substance (a brand like *Concerta* stays on the dose as its product), and optionally an amount, unit, route, time, meal, notes and tags.

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "profileID": "00000000-0000-4000-8000-000000000001",
+  "grantID": "00000000-0000-4000-8000-000000000002",
+  "epoch": 1,
+  "recordID": "00000000-0000-4000-8000-000000000003",
+  "kind": "dose",
+  "fields": {
+    "quantity": {
+      "amount": 1,
+      "unit": "mg"
+    },
+    "notes": "fixture"
+  },
+  "contentKey": "vKZEZb565dxFwoM8JRsBQ0DXVTRfUYZ-xhcZnogcd80",
+  "indexKey": "5prRHB_oAWDggZ0uMklNlZDWu95mNoSVZ3X52rVcq0E",
+  "token": "piru1.eyJ1cmwiOiJodHRwOi8vMTI3LjAuMC4xOjg3ODgvdjEiLCJwcm9maWxlSUQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJncmFudElEIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAyIiwiYmVhcmVyIjoiS0JXYjFIVDBQRlBvZzdNNlJ0YmM1ejhLdUVzNWxOd254RFJ0LWxTcGlCayIsInNpZ25Qcml2YXRlIjoiM3ZiYVYzMFhSQ1ZTbEFRbjRsNkczVmVoVmJLSDFHc2FVU0NldW8xdF8tdyIsImJveFByaXZhdGUiOiJlUHJqdThoNDJYNHZUVU9iZTRUMzlmb0JuZllVd05wLTB5cTRxVHJEbWJrIn0",
+  "grant": {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "scope": "owner",
+    "signPublic": "BGbv1UrYTGDnDGRETQ_jdUkl9Ml58uB3xULhWyJUFap_790eiyeY2evJvQPz3ohJJlk6Ka9UXCi-hg6Ds_6uv9A",
+    "boxPublic": "BFhvSKxKitEEjgtru51-DcuUHfeyY7mMYEorEBUT35J1tvLQAXR5EpHHIMm0xooUz-9G27PwzJW1S19vXrae7BE",
+    "labelBox": "7caDxr27_vEAPIhVO9BuLNikSbDak2ngFONBNqXMKHn1TJFL571CJ55LKng0xEVbAiEz5gFCoui7gvOhm0Zm4JgejjloOBf49zkgw7eGUtHAu_MST7eIkS9VNi-1yBqMgbdXma7fohPHUNgBIoBD4VhFK61sSlSq7JQ2e01slqI11367ce7ruogfxI-1QAQ37Mp2DCDj",
+    "wrapped": {
+      "enc": "BNBVBM5QRkULSNLgCEpSvSFXpTK5O5RQuzRFccfu40cYPYJQ_mhZR2ZUbaWV53ZdXiMpjaXCAbVxi8WkXdRoWkM",
+      "ct": "FXYIoZCX0vK8_lUwe8H6KU9_vh0eNnHXaE8gPHDjUfpRPcJtVtRsbGrhFr816chFxOHxl-kg_kjGGplTEfEibbFg-rCpaTqrKdAQaeYkbI8"
+    }
+  },
+  "document": "hW9Kg2lZMggA3gEBEEALsQSPGhf1mFfVEmHYp7IBXHGrCWHy5I4h1raTLs6rrYKzng5aSPdSNGvbnguuv6IGAQIDAhMCIwZAAlYCCBUeIQIjBTQBQgJWCFdJgAECfwB_AX8Ef8mWk9gGfwB_B3wEa2luZAVub3RlcwhxdWFudGl0eQhyZWNvcmRJRAQAfgEDAn8EBAF8RpYBhgPGBGRvc2UiZml4dHVyZSJ7ImFtb3VudCI6MSwidW5pdCI6Im1nIn0wMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDMEAAA",
+  "envelope": {
+    "profileID": "00000000-0000-4000-8000-000000000001",
+    "docID": "ux6To2wtBSCfQ5NuFGiE6ejukNil4ymbuNHX3gZ262Y",
+    "opID": "00000000-0000-4000-8000-000000000004",
+    "grantID": "00000000-0000-4000-8000-000000000002",
+    "epoch": 1,
+    "nonce": "okBvT1auIXF5btto",
+    "ciphertext": "f3z9PJovFhOzTaxLX1w8M0qdOUHaqsJMXfzMiy9Th4ptmnsy3IRS78PWMklsHiHZuiaNXNhYqHg5qM1sDdgKXxauKsSX5qQyZ52aFZY_cQO6GQSCXLz0kea5bJjo8pCibNGD-Im6dWTg7CVlT331RlbvBMIEe8ZgmCXK226eljzEGlyBo-5WLQxK4TEOS9vEaZXppob17JliBe85Aak55eK3f1ztyTI8sTeabWvBPJ8lpf9r3aKJy3zXfV3afDjcs0fb8MKFP4KzwV6zaC9Tcji7Lnm3nnNzNiH-8CHueBddRaWKQ4-THC4fYuVRzdxMSARw3oOParUM",
+    "signature": "I87lqCCyiTnxlMfUddfYHgAH07B6qot6BRoyDpH1icxGBJt-qZoPpZXb_nMCgjwopF67w_CKGR1yMQQVNi3B3g"
+  }
+}

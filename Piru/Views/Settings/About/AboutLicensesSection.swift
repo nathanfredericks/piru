@@ -39,6 +39,11 @@ private struct BundledLicense: Identifiable {
             resource: "License-MIT-GRDB",
         ),
         BundledLicense(
+            name: "MIT License",
+            covers: "Automerge. Copyright © 2019–2023 the Automerge contributors.",
+            resource: "License-MIT-Automerge",
+        ),
+        BundledLicense(
             name: "Apache License 2.0 with Runtime Library Exception",
             covers: "swift-collections and swift-async-algorithms. Copyright © Apple Inc. and the Swift project authors.",
             resource: "License-Apache-2.0-Swift",

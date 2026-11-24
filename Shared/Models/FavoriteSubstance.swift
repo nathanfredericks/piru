@@ -5,7 +5,10 @@ import SwiftData
 final class FavoriteSubstance {
     // The quick-log + reorder views sort by `sortOrder` then `createdAt` (reverse), so a compound
     // index matches that exact ordering. `substance` is already `@Attribute(.unique)` (implicit index).
-    #Index<FavoriteSubstance>([\.sortOrder, \.createdAt])
+    #Index<FavoriteSubstance>([\.syncID], [\.sortOrder, \.createdAt])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
 
     @Attribute(.unique) var substance: String
     var createdAt: Date

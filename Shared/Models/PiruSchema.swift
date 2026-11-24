@@ -31,13 +31,17 @@ enum PiruSchema {
             RoutineOccurrence.self,
             SessionNote.self,
             LabMeasurement.self,
+            ProfileSyncState.self,
+            ProfileSyncDocument.self,
         ]
     }
 
     /// Remove every user-data entity in the schema and commit the deletion.
-    static func deleteAll(in context: ModelContext) throws {
+    static func deleteAll(in context: ModelContext, preservingSyncState: Bool = false) throws {
         do {
             for model in models {
+                // A journal reset needs the previous record identities to replicate its deletes.
+                if preservingSyncState, model == ProfileSyncDocument.self || model == ProfileSyncState.self { continue }
                 try deleteRows(of: model, in: context)
             }
             try context.save()

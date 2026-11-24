@@ -18,6 +18,11 @@ import SwiftData
 /// stays identical across the app, widget, and Live Activity targets.
 @Model
 final class CustomDrinkPreset {
+    #Index<CustomDrinkPreset>([\.syncID])
+
+    /// Persisted journal-sync identity, retained across edits to the row’s natural key.
+    @Attribute(.preserveValueOnDeletion) var syncID: UUID?
+
     /// User-facing drink name ("Beer", "IPA", "House red"). Not localized once
     /// saved — it's user content.
     var name: String = ""

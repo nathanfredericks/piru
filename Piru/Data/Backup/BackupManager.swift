@@ -240,7 +240,7 @@ final class BackupManager {
             try DataExportImport.validate(plaintext)
             // Never wipe without a recoverable copy first.
             StoreRecovery.snapshotStore(reason: "prerestore")
-            try DataExportImport.deleteAll(context: context)
+            try DataExportImport.deleteAll(context: context, preservingSyncState: true)
             // The custom-substance cache still lists the deleted rows until it
             // reloads, and the importer skips any custom it already lists.
             customStore.resetAfterDeletion()

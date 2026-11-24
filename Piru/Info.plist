@@ -32,6 +32,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>PIRU_SYNC_URL</key>
+	<string>$(PIRU_SYNC_URL)</string>
 	<key>PiruAppGroup</key>
 	<string>$(PIRU_APP_GROUP)</string>
 	<key>PiruBundleID</key>

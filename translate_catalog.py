@@ -6816,6 +6816,10 @@ T = {
         "导出场次和日记摘要",
         "匯出場次和日記摘要",
     ),
+    "Automerge. Copyright © 2019–2023 the Automerge contributors.": (
+        "Automerge。版权所有 © 2019–2023 Automerge 贡献者。",
+        "Automerge。版權所有 © 2019–2023 Automerge 貢獻者。",
+    ),
     "GRDB.swift. Copyright © Gwendal Roué.": (
         "GRDB.swift。版权所有 © Gwendal Roué。",
         "GRDB.swift。版權所有 © Gwendal Roué。",
@@ -8065,6 +8069,252 @@ except ImportError:
 # but written out in full: iOS does NOT fall back per key from es-ES to es — a
 # key missing from the es-ES table shows in English on a Spain iPhone.
 EXTRA_LANGUAGES = {"es": ES, "es-ES": {**ES, **ES_ES}}
+
+# Journal Sync and authorized apps
+JOURNAL_SYNC_T = {
+    "This erases this profile’s local data and disconnects Journal Sync even if you’re signed out. Your Watch clears its copy when it reconnects. The cloud journal is kept. To erase it, use Delete Cloud Journal in Journal Sync.": (
+        "这会清除此个人资料的本地数据，并断开日记同步，即使你已退出登录也是如此。你的手表会在重新连接后清除其副本。云端日记会保留。如需删除，请在“日记同步”中选择“删除云端日记”。",
+        "這會清除此個人檔案的本機資料，並中斷日記同步，即使你已登出也是如此。你的手錶會在重新連線後清除其副本。雲端日記會保留。如要刪除，請在「日記同步」中選擇「刪除雲端日記」。",
+    ),
+    "Deletes this profile’s journal, schedules, inventory, presets, recovery copies, sync data, and archived profile photos from this device. Exported files, Apple Health records, and device backups are kept.": (
+        "从此设备删除此个人资料的日记、计划、库存、预设、恢复副本、同步数据和已归档的头像。导出的文件、Apple 健康记录和设备备份会保留。",
+        "從此裝置刪除這份個人檔案的日記、排程、庫存、預設、復原副本、同步資料和已封存的個人照片。匯出的檔案、Apple 健康紀錄和裝置備份會保留。",
+    ),
+    "Link This Empty Profile": ("关联此空白个人资料", "連結此空白個人檔案"),
+    "If your key is in iCloud Keychain, you can leave the recovery code blank.": (
+        "如果密钥已保存在 iCloud 钥匙串中，恢复码可以留空。",
+        "如果密鑰已儲存在「iCloud 鑰匙圈」，復原碼可以留白。",
+    ),
+    "Choose an empty local profile or download into a new profile.": (
+        "请选择一个空白的本地个人资料，或下载到新的个人资料。",
+        "請選擇一個空白的本機個人檔案，或下載到新的個人檔案。",
+    ),
+    "Piru could not verify this profile’s journal. Try again after the store is available.": (
+        "Piru 无法检查此个人资料的日记。请在数据库可用后重试。",
+        "Piru 無法檢查此個人檔案的日記。請在資料庫可用後再試一次。",
+    ),
+    "Merge Details": ("合并详情", "合併詳細資料"),
+    "Record ID": ("记录 ID", "紀錄 ID"),
+    "Record deleted": ("记录已删除", "已刪除紀錄"),
+    "Merge details unavailable": ("合并详情不可用", "無法顯示合併詳細資料"),
+    "Version %lld": ("版本 %lld", "版本 %lld"),
+    "Concurrent edit": ("同时发生的编辑", "同時發生的編輯"),
+    "Merged result": ("合并结果", "合併結果"),
+    "Not set": ("未设置", "未設定"),
+    "All dose fields": ("所有剂量字段", "所有劑量欄位"),
+    "Unknown dose": ("剂量未知", "劑量未知"),
+    "You can keep a journal on this device without an account.": (
+        "无需账户，你也可以在这台设备上记日记。",
+        "即使沒有帳號，你也可以在這部裝置上寫日記。",
+    ),
+    "Optional Journal Sync": ("可选的日记同步", "可選的日記同步"),
+    "Sign in with Apple and start sync for a profile you choose. Its records are encrypted end to end.": (
+        "通过 Apple 登录后，你可以为选定的个人资料开启同步。其中的记录会经过端到端加密。",
+        "透過 Apple 登入後，你可以為選定的個人檔案開啟同步。其中的紀錄會以端對端加密。",
+    ),
+    "You choose where to save exported files. Device backups can also include your journal.": (
+        "导出文件的保存位置由你选择。设备备份也可能包含你的日记。",
+        "匯出檔案的儲存位置由你選擇。裝置備份也可能包含你的日記。",
+    ),
+    "If you turn on sync, Piru encrypts the selected profile’s records before upload. Only authorized devices and apps can decrypt them. The service can see which account synced, when, and how much data moved.": (
+        "如果你开启同步，Piru 会在上传前加密所选个人资料中的记录。只有获得授权的设备和应用才能解密。同步服务可以看到哪个账户进行了同步、同步时间以及传输的数据量。",
+        "如果你開啟同步，Piru 會在上傳前加密所選個人檔案中的紀錄。只有獲得授權的裝置和 App 才能解密。同步服務可以看到哪個帳號進行了同步、同步時間及傳輸的資料量。",
+    ),
+    "Connect Apple Health to see readings alongside your entries. Journal Sync excludes readings from Apple Health.": (
+        "连接 Apple 健康后，你可以在日记条目旁查看健康读数。日记同步不包含来自 Apple 健康的读数。",
+        "連結 Apple 健康後，你可以在日記項目旁查看健康讀數。日記同步不包含來自 Apple 健康的讀數。",
+    ),
+    "Linked device": ("已关联设备", "已連結裝置"),
+    "Linked devices": ("已关联设备", "已連結裝置"),
+    "Deletion synced": ("删除操作已同步", "刪除操作已同步"),
+    "Edits merged automatically": ("更改已自动合并", "變更已自動合併"),
+    "Change received": ("已收到更改", "已收到變更"),
+    "Revoke Device…": ("撤销设备访问权限…", "撤銷裝置存取權限…"),
+    "Revoke Access": ("撤销访问权限", "撤銷存取權限"),
+    "Future changes to %@ will use a new encryption key. Previously downloaded records can still be read.": (
+        "%@之后的更改将使用新密钥加密。已下载的记录仍可读取。",
+        "%@之後的變更將使用新密鑰加密。已下載的紀錄仍可讀取。",
+    ),
+    "This device": ("此设备", "此裝置"),
+    "Owner": ("所有者", "擁有者"),
+    "Access Tokens": ("访问令牌", "存取權杖"),
+    "After sign-in, choose the journal you want to connect.": (
+        "登录后，选择要关联的日记。",
+        "登入後，選擇要連結的日記。",
+    ),
+    "Changes waiting to sync": ("更改等待同步", "變更等待同步"),
+    "Cloud Data": ("云端数据", "雲端資料"),
+    "Cloud journal": ("云端日记", "雲端日記"),
+    "Connect this profile to sync its journal across your devices.": (
+        "关联此个人资料，即可在你的设备间同步日记。",
+        "連結此個人檔案，即可在你的裝置間同步日記。",
+    ),
+    "Copy Recovery Code": ("复制恢复码", "拷貝復原碼"),
+    "Copy Token": ("复制令牌", "拷貝權杖"),
+    "Copy the token before closing this screen. Anyone who has it can use its permissions.": (
+        "请在关闭此页面前复制令牌。任何持有令牌的人都可以使用其权限。",
+        "請在關閉此畫面前拷貝權杖。任何持有權杖的人都可以使用其權限。",
+    ),
+    "Create Access Token": ("创建访问令牌", "建立存取權杖"),
+    "Create Cloud Journal": ("创建云端日记", "建立雲端日記"),
+    "Create Token": ("创建令牌", "建立權杖"),
+    "Create an encrypted cloud journal for this profile.": (
+        "为此个人资料创建加密的云端日记。",
+        "為此個人檔案建立加密的雲端日記。",
+    ),
+    "Custom substances, presets, and shortcuts": (
+        "自定义物质、预设和快捷方式",
+        "自訂物質、預設和捷徑",
+    ),
+    "Delete Cloud Journal": ("删除云端日记", "刪除雲端日記"),
+    "Delete the cloud journal for %@?": ("删除%@的云端日记？", "刪除%@的雲端日記？"),
+    "Deleting the cloud journal disconnects its devices and revokes its access tokens. Local copies stay on each device.": (
+        "删除云端日记会断开已关联的设备，并撤销访问令牌。每台设备都会保留本地副本。",
+        "刪除雲端日記會中斷已連結裝置的連線，並撤銷存取權杖。每部裝置都會保留本機副本。",
+    ),
+    "Disconnect": ("断开连接", "中斷連線"),
+    "Disconnect This iPhone": ("断开此 iPhone 的连接", "中斷此 iPhone 的連線"),
+    "Disconnect this iPhone?": ("断开此 iPhone 的连接？", "中斷此 iPhone 的連線？"),
+    "Doses, sessions, and notes": ("剂量、场次和笔记", "劑量、場次和筆記"),
+    "Download as New Profile": ("下载为新个人资料", "下載為新個人檔案"),
+    "Download into a separate profile on this iPhone. If your key is in iCloud Keychain, you can leave the recovery code blank.": (
+        "日记将下载到此 iPhone 上的独立个人资料。如果密钥已保存在 iCloud 钥匙串中，恢复码可以留空。",
+        "日記會下載到此 iPhone 上的獨立個人檔案。如果密鑰已儲存在「iCloud 鑰匙圈」，復原碼可以留白。",
+    ),
+    "Each token gives one app access to the entire synced profile for %@.": (
+        "每个令牌可让一个应用访问%@的整个同步个人资料。",
+        "每個權杖可讓一個 App 存取%@的整份同步個人檔案。",
+    ),
+    "From this iPhone": ("来自此 iPhone", "來自此 iPhone"),
+    "Included in sync": ("同步内容", "同步內容"),
+    "Journal Sync": ("日记同步", "日記同步"),
+    "Last synced": ("上次同步", "上次同步"),
+    "Link a Journal": ("关联日记", "連結日記"),
+    "Manage Cloud Data": ("管理云端数据", "管理雲端資料"),
+    "Manually entered labs and body data": (
+        "手动录入的化验结果和身体数据",
+        "手動輸入的檢驗結果和身體資料",
+    ),
+    "Medications, schedules, and inventory": ("药物、用药计划和库存", "藥物、用藥排程和庫存"),
+    "New Token": ("新令牌", "新增權杖"),
+    "New profile name": ("新个人资料名称", "新個人檔案名稱"),
+    "No Access Tokens": ("没有访问令牌", "沒有存取權杖"),
+    "No cloud journals": ("没有云端日记", "沒有雲端日記"),
+    "No sync activity yet": ("暂无同步记录", "尚無同步紀錄"),
+    "On this iPhone": ("在此 iPhone 上", "在此 iPhone 上"),
+    "Only authorized devices and apps can decrypt the synced profile. Location fields, Apple Health readings, device settings, and paired people’s journals stay on your device.": (
+        "只有获得授权的设备和应用才能解密同步的个人资料。位置字段、Apple 健康读数、设备设置和已配对者的日记都保留在本机。",
+        "只有獲授權的裝置和 App 能解密同步的個人檔案。位置欄位、Apple 健康讀數、裝置設定和已配對對象的日記都保留在本機。",
+    ),
+    "Open Profile": ("打开个人资料", "開啟個人檔案"),
+    "Pending changes": ("待同步的更改", "待同步的變更"),
+    "Permission": ("权限", "權限"),
+    "Profile details, preferences, and favorites": (
+        "个人资料详情、偏好设置和收藏",
+        "個人檔案資料、偏好設定和收藏",
+    ),
+    "Read and write": ("读写", "讀寫"),
+    "Read only": ("只读", "唯讀"),
+    "Ready to sync": ("准备同步", "準備同步"),
+    "Recovery Code": ("恢复码", "復原碼"),
+    "Recovery code": ("恢复码", "復原碼"),
+    "Revoke %@": ("撤销%@", "撤銷%@"),
+    "Revoke %@?": ("撤销%@？", "撤銷%@？"),
+    "Revoke Token…": ("撤销令牌…", "撤銷權杖…"),
+    "Save this code somewhere private. You can use it to open the journal on another device.": (
+        "请将此代码保存在私密处。你可以用它在另一台设备上打开这本日记。",
+        "請將這組代碼儲存在私密處。你可以用它在另一部裝置上開啟這本日記。",
+    ),
+    "Show Recovery Code": ("显示恢复码", "顯示復原碼"),
+    "Sign Out": ("退出登录", "登出"),
+    "Start Sync": ("开始同步", "開始同步"),
+    "Sync History": ("同步历史", "同步記錄"),
+    "Sync Now": ("立即同步", "立即同步"),
+    "Sync interrupted": ("同步中断", "同步中斷"),
+    "Syncing…": ("正在同步…", "正在同步⋯"),
+    "This app can read and export every synced record in %@.": (
+        "此应用可以读取和导出%@的所有同步记录。",
+        "此 App 可以讀取和匯出%@的所有同步紀錄。",
+    ),
+    "This app can read, export, add, edit, and delete any synced record in %@.": (
+        "此应用可以读取、导出、添加、编辑和删除%@的任何同步记录。",
+        "此 App 可以讀取、匯出、新增、編輯和刪除%@的任何同步紀錄。",
+    ),
+    "Token Created": ("令牌已创建", "已建立權杖"),
+    "Token name": ("令牌名称", "權杖名稱"),
+    "Try Again": ("重试", "再試一次"),
+    "Up to date": ("已同步", "已同步"),
+    "Weekly summary": ("每周摘要", "每週摘要"),
+    "Your journal stays on this iPhone. Apps with access tokens can still use the cloud journal.": (
+        "你的日记会保留在此 iPhone 上。持有访问令牌的应用仍可使用云端日记。",
+        "你的日記會保留在此 iPhone 上。持有存取權杖的 App 仍可使用雲端日記。",
+    ),
+    "Your recovery code": ("你的恢复码", "你的復原碼"),
+    "Your token": ("你的令牌", "你的權杖"),
+    "Sign in to manage Journal Sync.": ("登录以管理日记同步。", "登入以管理日記同步。"),
+    "Refresh the sign-in request and try again.": (
+        "请刷新登录请求，然后重试。",
+        "請重新整理登入要求，然後再試一次。",
+    ),
+    "The linked journal changed. Refresh and try again.": (
+        "关联的日记已更改。请刷新后重试。",
+        "連結的日記已變更。請重新整理後再試一次。",
+    ),
+    "Wait for the current Journal Sync request to finish.": (
+        "请等待当前的日记同步请求完成。",
+        "請等待目前的日記同步要求完成。",
+    ),
+    "This profile already has a linked journal.": (
+        "此个人资料已关联日记。",
+        "此個人檔案已連結日記。",
+    ),
+    "This journal has no active device credential.": (
+        "此日记没有有效的设备凭据。",
+        "此日記沒有有效的裝置憑證。",
+    ),
+    "Enter the recovery code saved for this journal.": (
+        "请输入为此日记保存的恢复码。",
+        "請輸入為此日記儲存的復原碼。",
+    ),
+    "This journal is already linked to a profile on this device.": (
+        "这本日记已关联到此设备上的个人资料。",
+        "這本日記已連結此裝置上的個人檔案。",
+    ),
+    "Enter a name of up to 120 characters.": (
+        "请输入不超过 120 个字符的名称。",
+        "請輸入不超過 120 個字元的名稱。",
+    ),
+    "Retry the previous Journal Sync action to finish it.": (
+        "请重试上一次日记同步操作以完成该操作。",
+        "請重試上一次日記同步操作，以完成該操作。",
+    ),
+    "Keychain is temporarily unavailable. Unlock this device and try again.": (
+        "钥匙串暂时不可用。请解锁此设备后重试。",
+        "鑰匙圈暫時無法使用。請解鎖此裝置後再試一次。",
+    ),
+    "Journal Sync could not read the saved credential.": (
+        "日记同步无法读取已保存的凭据。",
+        "日記同步無法讀取已儲存的憑證。",
+    ),
+    "Journal Sync could not access Keychain.": (
+        "日记同步无法访问钥匙串。",
+        "日記同步無法存取鑰匙圈。",
+    ),
+    "Journal Sync needs a configured service URL.": (
+        "日记同步需要配置服务网址。",
+        "日記同步需要設定服務網址。",
+    ),
+    "The sync service returned an invalid response.": (
+        "同步服务返回的响应无效。",
+        "同步服務傳回的回應無效。",
+    ),
+    "The sync response is too large.": ("同步响应过大。", "同步回應太大。"),
+    "Journal Sync request failed (HTTP %lld).": (
+        "日记同步请求失败（HTTP %lld）。",
+        "日記同步要求失敗（HTTP %lld）。",
+    ),
+}
+T.update(JOURNAL_SYNC_T)
 
 if __name__ == "__main__":
     project_root = Path(__file__).resolve().parent
@@ -9440,6 +9690,8 @@ if __name__ == "__main__":
     NEW_KEYS.update(
         {"Last %lld days", "All time", "Repeats", "S-enantiomer", "R-enantiomer", "racemate"}
     )
+    NEW_KEYS.add("Automerge. Copyright © 2019–2023 the Automerge contributors.")
+    NEW_KEYS.update(JOURNAL_SYNC_T)
     print("--- Piru main app catalog ---")
     n, added, missing = apply_translations(
         project_root / "Piru/Localizable.xcstrings",
